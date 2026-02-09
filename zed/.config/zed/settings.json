@@ -1,0 +1,263 @@
+{
+  // ─────────────────────────────────────────────────────────────
+  // File Scanning & Search
+  // ─────────────────────────────────────────────────────────────
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/.svn",
+    "**/.hg",
+    "**/.jj",
+    "**/.sl",
+    "**/.repo",
+    "**/CVS",
+    "**/.DS_Store",
+    "**/Thumbs.db",
+    "**/node_modules",
+    "**/.pnpm",
+    "**/dist",
+    "**/build",
+    "**/.next",
+    "**/.nuxt",
+    "**/.turbo",
+    "**/.cache",
+    "**/.parcel-cache",
+    "**/.venv",
+    "**/.env",
+    "**/venv",
+    "**/__pycache__",
+    "**/.pytest_cache",
+    "**/.mypy_cache",
+    "**/target",
+    "**/.cargo",
+    "**/vendor",
+    "**/.bundle",
+    "**/coverage",
+    "**/.nyc_output",
+    "**/*.log",
+  ],
+
+  // ─────────────────────────────────────────────────────────────
+  // Theme & Appearance
+  // ─────────────────────────────────────────────────────────────
+  "vim_mode": true,
+  "theme": {
+    "mode": "system",
+    "light": "One Light",
+    "dark": "Dim Night",
+  },
+  "icon_theme": "Base Charmed Icons",
+  "cursor_shape": "bar",
+  "experimental.theme_overrides": {
+    "players": [
+      {
+        "cursor": "#ffffff",
+        "selection": "#214265",
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // Fonts
+  // ─────────────────────────────────────────────────────────────
+  "ui_font_family": "Inter",
+  "ui_font_size": 20,
+  "buffer_font_family": "Monaspace Argon Var",
+  "buffer_font_size": 22,
+  "buffer_font_weight": 500.0,
+  "buffer_line_height": { "custom": 1.45 },
+  "agent_ui_font_size": 15,
+  "agent_buffer_font_size": 15,
+
+  // ─────────────────────────────────────────────────────────────
+  // UI Panels & Layout
+  // ─────────────────────────────────────────────────────────────
+  "collaboration_panel": { "dock": "right" },
+  "git_panel": { "dock": "right" },
+  "project_panel": { "dock": "right" },
+  "tab_bar": {
+    "show": true,
+    "show_tab_bar_buttons": false,
+    "show_nav_history_buttons": false,
+  },
+  "preview_tabs": { "enabled": false },
+  "max_tabs": 7,
+  "title_bar": { "show_branch_name": true, "show_branch_icon": true },
+  "toolbar": {
+    "breadcrumbs": false,
+    "quick_actions": false,
+    "selections_menu": false,
+  },
+  "show_call_status_icon": false,
+
+  // ─────────────────────────────────────────────────────────────
+  // Editor Behavior
+  // ─────────────────────────────────────────────────────────────
+  "base_keymap": "VSCode",
+  "soft_wrap": "editor_width",
+  "show_whitespaces": "trailing",
+  "format_on_save": "on",
+  "formatter": "prettier",
+  "vertical_scroll_margin": 5,
+  "hover_popover_delay": 150,
+
+  // ─────────────────────────────────────────────────────────────
+  // Diagnostics & Inlay Hints
+  // ─────────────────────────────────────────────────────────────
+  "diagnostics_max_severity": null,
+  "diagnostics": {
+    "inline": {
+      "enabled": true,
+      "max_severity": "warning",
+      "padding": 4,
+      "min_column": 0,
+    },
+  },
+  "inlay_hints": {
+    "enabled": true,
+    "show_type_hints": false,
+    "show_parameter_hints": true,
+    "show_other_hints": true,
+    "show_background": false,
+    "edit_debounce_ms": 700,
+    "scroll_debounce_ms": 50,
+    "toggle_on_modifiers_press": null,
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // AI & Edit Predictions
+  // ─────────────────────────────────────────────────────────────
+  "disable_ai": false,
+  "show_edit_predictions": false,
+  "edit_predictions": {
+    "provider": "zed",
+    "mode": "subtle",
+    "enabled_in_text_threads": false,
+    "copilot": {
+      "proxy": null,
+      "proxy_no_verify": null,
+      "enterprise_uri": null,
+    },
+  },
+  "agent": {
+    "default_profile": "write",
+    "default_model": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-thinking-latest",
+    },
+    "play_sound_when_agent_done": true,
+    "single_file_review": true,
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // Terminal
+  // ─────────────────────────────────────────────────────────────
+  "terminal": {
+    "button": false,
+    "font_size": 15,
+    "shell": { "program": "/bin/zsh" },
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // Languages
+  // ─────────────────────────────────────────────────────────────
+  "languages": {
+    "TypeScript": {
+      "language_servers": ["tsgo", "!vtsls", "!typescript-language-server"],
+      "show_edit_predictions": true,
+      "code_actions_on_format": { "source.fixAll.eslint": true },
+      "colorize_brackets": true,
+    },
+    "TSX": {
+      "language_servers": ["tsgo", "!vtsls", "!typescript-language-server"],
+      "code_actions_on_format": { "source.fixAll.eslint": true },
+      "colorize_brackets": true,
+    },
+    "JavaScript": {
+      "language_servers": ["tsgo", "!vtsls", "!typescript-language-server"],
+      "code_actions_on_format": { "source.fixAll.eslint": true },
+      "colorize_brackets": true,
+    },
+    "JSON": { "colorize_brackets": true },
+    "SQL": { "colorize_brackets": true },
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // LSP Configuration
+  // ─────────────────────────────────────────────────────────────
+  "lsp": {
+    "biome": {
+      "settings": {
+        "require_config_file": true,
+      },
+    },
+    "oxc": {
+      "initialization_options": {
+        "options": {
+          "run": "onType",
+          "typeAware": true,
+        },
+      },
+    },
+    // Kept for reference (currently disabled via language_servers)
+    "vtsls": {
+      "settings": {
+        "vtsls": {
+          "autoUseWorkspaceTsdk": true,
+          "experimental": {
+            "completion": {
+              "enableServerSideFuzzyMatch": true,
+              "entriesLimit": 10,
+            },
+          },
+        },
+        "typescript": {
+          "preferGoToSourceDefinition": true,
+          "tsserver": {
+            "maxTsServerMemory": 24576,
+            "enableTracing": false,
+            "log": "off",
+          },
+          "inlayHints": {
+            "parameterNames": {
+              "enabled": "all",
+              "suppressWhenArgumentMatchesName": true,
+            },
+          },
+        },
+        "javascript": {
+          "preferGoToSourceDefinition": true,
+          "tsserver": {
+            "maxTsServerMemory": 8192,
+            "enableTracing": false,
+            "log": "off",
+          },
+          "inlayHints": {
+            "parameterNames": {
+              "enabled": "all",
+              "suppressWhenArgumentMatchesName": true,
+            },
+          },
+        },
+      },
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // Profiles
+  // ─────────────────────────────────────────────────────────────
+  "profiles": {
+    "rec": {
+      "ui_font_size": 24,
+      "buffer_font_size": 24,
+      "diagnostics_max_severity": null,
+      "diagnostics": {
+        "inline": {
+          "enabled": true,
+          "max_severity": "warning",
+          "padding": 1,
+          "min_column": 0,
+        },
+      },
+    },
+  },
+}

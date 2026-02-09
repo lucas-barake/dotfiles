@@ -1,0 +1,11 @@
+[
+  {
+    "label": "terminal",
+    "command": "$SHELL",
+    "args": ["-l"],
+    "reveal_target": "center",
+    "allow_concurrent_runs": true,
+    "use_new_terminal": true,
+    "hide": "always"
+  }
+]
