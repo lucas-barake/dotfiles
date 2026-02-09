@@ -1,12 +1,17 @@
 return {
   {
-    "mikavilpas/yazi.nvim",
-    event = "VeryLazy",
+    "stevearc/oil.nvim",
+    lazy = false,
     keys = {
-      { "-", "<cmd>Yazi<cr>", desc = "Open yazi at current file" },
+      { "-", "<cmd>Oil<cr>", desc = "Open parent directory" },
     },
     opts = {
-      open_for_directories = true,
+      default_file_explorer = true,
+      skip_confirm_for_simple_edits = true,
+      watch_for_changes = true,
+      view_options = {
+        show_hidden = true,
+      },
     },
   },
 }

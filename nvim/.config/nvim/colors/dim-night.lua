@@ -10,14 +10,13 @@ local hi = function(group, opts)
   vim.api.nvim_set_hl(0, group, opts)
 end
 
--- Palette (from VS Code Dim Night theme)
 local c = {
-  bg = "#0A0A0A",
-  bg_dark = "#060606",
-  bg_float = "#0B0B0B",
-  bg_highlight = "#151515",
-  bg_widget = "#080808",
-  border = "#404040",
+  bg = "#000000",
+  bg_dark = "#000000",
+  bg_float = "#050505",
+  bg_highlight = "#0A0A0A",
+  bg_widget = "#000000",
+  border = "#303030",
   fg = "#e5e5e5",
   fg_dim = "#d4d4d4",
   fg_muted = "#9d9d9d",
@@ -64,7 +63,6 @@ local c = {
   text = "#e1e4e8",
 }
 
--- Editor UI
 hi("Normal", { fg = c.fg, bg = c.bg })
 hi("NormalFloat", { fg = c.fg, bg = c.bg_float })
 hi("NormalNC", { fg = c.fg, bg = c.bg })
@@ -78,18 +76,18 @@ hi("ColorColumn", { bg = c.bg_highlight })
 hi("Cursor", { fg = c.bg, bg = c.blue_cursor })
 hi("lCursor", { fg = c.bg, bg = c.blue_cursor })
 hi("CursorIM", { fg = c.bg, bg = c.blue_cursor })
-hi("Visual", { bg = "#152e4b" })
-hi("VisualNOS", { bg = "#0f1c2b" })
-hi("Search", { bg = "#4b4018" })
-hi("IncSearch", { bg = "#4b4018" })
-hi("CurSearch", { bg = "#6c5a1e" })
-hi("Substitute", { bg = "#4b4018" })
-hi("MatchParen", { bg = "#0e4f4f" })
-hi("Folded", { bg = "#191c1f", fg = c.fg_muted })
+hi("Visual", { bg = "#0B2441" })
+hi("VisualNOS", { bg = "#051221" })
+hi("Search", { bg = "#41360E" })
+hi("IncSearch", { bg = "#41360E" })
+hi("CurSearch", { bg = "#625014" })
+hi("Substitute", { bg = "#41360E" })
+hi("MatchParen", { bg = "#044545" })
+hi("Folded", { bg = "#0D1013", fg = c.fg_muted })
 hi("FoldColumn", { fg = c.fg_gutter, bg = c.bg })
 
 hi("Pmenu", { fg = c.text, bg = c.bg_float })
-hi("PmenuSel", { bg = "#2a2a2a" })
+hi("PmenuSel", { bg = "#1C1C1C" })
 hi("PmenuSbar", { bg = c.bg_widget })
 hi("PmenuThumb", { bg = c.fg_gutter })
 
@@ -97,7 +95,7 @@ hi("StatusLine", { fg = c.text_light, bg = c.bg_dark })
 hi("StatusLineNC", { fg = c.fg_muted, bg = c.bg_dark })
 hi("TabLine", { fg = c.fg_muted, bg = c.bg_dark })
 hi("TabLineFill", { bg = c.bg_dark })
-hi("TabLineSel", { fg = c.text, bg = "#1a0f20" })
+hi("TabLineSel", { fg = c.text, bg = "#0E0514" })
 hi("WinSeparator", { fg = c.border })
 hi("VertSplit", { fg = c.border })
 
@@ -113,10 +111,10 @@ hi("SpecialKey", { fg = c.fg_gutter })
 hi("Conceal", { fg = c.fg_muted })
 hi("Whitespace", { fg = c.fg_gutter })
 
-hi("DiffAdd", { bg = "#102815" })
-hi("DiffChange", { bg = "#0c140e" })
-hi("DiffDelete", { bg = "#311316" })
-hi("DiffText", { bg = "#133b1d" })
+hi("DiffAdd", { bg = "#061E0B" })
+hi("DiffChange", { bg = "#020A04" })
+hi("DiffDelete", { bg = "#27090C" })
+hi("DiffText", { bg = "#093113" })
 
 hi("DiagnosticError", { fg = c.red_error })
 hi("DiagnosticWarn", { fg = "#ffab70" })
@@ -131,7 +129,6 @@ hi("GitSignsAdd", { fg = "#28a745" })
 hi("GitSignsChange", { fg = c.purple })
 hi("GitSignsDelete", { fg = "#ea4a5a" })
 
--- Syntax (fallback for non-treesitter)
 hi("Comment", { fg = c.green_comment, italic = true })
 hi("Constant", { fg = c.yellow })
 hi("String", { fg = c.green })
@@ -166,7 +163,6 @@ hi("Underlined", { underline = true })
 hi("Error", { fg = c.red_dark })
 hi("Todo", { fg = c.purple, bold = true })
 
--- Tree-sitter highlights
 hi("@comment", { link = "Comment" })
 hi("@variable", { fg = c.white })
 hi("@variable.builtin", { fg = c.red, italic = true })
@@ -227,7 +223,6 @@ hi("@markup.link.url", { fg = c.green, underline = true })
 hi("@markup.raw", { fg = c.purple_light })
 hi("@markup.list", { fg = c.white })
 
--- LSP semantic tokens
 hi("@lsp.type.namespace", { fg = c.silver })
 hi("@lsp.type.property", { fg = c.blue })
 hi("@lsp.type.variable", { fg = c.white })
@@ -254,12 +249,11 @@ hi("FzfLuaNormal", { fg = c.fg, bg = c.bg_float })
 hi("FzfLuaBorder", { fg = c.border, bg = c.bg_float })
 hi("FzfLuaTitle", { fg = c.text, bg = c.purple_dark })
 hi("FzfLuaPreviewTitle", { fg = c.text, bg = c.purple_dark })
-hi("FzfLuaCursorLine", { bg = "#2a2a2a" })
+hi("FzfLuaCursorLine", { bg = "#1C1C1C" })
 hi("FzfLuaFzfMatch", { fg = c.purple })
 hi("FzfLuaDirPart", { fg = c.fg_gutter })
 hi("FzfLuaFilePart", { fg = "#ffffff" })
 
--- Plugin: Neo-tree
 hi("NeoTreeNormal", { fg = c.text_light, bg = c.bg_dark })
 hi("NeoTreeNormalNC", { fg = c.text_light, bg = c.bg_dark })
 hi("NeoTreeDirectoryName", { fg = c.text_light })
@@ -271,18 +265,15 @@ hi("NeoTreeGitDeleted", { fg = "#ea4a5a" })
 hi("NeoTreeGitUntracked", { fg = c.green_bright })
 hi("NeoTreeIndentMarker", { fg = c.bg_float })
 
--- Plugin: Which-key
 hi("WhichKey", { fg = c.purple })
 hi("WhichKeyGroup", { fg = c.orange })
 hi("WhichKeyDesc", { fg = c.fg })
 hi("WhichKeySeparator", { fg = c.fg_gutter })
 hi("WhichKeyFloat", { bg = c.bg_dark })
 
--- Plugin: Indent Blankline
 hi("IblIndent", { fg = c.gray_dark })
 hi("IblScope", { fg = c.fg_gutter })
 
--- Plugin: Noice / Notify
 hi("NotifyINFOBorder", { fg = c.purple })
 hi("NotifyINFOTitle", { fg = c.purple })
 hi("NotifyINFOIcon", { fg = c.purple })
@@ -293,23 +284,36 @@ hi("NotifyERRORBorder", { fg = c.red_error })
 hi("NotifyERRORTitle", { fg = c.red_error })
 hi("NotifyERRORIcon", { fg = c.red_error })
 
--- Plugin: Lualine (handled via theme table below, but set fallbacks)
 hi("lualine_a_normal", { fg = c.bg_dark, bg = c.purple_accent, bold = true })
-hi("lualine_b_normal", { fg = c.text, bg = "#1A1A1A" })
+hi("lualine_b_normal", { fg = c.text, bg = "#0E0E0E" })
 hi("lualine_c_normal", { fg = c.fg_muted, bg = c.bg_dark })
 
--- Plugin: Lazy
-hi("LazyButton", { fg = c.text, bg = "#1A1A1A" })
+hi("LazyButton", { fg = c.text, bg = "#0E0E0E" })
 hi("LazyButtonActive", { fg = c.bg_dark, bg = c.purple })
 hi("LazyH1", { fg = c.bg_dark, bg = c.purple, bold = true })
 
--- Plugin: Snacks Picker
 hi("SnacksPickerDir", { fg = c.fg_muted })
 hi("SnacksPickerFile", { fg = c.fg })
 hi("SnacksPickerMatch", { fg = c.purple, bold = true })
 
--- Misc
+hi("OilDir", { fg = c.blue_bright })
+hi("OilDirIcon", { fg = c.blue_bright })
+hi("OilFile", { fg = c.fg })
+hi("OilHidden", { fg = c.gray })
+hi("OilDirHidden", { fg = c.gray })
+hi("OilFileHidden", { fg = c.gray })
+hi("OilLink", { fg = c.cyan })
+hi("OilOrphanLink", { fg = c.red_error })
+hi("OilLinkTarget", { fg = c.fg_muted })
+hi("OilOrphanLinkTarget", { fg = c.red_error })
+hi("OilCreate", { fg = c.green_bright })
+hi("OilDelete", { fg = c.red_error })
+hi("OilMove", { fg = c.yellow })
+hi("OilCopy", { fg = c.cyan })
+hi("OilChange", { fg = c.purple })
+hi("OilTrashSourcePath", { fg = c.gray })
+
 hi("FloatBorder", { fg = c.border, bg = c.bg_float })
 hi("WinBar", { fg = c.fg_muted })
 hi("WinBarNC", { fg = c.fg_muted })
-hi("LspInlayHint", { fg = "#949494", bg = "#101010" })
+hi("LspInlayHint", { fg = "#949494", bg = "#060606" })
