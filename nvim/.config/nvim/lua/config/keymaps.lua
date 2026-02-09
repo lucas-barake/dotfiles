@@ -67,8 +67,8 @@ end, { desc = "Clear search and close floats" })
 
 map("n", "<C-w>v", function()
   vim.cmd("vsplit")
-  require("oil").open(vim.fn.expand("#:p:h"))
-end, { desc = "Vertical split with Oil (file dir)" })
+  require("yazi").yazi()
+end, { desc = "Vertical split with Yazi" })
 
 map("n", "<C-h>", "<C-w>h", { desc = "Go to left window" })
 map("n", "<C-j>", "<C-w>j", { desc = "Go to lower window" })

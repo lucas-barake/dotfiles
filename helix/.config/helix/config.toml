@@ -21,9 +21,12 @@ right = ["diagnostics", "selections", "position", "file-encoding", "file-type"]
 render = true
 character = "│"
 
+[editor.soft-wrap]
+enable = true
+
 [editor.lsp]
 display-messages = true
-display-inlay-hints = true
+display-inlay-hints = false
 
 [keys.normal]
 G = "goto_file_end"
