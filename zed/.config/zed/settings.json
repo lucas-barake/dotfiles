@@ -60,9 +60,9 @@
   // Fonts
   // ─────────────────────────────────────────────────────────────
   "ui_font_family": "Inter",
-  "ui_font_size": 20,
+  "ui_font_size": 15,
   "buffer_font_family": "Monaspace Argon Var",
-  "buffer_font_size": 22,
+  "buffer_font_size": 17,
   "buffer_font_weight": 500.0,
   "buffer_line_height": { "custom": 1.45 },
   "agent_ui_font_size": 15,
