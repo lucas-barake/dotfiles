@@ -1,0 +1,44 @@
+theme = "dim-night"
+
+[editor]
+line-number = "relative"
+cursorline = true
+bufferline = "multiple"
+color-modes = true
+true-color = true
+default-yank-register = "+"
+
+[editor.cursor-shape]
+insert = "bar"
+normal = "block"
+select = "underline"
+
+[editor.statusline]
+left = ["mode", "spinner", "file-name", "file-modification-indicator"]
+right = ["diagnostics", "selections", "position", "file-encoding", "file-type"]
+
+[editor.indent-guides]
+render = true
+character = "│"
+
+[editor.lsp]
+display-messages = true
+display-inlay-hints = true
+
+[keys.normal]
+G = "goto_file_end"
+C-s = ":write"
+minus = [
+  ':sh rm -f /tmp/helix-yazi-file',
+  ":insert-output yazi '%{buffer_name}' --chooser-file=/tmp/helix-yazi-file",
+  ':sh printf "\x1b[?1049h\x1b[?2004h" > /dev/tty',
+  ':open %sh{cat /tmp/helix-yazi-file}',
+  ':redraw',
+]
+
+[keys.insert]
+C-s = ["normal_mode", ":write"]
+
+[editor.inline-diagnostics]
+cursor-line = "hint"
+other-lines = "error"

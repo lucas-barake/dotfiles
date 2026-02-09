@@ -1,0 +1,45 @@
+[language-server.typescript-language-server]
+command = "typescript-language-server"
+args = ["--stdio"]
+
+[language-server.lua-language-server]
+command = "/Users/lucas/.local/share/nvim/mason/bin/lua-language-server"
+
+[language-server.yaml-language-server]
+command = "/Users/lucas/.local/share/nvim/mason/bin/yaml-language-server"
+args = ["--stdio"]
+
+[[language]]
+name = "typescript"
+language-servers = ["typescript-language-server"]
+formatter = { command = "/Users/lucas/.config/helix/fmt.sh", args = ["ts"] }
+auto-format = true
+
+[[language]]
+name = "tsx"
+language-servers = ["typescript-language-server"]
+formatter = { command = "/Users/lucas/.config/helix/fmt.sh", args = ["tsx"] }
+auto-format = true
+
+[[language]]
+name = "javascript"
+language-servers = ["typescript-language-server"]
+formatter = { command = "/Users/lucas/.config/helix/fmt.sh", args = ["js"] }
+auto-format = true
+
+[[language]]
+name = "json"
+formatter = { command = "/Users/lucas/.config/helix/fmt.sh", args = ["json"] }
+auto-format = true
+
+[[language]]
+name = "yaml"
+language-servers = ["yaml-language-server"]
+formatter = { command = "/Users/lucas/.config/helix/fmt.sh", args = ["yaml"] }
+auto-format = true
+
+[[language]]
+name = "lua"
+language-servers = ["lua-language-server"]
+formatter = { command = "/Users/lucas/.local/share/nvim/mason/bin/stylua", args = ["-"] }
+auto-format = true
