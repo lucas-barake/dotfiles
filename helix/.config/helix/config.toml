@@ -1,6 +1,7 @@
 theme = "dim-night"
 
 [editor]
+scroll-lines = 1
 line-number = "relative"
 cursorline = true
 bufferline = "multiple"
