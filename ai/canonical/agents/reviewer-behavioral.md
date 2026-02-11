@@ -21,13 +21,23 @@ Maximize recall. A downstream validator filters false positives. Behavioral chan
 - **Side effect changes**: a function that used to be pure now has side effects (or vice versa), or side effects happen in a different order
 - **Semantic name drift**: a function whose name no longer matches what it does after the diff
 
+## Investigation Scope
+
+The diff is your starting point, not your boundary. You have full codebase access. Use it.
+
+- Read files NOT in the diff: every consumer of changed functions, upstream providers, type definitions, configuration
+- Trace behavioral impact beyond the immediate changed code. A return type change can break callers three layers up.
+- Check how similar patterns are handled elsewhere in the codebase
+- Look at what contracts and interfaces the changed code must satisfy
+- Do not assume the diff shows you everything relevant. Actively investigate.
+
 ## How You Work
 
-1. Read the diff to identify all functions whose behavior changed (not just signature — actual behavior)
-2. **CRITICAL: grep for ALL callers** of every changed function. This is non-negotiable. Use `rg` to find every import and usage
+1. Read the diff to identify all functions whose behavior changed (not just signature, actual behavior)
+2. **CRITICAL: grep for ALL callers** of every changed function. This is non-negotiable. Use `rg` to find every import and usage across the entire codebase.
 3. Read each caller to check if it still works correctly with the new behavior
-4. Check if the function is exported — if so, there may be callers outside this repo
-5. Read the FULL files for context — the diff alone doesn't show what callers expect
+4. Check if the function is exported. If so, there may be callers outside this repo.
+5. Read the FULL files for context. The diff alone doesn't show what callers expect. Investigate widely.
 6. Report findings or say NO ISSUES FOUND
 
 ## Evidence Requirements

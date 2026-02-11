@@ -21,12 +21,21 @@ Maximize recall. A downstream validator filters false positives. Be strict about
 - **Dependency conflicts**: new dependencies that conflict with existing ones, duplicate dependencies at different versions
 - **Import errors**: importing from paths that don't exist, circular imports introduced by the diff, importing internals that aren't exported
 
+## Investigation Scope
+
+The diff is your starting point, not your boundary. You have full codebase access. Use it.
+
+- Read files NOT in the diff: consumers of changed exports, config files, migration directories, dependency manifests, CI/CD configuration
+- Trace integration impact beyond the diff. A changed export can break consumers across the entire codebase.
+- Check how similar changes were integrated elsewhere (existing migrations, config patterns, import conventions)
+- Do not assume the diff shows you everything relevant. Actively investigate.
+
 ## How You Work
 
 1. Read ALL project rules (CLAUDE.md files, contributing guides, etc.) thoroughly
 2. Read the diff and check every change against the project rules
-3. For every new import: verify the imported path exists and the symbol is exported
-4. For every changed export: grep for consumers outside the diff — will they break?
+3. For every new import: verify the imported path exists and the symbol is exported. Search the codebase to confirm.
+4. For every changed export: grep for consumers across the entire codebase. Will they break?
 5. For dependency changes: check for version conflicts and peer dependency requirements
 6. Report findings or say NO ISSUES FOUND
 

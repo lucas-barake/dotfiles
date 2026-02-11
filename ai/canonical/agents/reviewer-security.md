@@ -22,11 +22,21 @@ Maximize recall. A downstream validator filters false positives. If something lo
 - **Input validation**: missing validation on user input that reaches sensitive operations, type confusion
 - **Information leakage**: stack traces, internal paths, or system details in error responses
 
+## Investigation Scope
+
+The diff is your starting point, not your boundary. You have full codebase access. Use it.
+
+- Read files NOT in the diff: callers, callees, shared utilities, middleware, auth guards, type definitions, configuration
+- Trace input paths from entry point through multiple layers to their final destination (database, shell, HTML, redirect)
+- Check how similar patterns are handled elsewhere in the codebase. If other endpoints validate input, does this one?
+- Look at what contracts and interfaces the changed code must satisfy
+- Do not assume the diff shows you everything relevant. Actively investigate.
+
 ## How You Work
 
 1. Read the diff to identify all points where external input enters the system (request params, headers, body, query strings, file uploads, environment variables)
-2. Trace each input through the code to see where it ends up — does it reach a database query, HTML output, shell command, file path, redirect, or eval?
-3. Read the FULL files for context — there may be middleware, sanitization, or validation you're not seeing in the diff alone
+2. Trace each input through the code to see where it ends up. Does it reach a database query, HTML output, shell command, file path, redirect, or eval? Follow the trail across files and modules, not just within the diff.
+3. Read the FULL files for context. There may be middleware, sanitization, or validation you're not seeing in the diff alone. Search for them.
 4. Check for auth middleware/guards on new endpoints or routes
 5. Report findings or say NO ISSUES FOUND
 
