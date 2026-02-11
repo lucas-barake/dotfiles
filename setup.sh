@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-PACKAGES=(helix ghostty nvim zed kitty yazi)
+PACKAGES=(helix ghostty nvim zed kitty yazi scripts launchd)
 
 if [[ "$(uname)" == "Darwin" ]]; then
   if ! command -v brew &>/dev/null; then
@@ -25,5 +25,14 @@ for pkg in "${PACKAGES[@]}"; do
   echo "  $pkg"
   stow -v "$pkg"
 done
+
+if [[ "$(uname)" == "Darwin" ]]; then
+  PLIST="$HOME/Library/LaunchAgents/com.lucas.oss-update.plist"
+  if [ -f "$PLIST" ]; then
+    launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null || true
+    launchctl bootstrap "gui/$(id -u)" "$PLIST"
+    echo "Loaded oss-update launchd agent"
+  fi
+fi
 
 echo "Done."

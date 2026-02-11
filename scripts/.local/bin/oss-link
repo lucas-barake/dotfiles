@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+OSS_DIR="$HOME/src/oss"
+
+if [ ! -d "$OSS_DIR" ]; then
+  echo "error: $OSS_DIR does not exist"
+  exit 1
+fi
+
+if [ ! -d ".git" ]; then
+  echo "error: not in a git repository root"
+  exit 1
+fi
+
+mkdir -p .context
+if [ -L ".context/oss" ]; then
+  echo ".context/oss already linked"
+  exit 0
+fi
+
+ln -s "$OSS_DIR" .context/oss
+echo "linked .context/oss -> $OSS_DIR"
