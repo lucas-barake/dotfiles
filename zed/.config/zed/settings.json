@@ -45,7 +45,7 @@
     "light": "One Light",
     "dark": "Dim Night",
   },
-  "icon_theme": "Base Charmed Icons",
+  "icon_theme": "Charmed Icons+",
   "cursor_shape": "bar",
   "experimental.theme_overrides": {
     "players": [
@@ -61,8 +61,8 @@
   // ─────────────────────────────────────────────────────────────
   "ui_font_family": "Inter",
   "ui_font_size": 15,
-  "buffer_font_family": "Monaspace Argon Var",
-  "buffer_font_size": 17,
+  "buffer_font_family": "Monaspace Neon Var",
+  "buffer_font_size": 18,
   "buffer_font_weight": 500.0,
   "buffer_line_height": { "custom": 1.45 },
   "agent_ui_font_size": 15,
