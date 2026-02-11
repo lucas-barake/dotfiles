@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./src/bin.ts --compile --outfile bin/dotai",
+    "test": "vitest run",
+    "sync": "bun run src/bin.ts sync"
+  },
+  "dependencies": {
+    "effect": "https://pkg.pr.new/Effect-TS/effect-smol/effect@main",
+    "@effect/platform-bun": "https://pkg.pr.new/Effect-TS/effect-smol/@effect/platform-bun@main"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "https://pkg.pr.new/Effect-TS/effect-smol/@effect/platform-node@main",
+    "@effect/vitest": "https://pkg.pr.new/Effect-TS/effect-smol/@effect/vitest@main",
+    "vitest": "latest",
+    "@types/bun": "latest"
+  }
+}

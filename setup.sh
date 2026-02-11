@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-PACKAGES=(helix ghostty nvim zed kitty yazi scripts launchd)
+PACKAGES=(helix ghostty nvim zed kitty yazi scripts launchd git)
 
 if [[ "$(uname)" == "Darwin" ]]; then
   if ! command -v brew &>/dev/null; then
@@ -26,6 +26,8 @@ for pkg in "${PACKAGES[@]}"; do
   stow -v "$pkg"
 done
 
+git config --global core.excludesfile "$HOME/.gitignore_global"
+
 if [[ "$(uname)" == "Darwin" ]]; then
   PLIST="$HOME/Library/LaunchAgents/com.lucas.oss-update.plist"
   if [ -f "$PLIST" ]; then
@@ -33,6 +35,15 @@ if [[ "$(uname)" == "Darwin" ]]; then
     launchctl bootstrap "gui/$(id -u)" "$PLIST"
     echo "Loaded oss-update launchd agent"
   fi
+fi
+
+if [ -f "$DOTFILES/ai/package.json" ]; then
+  echo "Setting up ai tooling..."
+  cd "$DOTFILES/ai"
+  bun install
+  bun run build
+  ln -sf "$DOTFILES/ai/bin/dotai" "$HOME/.local/bin/dotai"
+  echo "Linked dotai binary"
 fi
 
 echo "Done."

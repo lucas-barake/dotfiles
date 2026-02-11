@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "linear": {
+      "type": "remote",
+      "url": "https://mcp.linear.app/sse",
+      "oauth": {}
+    }
+  },
+  "permission": {
+    "bash": {
+      "git push *": "ask",
+      "git reset --hard *": "ask",
+      "git checkout . *": "ask",
+      "git clean *": "ask",
+      "git branch -D *": "ask",
+      "gh pr create *": "ask",
+      "gh pr edit *": "ask",
+      "gh pr close *": "ask",
+      "gh pr merge *": "ask",
+      "gh release create *": "ask",
+      "gh repo delete *": "ask",
+      "pnpm publish *": "ask",
+      "npm publish *": "ask",
+      "rm -rf *": "ask"
+    }
+  }
+}
