@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-PACKAGES=(helix ghostty nvim zed kitty)
+PACKAGES=(helix ghostty nvim zed kitty yazi)
 
 if [[ "$(uname)" == "Darwin" ]]; then
   if ! command -v brew &>/dev/null; then
