@@ -243,7 +243,7 @@ return {
   {
     "smoka7/hop.nvim",
     keys = {
-      { "<CR>", "<cmd>HopWord<cr>", mode = { "n", "x", "o" }, desc = "Jump to word" },
+      { "gw", "<cmd>HopWord<cr>", mode = { "n", "x", "o" }, desc = "Jump to word" },
     },
     opts = {},
   },

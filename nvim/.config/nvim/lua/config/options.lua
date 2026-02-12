@@ -45,7 +45,8 @@ opt.wildoptions = "pum"
 opt.pumheight = 15
 
 vim.diagnostic.config({
-  virtual_text = { spacing = 1, prefix = "●" },
+  virtual_text = false,
+  virtual_lines = { current_line = true },
   signs = true,
   underline = true,
   severity_sort = true,

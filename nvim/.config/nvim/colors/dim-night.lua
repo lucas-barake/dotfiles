@@ -124,6 +124,7 @@ hi("DiagnosticUnderlineError", { undercurl = true, sp = c.red_error })
 hi("DiagnosticUnderlineWarn", { undercurl = true, sp = "#ffab70" })
 hi("DiagnosticUnderlineInfo", { undercurl = true, sp = c.purple })
 hi("DiagnosticUnderlineHint", { undercurl = true, sp = c.cyan })
+hi("DiagnosticVirtualLinesType", { fg = c.cyan })
 
 hi("GitSignsAdd", { fg = "#28a745" })
 hi("GitSignsChange", { fg = c.purple })
