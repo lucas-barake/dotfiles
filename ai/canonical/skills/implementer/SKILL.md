@@ -13,7 +13,11 @@ You are implementing a pre-investigated plan. The user will tell you which plan 
 
 Read the plan file thoroughly. Understand the full scope before touching any code.
 
-### Step 2: Load all context
+### Step 2: Load skills
+
+The plan's **Skills** section lists which skills to load. Load ALL of them via the Skill tool before writing any code. This is non-negotiable.
+
+### Step 3: Load all context
 
 Before writing a single line of code, you MUST read every file and reference mentioned in the plan. This is non-negotiable.
 
@@ -26,16 +30,18 @@ Extract every file path from:
 
 Read these files in parallel where possible. If any file referenced in the plan no longer exists or has changed significantly, stop and tell the user before proceeding.
 
-### Step 3: Implement
+### Step 4: Implement
 
 Work through the implementation checklist in order. Each checkbox is a discrete task — complete it fully before moving to the next.
 
+**After completing each checkbox item**, immediately update the plan file to check it off: change `- [ ]` to `- [x]`. This tracks progress in the plan itself so that if the session is interrupted, anyone can see exactly what's done and what remains.
+
 Use the references section if you hit unexpected behavior.
 
-### Step 4: Test
+### Step 5: Test
 
 Write tests as described in the test plan. Run them to confirm they pass.
 
-### Step 5: Verify
+### Step 6: Verify
 
 Follow the verification section to confirm the implementation works end-to-end.

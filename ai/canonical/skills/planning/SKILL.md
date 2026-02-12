@@ -94,15 +94,19 @@ Once you have ALL information, write the plan document to `./.context/plans/<fea
 
 The plan must be comprehensive enough for someone with NO context to implement it directly.
 
-### 1. Summary
+### 1. Skills
+
+List the skills the implementer MUST load (via the Skill tool) before writing any code. Refer to the skill trigger table in the global instructions to determine which skills apply based on the domains this plan touches.
+
+### 2. Summary
 
 One sentence describing what's being implemented and why.
 
-### 2. Current State
+### 3. Current State
 
 What already exists — branch state, partial implementations, relevant existing code.
 
-### 3. Implementation Checklist
+### 4. Implementation Checklist
 
 Ordered, actionable tasks. Each task is a checkbox:
 
@@ -131,7 +135,7 @@ The implementing agent will write the actual code. Your job is to describe WHAT 
 
 You do NOT need to write final implementation code. Write conceptual code that conveys the intent unambiguously — the implementing agent turns it into real code. The key is: every decision is already made. The implementer executes, they don't decide.
 
-### 4. Test Plan
+### 5. Test Plan
 
 Every file/module created MUST have tests. No exceptions.
 
@@ -161,11 +165,11 @@ For each file being created/modified:
 - Expected behavior for each test case
 - Conceptual test code describing what to assert and how
 
-### 5. Verification
+### 6. Verification
 
 How to verify the implementation works — test commands, expected behavior, manual checks.
 
-### 6. References
+### 7. References
 
 A numbered list (nested, no tables) of investigation findings that may be useful if the implementer hits issues. These are NOT a substitute for a comprehensive plan — the plan itself must be self-sufficient. References are a safety net for edge cases.
 
