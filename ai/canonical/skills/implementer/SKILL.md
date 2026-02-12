@@ -43,6 +43,8 @@ Work through the implementation checklist in order. Each checkbox is a discrete 
 
 For `[Additive]` items, implement first, then write tests.
 
+**Lint and typecheck continuously.** After writing or modifying any file (implementation or test), run the project's linter and typechecker before doing anything else. Check `package.json` for available `lint`, `typecheck`, `check`, or `tsc` scripts. Fix all errors before moving on. Do NOT defer lint/typecheck fixes to the end.
+
 **After completing each checkbox item**, immediately update the plan file to check it off: change `- [ ]` to `- [x]`. This tracks progress in the plan itself so that if the session is interrupted, anyone can see exactly what's done and what remains.
 
 Use the references section if you hit unexpected behavior.
