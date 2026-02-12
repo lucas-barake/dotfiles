@@ -46,6 +46,10 @@ result-*
 # AI
 .context/
 .worktrees/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+AGENTS.local.md
 
 # Misc
 .cache/
