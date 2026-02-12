@@ -28,6 +28,8 @@
 | Atom test files, `Registry.make`, `Atom.initialValue` | `effect-atom-testing` | Testing atoms, Atom.fn, runtime.atom, React components with atoms. Also load `effect-testing` + `effect-atom`.              |
 | `.tsx` files, React components                    | `react`                 | Writing React components, TSX files, TanStack Router pages, cn() styling                                                    |
 | `effect-form`, FormBuilder, useField              | `effect-form`           | Working with Effect-powered forms, Schema validation, field atoms                                                           |
+| `@effect/rpc`, Rpc.make, RpcGroup, RpcServer      | `effect-rpc`            | Defining RPCs, groups, handlers, clients, middleware, transports. Also load `effect` profile.                                |
+| RPC test files, RpcTest, RpcTest.makeClient        | `effect-rpc-testing`    | Testing RPC handlers, integration tests, in-memory transport. Also load `effect-rpc` + `effect-testing`.                    |
 
 **Loading multiple skills:** When a task spans multiple domains (e.g., writing a test for a repository), load ALL relevant skills:
 
@@ -37,6 +39,9 @@
 - Atom test → load `effect` profile + `effect-atom` + `effect-atom-testing` + `effect-testing`
 - React with atoms → load `react` + `effect-atom`
 - Effect form → load `effect-form` + `effect` + `react`
+- RPC handler → load `effect` + `effect-rpc`
+- RPC test → load `effect` + `effect-rpc` + `effect-rpc-testing` + `effect-testing`
+- RPC with HTTP → load `effect` + `effect-rpc` + `effect-layers`
 
 ## Check Before Creating (NON-NEGOTIABLE)
 
