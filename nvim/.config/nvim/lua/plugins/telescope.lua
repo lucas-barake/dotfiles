@@ -69,8 +69,40 @@ return {
           end,
         },
       },
+      oldfiles = {
+        winopts = {
+          on_create = function()
+            vim.keymap.set("t", "j", "<Down>", { buffer = true })
+            vim.keymap.set("t", "k", "<Up>", { buffer = true })
+          end,
+        },
+      },
       git = {
+        commits = {
+          winopts = {
+            on_create = function()
+              vim.keymap.set("t", "j", "<Down>", { buffer = true })
+              vim.keymap.set("t", "k", "<Up>", { buffer = true })
+            end,
+          },
+        },
         bcommits = {
+          winopts = {
+            on_create = function()
+              vim.keymap.set("t", "j", "<Down>", { buffer = true })
+              vim.keymap.set("t", "k", "<Up>", { buffer = true })
+            end,
+          },
+        },
+        status = {
+          winopts = {
+            on_create = function()
+              vim.keymap.set("t", "j", "<Down>", { buffer = true })
+              vim.keymap.set("t", "k", "<Up>", { buffer = true })
+            end,
+          },
+        },
+        branches = {
           winopts = {
             on_create = function()
               vim.keymap.set("t", "j", "<Down>", { buffer = true })
@@ -82,7 +114,7 @@ return {
       winopts = {
         height = 0.95,
         width = 0.95,
-        preview = { layout = "horizontal", horizontal = "right:50%" },
+        preview = { layout = "horizontal", horizontal = "right:50%", wrap = "wrap" },
       },
     },
     config = function(_, opts)

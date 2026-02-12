@@ -45,6 +45,7 @@ result-*
 
 # AI
 .context/
+.worktrees/
 
 # Misc
 .cache/
