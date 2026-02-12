@@ -86,7 +86,16 @@ If the implementation requires decisions that aren't clear from the codebase or 
 - Present options with trade-offs when relevant
 - Do NOT proceed with assumptions on ambiguous requirements
 
-### Step 6: Write the Plan
+### Step 6: Classify Items as TDD or Additive
+
+Before writing the plan, classify each planned change:
+
+- **Modifying existing code** (changing behavior, refactoring, fixing bugs): these items MUST follow TDD. The checklist must order the test BEFORE the implementation. Write the failing test first, then make it pass.
+- **Additive code** (new files, new functions, new modules with no existing behavior to preserve): no TDD required. Tests come after implementation as normal.
+
+This classification drives the ordering within the Implementation Checklist.
+
+### Step 7: Write the Plan
 
 Once you have ALL information, write the plan document to `./.context/plans/<feature-name>.md`.
 
@@ -114,6 +123,15 @@ Ordered, actionable tasks. Each task is a checkbox:
   - Verbatim code to write (copy-paste ready)
   - Exact import statements
   - Full type signatures copied from the codebase
+
+**TDD vs Additive ordering:**
+
+A single plan will often contain both kinds of items. For each item, determine which applies:
+
+- **Modifying existing code** (changing behavior, refactoring, fixing bugs) → TDD. The test checkbox comes BEFORE the implementation checkbox. The implementer writes the failing test first, then makes it pass. Mark these items with `[TDD]`.
+- **Additive code** (new files, new functions, no existing behavior affected) → tests after implementation as normal. Mark these items with `[Additive]`.
+
+Both can coexist in the same checklist. The markers tell the implementer which workflow to follow for each group.
 
 **Zero ambiguity — NON-NEGOTIABLE:**
 

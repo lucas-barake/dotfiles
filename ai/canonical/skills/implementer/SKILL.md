@@ -34,13 +34,15 @@ Read these files in parallel where possible. If any file referenced in the plan 
 
 Work through the implementation checklist in order. Each checkbox is a discrete task — complete it fully before moving to the next.
 
+**TDD vs Additive items:** Checklist items are marked `[TDD]` or `[Additive]`. For `[TDD]` items, the test checkbox appears before the implementation checkbox. Write the failing test first, confirm it fails, then implement the code to make it pass. For `[Additive]` items, implement first, then write tests.
+
 **After completing each checkbox item**, immediately update the plan file to check it off: change `- [ ]` to `- [x]`. This tracks progress in the plan itself so that if the session is interrupted, anyone can see exactly what's done and what remains.
 
 Use the references section if you hit unexpected behavior.
 
 ### Step 5: Test
 
-Write tests as described in the test plan. Run them to confirm they pass.
+Write any remaining tests described in the test plan that weren't already covered by TDD items. Run all tests to confirm they pass.
 
 ### Step 6: Verify
 
