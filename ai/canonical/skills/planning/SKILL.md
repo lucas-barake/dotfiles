@@ -50,6 +50,8 @@ Before spawning any agents:
 
 ### Step 2: E2E Structural Investigation (parallelize agents)
 
+Deep-dive agents automatically persist their findings to `.context/deep-dives/`. Before spawning, check that directory for existing investigations that might already cover what you need.
+
 Spawn deep-dive agents IN PARALLEL to map out the structure — not just the layer you're working on. Give each agent a specific structural question, NOT an open-ended problem to solve:
 
 - If it's a frontend task: spawn one deep-dive on the frontend code AND one on the backend/API code simultaneously

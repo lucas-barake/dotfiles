@@ -123,13 +123,16 @@ The workflow is always:
 - **Demand specificity** — instruct agents to return: full file paths, line numbers, verbatim code snippets. Never accept vague summaries
 - **Verify after** — after an agent returns, read the specific files it identifies. Don't blindly trust — but also don't re-explore broadly. Read what was identified, confirm it, move on
 - **Resume agents** when beneficial — they retain context from prior research
+- **Deep-dive agents persist findings automatically.** Deep-dive agents write their findings to `.context/deep-dives/<descriptive-name>.md`. Check this directory before spawning a new deep-dive to avoid re-investigating something already covered
 
 ### Available Agents
 
-- **fast-lookup** (sonnet — fast): Exact function definitions, type signatures, module exports, API shapes. Returns verbatim code with file paths + line numbers. No analysis — just the code
-- **quick-dive** (sonnet — moderate): Understand a module's purpose, structure, and immediate connections (1 level out). Returns code + light analysis + direct consumers/dependencies/tests. Answers the question and stops — doesn't trace entire subsystems
-- **deep-dive** (opus — thorough): Full subsystem investigation. Traces execution paths, maps dependency chains, verifies patterns across 3+ instances, follows every trail. Returns paths, snippets, connections, dependency maps, and recommended further investigation
+- **fast-lookup**: Exact function definitions, type signatures, module exports, API shapes. Returns verbatim code with file paths + line numbers. No analysis — just the code
+- **quick-dive**: Understand a module's purpose, structure, and immediate connections (1 level out). Returns code + light analysis + direct consumers/dependencies/tests. Answers the question and stops — doesn't trace entire subsystems
+- **deep-dive**: Full subsystem investigation. Traces execution paths, maps dependency chains, verifies patterns across 3+ instances, follows every trail. Returns paths, snippets, connections, dependency maps, and recommended further investigation. Automatically persists findings to `.context/deep-dives/`
 - **web-search**: ALL web lookups. Non-negotiable
+
+**Do NOT specify the model when spawning agents.** Each agent's model is configured in its definition. Passing a model override can cause the wrong model to be used.
 
 **When to use which:**
 
