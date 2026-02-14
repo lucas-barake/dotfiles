@@ -97,9 +97,22 @@ Before writing the plan, classify each planned change:
 
 This classification drives the ordering within the Implementation Checklist.
 
-### Step 7: Write the Plan
+### Step 7: Confirm Approach with User
 
-Once you have ALL information, write the plan document to `./.context/plans/<feature-name>.md`.
+Before writing the full plan document, present a brief overview to the user for approval. This prevents wasted effort on a plan the user would reject or redirect.
+
+The overview must cover:
+
+- **Approach:** the implementation strategy and how it fits into the existing architecture
+- **Key decisions:** any non-obvious choices you made during investigation
+- **Scope:** files that will be created or modified
+- **Open questions:** anything you're unsure about (if none, say so)
+
+Wait for the user to approve, adjust, or redirect before proceeding. If the user wants changes, loop back to whichever earlier step is needed. Do NOT write the plan until the user confirms.
+
+### Step 8: Write the Plan
+
+Once you have ALL information and user confirmation, write the plan document to `./.context/plans/<feature-name>.md`.
 
 ## Plan Document Structure
 
