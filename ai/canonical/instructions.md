@@ -42,7 +42,7 @@ Multiple branches can be active simultaneously (parallel branches). You do NOT n
 ```bash
 but commit -m "message"                  # commit all unassigned changes (prompts if multiple branches)
 but commit -m "message" <branch>         # commit to a specific branch
-but commit -m "message" --files <file>   # commit specific files
+but commit -m "message" -p <file-id>     # commit specific files (IDs from `but status`)
 but commit --ai                          # generate commit message with AI
 but commit empty --before <commit>       # insert empty commit before another
 but commit empty --after <commit>        # insert empty commit after another
@@ -60,7 +60,7 @@ but discard <file>                       # discard uncommitted changes in a file
 ### Pushing and PRs
 
 ```bash
-but push                                 # push current branches
+but push <branch>                        # push a specific branch to remote
 but push --dry-run                       # preview what would be pushed
 but pr                                   # open PRs for branches that don't have one
 ```
@@ -70,13 +70,12 @@ but pr                                   # open PRs for branches that don't have
 **Do NOT use `git rebase -i`.** Use these instead:
 
 ```bash
-but reword <commit>                      # change a commit message
+but reword <commit> -m "message"         # change a commit message
 but amend <commit>                       # fold uncommitted changes into an existing commit
 but uncommit                             # undo last commit, keep changes
-but squash <commits>                     # squash commits together
+but squash <commits> -m "message"        # squash commits together
 but move <commit>                        # move a commit to a different position or branch
 but absorb                               # auto-distribute uncommitted changes into best matching existing commits
-but rub                                  # interactively move hunks between commits
 ```
 
 `but absorb` is especially useful after small fixes. It figures out which existing commit each change belongs to and folds it in automatically.
@@ -104,7 +103,7 @@ You can restore to any point in the operations log.
 1. **No checkout/switch.** Multiple branches coexist. Assign files to branches with `but stage`.
 2. **No stash.** Not needed. Branches are parallel and the workspace is persistent.
 3. **No `git add`.** Commit directly. Use `but stage` only to direct files to specific branches.
-4. **No `rebase -i`.** Use `but reword`, `but squash`, `but move`, `but absorb`, `but rub`.
+4. **No `rebase -i`.** Use `but reword`, `but squash`, `but move`, `but absorb`.
 5. **No `git pull --rebase`.** Just `but pull`. Handles fetch + rebase + conflict recording.
 6. **Conflicts don't block.** They're recorded in commits and resolved later.
 7. **PRs are built in.** `but pr` opens them. `but status -v` shows CI status.
