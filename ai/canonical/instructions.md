@@ -9,39 +9,142 @@
 - **Correction Protocol:** If the user is wrong, correct them immediately and neutrally. Do not apologize. Do not hedge.
 - **Recursive Verification:** "I found X" is not the end. Ask: "Does X actually solve the root cause, or just the symptom?"
 
+## Git: Use `but` (GitButler CLI), NOT `git` (NON-NEGOTIABLE)
+
+This project uses GitButler's `but` CLI instead of raw `git`. **Always use `but` commands.** The repo is standard Git under the hood, but `but` provides a better workflow.
+
+### Status and Inspection
+
+```bash
+but                    # show status (branches, commits, uncommitted changes)
+but status -f          # status with file lists per commit
+but status -v          # verbose: includes PR URLs and CI status
+but diff               # show uncommitted changes
+but diff <branch>      # show diff for a branch
+but show <commit>      # show a specific commit
+```
+
+### Branching
+
+```bash
+but branch new <name>                    # create a new branch
+but branch new -a <parent> <name>        # create a stacked branch on top of <parent>
+but branch list                          # list branches
+but branch delete <name>                 # delete a branch
+but apply <name>                         # activate a branch in workspace
+but unapply <name>                       # deactivate a branch from workspace
+```
+
+Multiple branches can be active simultaneously (parallel branches). You do NOT need to "switch" branches. Files are assigned to branches, not checked out.
+
+### Committing
+
+```bash
+but commit -m "message"                  # commit all unassigned changes (prompts if multiple branches)
+but commit -m "message" <branch>         # commit to a specific branch
+but commit -m "message" --files <file>   # commit specific files
+but commit --ai                          # generate commit message with AI
+but commit empty --before <commit>       # insert empty commit before another
+but commit empty --after <commit>        # insert empty commit after another
+```
+
+### Staging (Assigning Files to Branches)
+
+Only needed when you have multiple active branches and want to direct specific files to specific branches.
+
+```bash
+but stage <file> <branch>                # assign a file to a branch
+but discard <file>                       # discard uncommitted changes in a file
+```
+
+### Pushing and PRs
+
+```bash
+but push                                 # push current branches
+but push --dry-run                       # preview what would be pushed
+but pr                                   # open PRs for branches that don't have one
+```
+
+### Editing Commits
+
+**Do NOT use `git rebase -i`.** Use these instead:
+
+```bash
+but reword <commit>                      # change a commit message
+but amend <commit>                       # fold uncommitted changes into an existing commit
+but uncommit                             # undo last commit, keep changes
+but squash <commits>                     # squash commits together
+but move <commit>                        # move a commit to a different position or branch
+but absorb                               # auto-distribute uncommitted changes into best matching existing commits
+but rub                                  # interactively move hunks between commits
+```
+
+`but absorb` is especially useful after small fixes. It figures out which existing commit each change belongs to and folds it in automatically.
+
+### Updating from Upstream
+
+```bash
+but pull --check                         # preview what rebasing onto upstream would do
+but pull                                 # fetch upstream and rebase all branches on top
+```
+
+Conflicts are recorded in commits rather than blocking you. Resolve them when ready with `but resolve`.
+
+### Undo
+
+```bash
+but undo                                 # undo last operation
+but oplog                                # view full operations log (every state change is a snapshot)
+```
+
+You can restore to any point in the operations log.
+
+### Key Differences from Git
+
+1. **No checkout/switch.** Multiple branches coexist. Assign files to branches with `but stage`.
+2. **No stash.** Not needed. Branches are parallel and the workspace is persistent.
+3. **No `git add`.** Commit directly. Use `but stage` only to direct files to specific branches.
+4. **No `rebase -i`.** Use `but reword`, `but squash`, `but move`, `but absorb`, `but rub`.
+5. **No `git pull --rebase`.** Just `but pull`. Handles fetch + rebase + conflict recording.
+6. **Conflicts don't block.** They're recorded in commits and resolved later.
+7. **PRs are built in.** `but pr` opens them. `but status -v` shows CI status.
+
+### JSON Output
+
+All commands support `--json` or `-j` for structured output:
+
+```bash
+but status --json
+but branch list --json
+```
+
+### Typical Workflow
+
+```bash
+but branch new my-feature
+# make changes, commit
+but commit -m "implement feature"
+
+# need to fix something unrelated? no context switch needed:
+but branch new hotfix
+but stage broken-file.py hotfix
+but commit -m "fix bug" hotfix
+
+# push and open PRs
+but push
+but pr
+
+# pull upstream changes
+but pull
+
+# made a mistake? undo it
+but undo
+```
+
 ## Git Commits
 
 - Do NOT add "Generated with Claude Code" or Co-Authored-By footers to commit messages
 - Do NOT add "Generated with Claude Code" or similar attribution to PR descriptions
-
-## Skills (MANDATORY - Load Before Writing Code)
-
-**NON-NEGOTIABLE:** You MUST load the appropriate skill BEFORE writing any code in that domain. Do NOT rely on memory - always load the skill first.
-
-| Trigger                                           | Skill to Load           | When                                                                                                                        |
-| ------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `@effect/sql`, SqlClient, SqlSchema, repositories | `effect-sql`            | Writing database queries, repositories, SqlSchema, migrations                                                               |
-| `@effect/vitest`, `*.test.ts`                     | `effect-testing`        | Writing or modifying test files. Also load `effect` profile.                                                                |
-| `@effect/cli` tests, MockTerminal, Prompt tests   | `effect-cli-testing`    | Testing CLI commands, Prompt.select, Prompt.confirm, terminal interactions. Also load `effect-testing`.                     |
-| Layer composition, ManagedRuntime                 | `effect-layers`         | Working with Layer.provide, Layer.merge, Layer.fresh, service dependencies                                                  |
-| `@effect/atom`, useAtom, atoms                    | `effect-atom`           | React state with Effect atoms. Also load `effect` profile.                                                                  |
-| Atom test files, `Registry.make`, `Atom.initialValue` | `effect-atom-testing` | Testing atoms, Atom.fn, runtime.atom, React components with atoms. Also load `effect-testing` + `effect-atom`.              |
-| `.tsx` files, React components                    | `react`                 | Writing React components, TSX files, TanStack Router pages, cn() styling                                                    |
-| `effect-form`, FormBuilder, useField              | `effect-form`           | Working with Effect-powered forms, Schema validation, field atoms                                                           |
-| `@effect/rpc`, Rpc.make, RpcGroup, RpcServer      | `effect-rpc`            | Defining RPCs, groups, handlers, clients, middleware, transports. Also load `effect` profile.                                |
-| RPC test files, RpcTest, RpcTest.makeClient        | `effect-rpc-testing`    | Testing RPC handlers, integration tests, in-memory transport. Also load `effect-rpc` + `effect-testing`.                    |
-
-**Loading multiple skills:** When a task spans multiple domains (e.g., writing a test for a repository), load ALL relevant skills:
-
-- Plan mode for Effect feature → use `planning` + `effect` profiles + other relevant domain skills
-- Repository test → load `effect` profile + `effect-sql` + `effect-testing`
-- Atom with Layer → load `effect` profile + `effect-atom` + `effect-layers`
-- Atom test → load `effect` profile + `effect-atom` + `effect-atom-testing` + `effect-testing`
-- React with atoms → load `react` + `effect-atom`
-- Effect form → load `effect-form` + `effect` + `react`
-- RPC handler → load `effect` + `effect-rpc`
-- RPC test → load `effect` + `effect-rpc` + `effect-rpc-testing` + `effect-testing`
-- RPC with HTTP → load `effect` + `effect-rpc` + `effect-layers`
 
 ## Check Before Creating (NON-NEGOTIABLE)
 
@@ -110,9 +213,9 @@ The workflow is always:
 
 ### Agent Usage Rules
 
-- **Spawn aggressively** — when in doubt, spawn an agent. The cost of an agent is negligible; the cost of polluting main context is permanent
+- **Spawn aggressively** — when in doubt, spawn an agent. The cost of an agent is negligible. The cost of polluting main context is permanent
 - **fast-lookup is free — use it constantly.** Spawn fast-lookups liberally for any factual question: signatures, types, exports, return values. Fire off multiple in parallel. They're fast, cheap, and prevent wrong assumptions from snowballing into debugging noise in your context
-- **Parallelize** — spawn multiple agents simultaneously for independent questions. E.g., one deep-dive on frontend code + one on backend API + one fast-lookup on library signatures — all at once
+- **Parallelize** — spawn multiple agents simultaneously for independent questions. E.g., one deep-dive on frontend code + one on backend API + one fast-lookup on library signatures, all at once
 - **Provide maximum context** to agents:
   - Full file paths you already know about
   - Verbatim code snippets (copy-paste exact code, not paraphrased)
@@ -121,14 +224,14 @@ The workflow is always:
   - What you're trying to accomplish and why
   - Any constraints or patterns you've already identified
 - **Demand specificity** — instruct agents to return: full file paths, line numbers, verbatim code snippets. Never accept vague summaries
-- **Verify after** — after an agent returns, read the specific files it identifies. Don't blindly trust — but also don't re-explore broadly. Read what was identified, confirm it, move on
+- **Verify after** — after an agent returns, read the specific files it identifies. Don't blindly trust, but also don't re-explore broadly. Read what was identified, confirm it, move on
 - **Resume agents** when beneficial — they retain context from prior research
 - **Deep-dive agents persist findings automatically.** Deep-dive agents write their findings to `.context/deep-dives/<descriptive-name>.md`. Check this directory before spawning a new deep-dive to avoid re-investigating something already covered
 
 ### Available Agents
 
-- **fast-lookup**: Exact function definitions, type signatures, module exports, API shapes. Returns verbatim code with file paths + line numbers. No analysis — just the code
-- **quick-dive**: Understand a module's purpose, structure, and immediate connections (1 level out). Returns code + light analysis + direct consumers/dependencies/tests. Answers the question and stops — doesn't trace entire subsystems
+- **fast-lookup**: Exact function definitions, type signatures, module exports, API shapes. Returns verbatim code with file paths + line numbers. No analysis, just the code
+- **quick-dive**: Understand a module's purpose, structure, and immediate connections (1 level out). Returns code + light analysis + direct consumers/dependencies/tests. Answers the question and stops. Doesn't trace entire subsystems
 - **deep-dive**: Full subsystem investigation. Traces execution paths, maps dependency chains, verifies patterns across 3+ instances, follows every trail. Returns paths, snippets, connections, dependency maps, and recommended further investigation. Automatically persists findings to `.context/deep-dives/`
 - **web-search**: ALL web lookups. Non-negotiable
 
@@ -161,7 +264,7 @@ DO NOT USE THE EXPLORE AGENT — use fast-lookup, quick-dive, or deep-dive for A
 
 - Do NOT use `grep` — use `rg` (ripgrep) instead for all text searching in Bash
 - Prefer the built-in Grep tool (which uses `rg` under the hood) over Bash commands when possible
-- **Searching for text/error messages/UI strings:** Never search for verbatim full messages — they often contain dynamic values (names, IDs, numbers, dates) that won't match. Instead:
+- **Searching for text/error messages/UI strings:** Never search for verbatim full messages. They often contain dynamic values (names, IDs, numbers, dates) that won't match. Instead:
   1. Identify the dynamic parts of the message (changing values)
   2. Extract the static substrings (unchanging parts)
   3. Search for the shorter static portions
@@ -188,9 +291,9 @@ DO NOT USE THE EXPLORE AGENT — use fast-lookup, quick-dive, or deep-dive for A
 - Do NOT write comments. Period.
 - No JSDoc, no inline comments, no "helpful" explanations, no TODO comments, no section dividers
 - Code MUST be self-documenting through clear naming and structure
-- If code needs a comment to be understood, refactor the code — do not add a comment
+- If code needs a comment to be understood, refactor the code. Do not add a comment
 - The ONLY exception: a comment explaining a non-obvious workaround for a specific bug or platform quirk, where the code would otherwise look wrong
-- This rule has ZERO flexibility — never add comments unless the exception above applies
+- This rule has ZERO flexibility. Never add comments unless the exception above applies
 
 ## Writing Style
 
