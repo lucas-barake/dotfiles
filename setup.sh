@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-PACKAGES=(helix ghostty nvim zed kitty yazi scripts launchd git)
+PACKAGES=(nvim zed scripts launchd git fish)
 
 if [[ "$(uname)" == "Darwin" ]]; then
   if ! command -v brew &>/dev/null; then
@@ -10,7 +10,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
   echo "Installing packages..."
-  brew install stow helix yazi neovim ghostty
+  brew install stow neovim fzf ripgrep fd node
 elif command -v apt-get &>/dev/null; then
   sudo apt-get update && sudo apt-get install -y stow
 elif command -v pacman &>/dev/null; then

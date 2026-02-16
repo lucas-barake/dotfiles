@@ -294,6 +294,15 @@ DO NOT USE THE EXPLORE AGENT — use fast-lookup, quick-dive, or deep-dive for A
 - The ONLY exception: a comment explaining a non-obvious workaround for a specific bug or platform quirk, where the code would otherwise look wrong
 - This rule has ZERO flexibility. Never add comments unless the exception above applies
 
+## Sudo Commands (NON-NEGOTIABLE)
+
+- NEVER run `sudo` directly in the terminal. The sandbox does not have an interactive TTY for password input
+- Instead, prompt the user for their password via `osascript` and pipe it to `sudo -S`:
+  ```bash
+  osascript -e 'Tell application "System Events" to display dialog "sudo password required" default answer "" with hidden answer' -e 'text returned of result' | sudo -S <command>
+  ```
+- This applies to ALL commands that require elevated privileges
+
 ## Writing Style
 
 - Do NOT use hyphens (`-`), semicolons (`;`), en dashes (`–`), or em dashes (`—`) as punctuation in prose (bullet point markers are fine)
