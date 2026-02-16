@@ -26,7 +26,6 @@ for pkg in "${PACKAGES[@]}"; do
   stow -v "$pkg"
 done
 
-git config --global core.excludesfile "$HOME/.gitignore_global"
 
 if [[ "$(uname)" == "Darwin" ]]; then
   PLIST="$HOME/Library/LaunchAgents/com.lucas.oss-update.plist"

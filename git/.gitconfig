@@ -1,0 +1,21 @@
+[include]
+	path = ~/.gitconfig.local
+
+[core]
+	excludesfile = ~/.gitignore_global
+
+[fetch]
+	prune = true
+	prunetags = true
+
+[pull]
+	rebase = true
+
+[rebase]
+	autostash = true
+	autosquash = true
+
+[alias]
+	gone = !git fetch -p && git for-each-ref --format '%(refname:short) %(upstream:track)' refs/heads | awk '$2 == \"[gone]\" {print $1}' | xargs -r git branch -D
+[maintenance]
+	repo = /Users/lucas/dotfiles
