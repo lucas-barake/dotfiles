@@ -3,15 +3,20 @@ return {
 
   {
     "nvim-treesitter/nvim-treesitter",
-    build = function()
-      require("nvim-treesitter").install({
+    lazy = false,
+    config = function()
+      local wanted = {
         "bash", "html", "javascript", "json", "lua",
         "markdown", "markdown_inline", "rust", "tsx",
         "typescript", "yaml", "sql",
-      })
-    end,
-    lazy = false,
-    config = function()
+      }
+      local missing = vim.tbl_filter(function(lang)
+        return not pcall(vim.treesitter.language.inspect, lang)
+      end, wanted)
+      if #missing > 0 then
+        require("nvim-treesitter").install(missing)
+      end
+
       vim.api.nvim_create_autocmd("FileType", {
         callback = function(args)
           if pcall(vim.treesitter.start, args.buf) then
