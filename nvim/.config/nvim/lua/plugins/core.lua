@@ -75,6 +75,18 @@ return {
         cmd = { "vtsls", "--stdio" },
         filetypes = { "typescript", "typescriptreact", "javascript", "javascriptreact" },
         root_markers = { "tsconfig.json", "jsconfig.json", "package.json", ".git" },
+        settings = {
+          typescript = {
+            tsdk = (function()
+              local local_tsdk = vim.fn.getcwd() .. "/node_modules/typescript/lib"
+              if vim.uv.fs_stat(local_tsdk) then
+                return local_tsdk
+              end
+              local global = vim.fn.trim(vim.fn.system("npm root -g")) .. "/typescript/lib"
+              return global
+            end)(),
+          },
+        },
       })
 
       local saved = get_saved_ts_server()
@@ -110,6 +122,7 @@ return {
     event = "InsertEnter",
     dependencies = { "rafamadriz/friendly-snippets" },
     opts = {
+      fuzzy = { implementation = "prefer_rust" },
       sources = {
         default = { "lsp", "path", "snippets" },
         providers = {

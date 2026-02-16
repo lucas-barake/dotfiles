@@ -48,6 +48,9 @@ map("n", "<leader>fP", copy_absolute_path, { desc = "Copy absolute path" })
 
 vim.api.nvim_create_user_command("CopyRelativePath", copy_relative_path, {})
 vim.api.nvim_create_user_command("CopyAbsolutePath", copy_absolute_path, {})
+vim.api.nvim_create_user_command("ReloadFile", function()
+  vim.cmd("edit!")
+end, { desc = "Discard changes and reload file from disk" })
 
 map({ "n", "i", "v" }, "<ScrollWheelUp>", "<C-y>", { desc = "Scroll up (slow)" })
 map({ "n", "i", "v" }, "<ScrollWheelDown>", "<C-e>", { desc = "Scroll down (slow)" })
