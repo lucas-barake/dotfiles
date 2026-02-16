@@ -9,9 +9,9 @@
 - **Correction Protocol:** If the user is wrong, correct them immediately and neutrally. Do not apologize. Do not hedge.
 - **Recursive Verification:** "I found X" is not the end. Ask: "Does X actually solve the root cause, or just the symptom?"
 
-## Git: Use `but` (GitButler CLI), NOT `git` (NON-NEGOTIABLE)
+## Git: Use `but` (GitButler CLI) When Available
 
-This project uses GitButler's `but` CLI instead of raw `git`. **Always use `but` commands.** The repo is standard Git under the hood, but `but` provides a better workflow.
+If the project uses GitButler, use the `but` CLI instead of raw `git`. The repo is standard Git under the hood, but `but` provides a better workflow. If `but` is not configured for the current project (e.g. `but status` fails with a setup error), fall back to standard `git`.
 
 ### Status and Inspection
 
@@ -71,7 +71,7 @@ but pr                                   # open PRs for branches that don't have
 
 ```bash
 but reword <commit> -m "message"         # change a commit message
-but amend <commit>                       # fold uncommitted changes into an existing commit
+but amend <file-id> <commit>             # fold a specific uncommitted file into an existing commit
 but uncommit                             # undo last commit, keep changes
 but squash <commits> -m "message"        # squash commits together
 but move <commit>                        # move a commit to a different position or branch
