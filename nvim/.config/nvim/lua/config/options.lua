@@ -16,6 +16,7 @@ opt.inccommand = "nosplit"
 opt.linebreak = true
 opt.number = true
 opt.relativenumber = true
+opt.statuscolumn = "%s %#NonText#%{v:lnum}%*  %=%l  "
 opt.scrolloff = 8
 opt.shiftround = true
 opt.shiftwidth = 2
