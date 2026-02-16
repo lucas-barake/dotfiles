@@ -19,6 +19,7 @@
 - One logical change per commit. A bug fix, a refactor, and a new feature are three commits, not one
 - When updating a feature branch: `git fetch origin && git rebase origin/main`, not `git merge origin/main`
 - Prefer `git stash push -m "description"` over bare `git stash`. Named stashes are findable
+- Run git commands from the working directory. Do not use `git -C <path>` unless you genuinely need to operate on a different repo than the current working directory
 
 ## Check Before Creating (NON-NEGOTIABLE)
 
