@@ -98,6 +98,33 @@ but oplog                                # view full operations log (every state
 
 You can restore to any point in the operations log.
 
+### Stacked Branches
+
+A stack is a chain of dependent branches. Each branch builds on the one below it. Use stacks for incremental PRs that depend on each other.
+
+```bash
+but branch new base-feature                  # creates independent branch (new stack)
+but branch new -a base-feature next-step     # stacks next-step on top of base-feature
+but branch new -a next-step final-part       # stacks final-part on top of next-step
+```
+
+**Push** is stack-aware. Pushing a branch pushes everything below it in the stack too:
+
+```bash
+but push final-part                          # pushes base-feature + next-step + final-part
+but push next-step                           # pushes base-feature + next-step only
+```
+
+**PRs** auto-chain base branches. `but pr new <branch>` creates PRs for all branches in the stack up to that branch. PR targets are set correctly: bottom branch targets main, each subsequent branch targets the one below it.
+
+**Pull** rebases the entire stack together. No per-branch rebase needed.
+
+**Deleting** a mid-stack branch moves its commits to the branch below. Last branch in a stack cannot be deleted.
+
+**Reordering** branches in a stack: use `but move <commit>` to rearrange commits between branches. No dedicated reorder command.
+
+`but status` shows stack structure visually. `but push --dry-run` shows `stacked_on` relationships per branch.
+
 ### Key Differences from Git
 
 1. **No checkout/switch.** Multiple branches coexist. Assign files to branches with `but stage`.
