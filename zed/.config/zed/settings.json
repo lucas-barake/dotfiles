@@ -155,7 +155,7 @@
   "terminal": {
     "button": false,
     "font_size": 15,
-    "shell": { "program": "/bin/zsh" },
+    "shell": { "program": "/opt/homebrew/bin/fish" },
   },
 
   // ─────────────────────────────────────────────────────────────
