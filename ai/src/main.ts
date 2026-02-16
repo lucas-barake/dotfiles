@@ -73,6 +73,8 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     const fs = yield* FileSystem.FileSystem
     const p = yield* Path.Path
 
+    if (!(yield* fs.exists(targetDir))) return true
+
     const base = yield* fs.readFileString(p.join(sourceDir, "instructions.md"))
     const extrasPath = p.join(sourceDir, `instructions.${target}.md`)
     const extras = (yield* fs.exists(extrasPath)) ? yield* fs.readFileString(extrasPath) : ""
@@ -131,8 +133,8 @@ const sync = Command.make(
       const modelMap = yield* readModelMap(home)
       const targets: ReadonlyArray<Target> = target === "all" ? ["claude", "opencode"] : [target]
       for (const t of targets) {
-        yield* syncTarget(`${home}/canonical`, targetPaths[t], t, modelMap)
-        yield* Console.log(`Synced ${t}`)
+        const skipped = yield* syncTarget(`${home}/canonical`, targetPaths[t], t, modelMap)
+        yield* Console.log(skipped ? `Skipped ${t} (directory not found)` : `Synced ${t}`)
       }
     })
 )
