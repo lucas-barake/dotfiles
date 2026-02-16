@@ -29,7 +29,8 @@ context: fork
 Write output to \`./.context/plans/output.md\`.
 `
 
-const makeMemoryFs = (files: Record<string, string>) => {
+const makeMemoryFs = (files: Record<string, string>, dirs: ReadonlyArray<string> = []) => {
+  const dirSet = new Set(dirs)
   const written = new Map<string, string>()
   const layer = FileSystem.layerNoop({
     readFileString: (path: string) => {
@@ -41,7 +42,7 @@ const makeMemoryFs = (files: Record<string, string>) => {
       written.set(path, data)
       return Effect.void
     },
-    exists: (path: string) => Effect.succeed(path in files),
+    exists: (path: string) => Effect.succeed(path in files || dirSet.has(path)),
     readDirectory: (path: string) => {
       const prefix = path.endsWith("/") ? path : path + "/"
       const entries = new Set<string>()
@@ -151,7 +152,7 @@ describe("syncTarget", () => {
         "/src/instructions.md": "# Base Rules\n",
         "/src/agents/deep-dive.md": sampleAgent,
         "/src/skills/test-skill/SKILL.md": sampleSkill
-      })
+      }, ["/out"])
 
       yield* syncTarget("/src", "/out", "claude").pipe(
         Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
@@ -176,7 +177,7 @@ describe("syncTarget", () => {
         "/src/instructions.md": "# Rules\n",
         "/src/agents/a.md": sampleAgent,
         "/src/skills/s/SKILL.md": sampleSkill
-      })
+      }, ["/out"])
 
       yield* syncTarget("/src", "/out", "claude", modelMap).pipe(
         Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
@@ -184,6 +185,23 @@ describe("syncTarget", () => {
 
       expect(written.get("/out/agents/a.md")).toContain("model: bedrock-haiku")
       expect(written.get("/out/skills/s/SKILL.md")).toContain("model: bedrock-sonnet")
+    }))
+
+  it.effect("skips target when target directory does not exist", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/instructions.md": "# Rules\n",
+        "/src/agents/a.md": sampleAgent,
+        "/src/skills/s/SKILL.md": sampleSkill
+      })
+
+      // /out does not exist in the filesystem — syncTarget should skip it
+      const skipped = yield* syncTarget("/src", "/out", "claude").pipe(
+        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
+      )
+
+      expect(skipped).toBe(true)
+      expect(written.size).toBe(0)
     }))
 
   it.effect("syncs instructions with extras, agents, and skills for opencode", () =>
@@ -195,7 +213,7 @@ describe("syncTarget", () => {
         "/src/agents/deep-dive.md": sampleAgent,
         "/src/skills/test-skill/SKILL.md": sampleSkill,
         "/src/opencode.json": configContent
-      })
+      }, ["/out"])
 
       yield* syncTarget("/src", "/out", "opencode").pipe(
         Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
@@ -245,7 +263,7 @@ describe("CLI", () => {
               "/src/instructions.md": "# Rules\n",
               "/src/agents/a.md": sampleAgent,
               "/src/skills/s/SKILL.md": sampleSkill
-            }).layer,
+            }, ["/out"]).layer,
             Path.layer,
             TestConsole.layer,
             MockTerminal.layer,
