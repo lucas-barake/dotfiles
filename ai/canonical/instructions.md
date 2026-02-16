@@ -17,8 +17,8 @@ If the project uses GitButler, use the `but` CLI instead of raw `git`. The repo 
 
 ```bash
 but                    # show status (branches, commits, uncommitted changes)
-but status -f          # status with file lists per commit
-but status -v          # verbose: includes PR URLs and CI status
+but stf                # status with file lists per commit
+but st -v              # verbose: includes PR URLs and CI status
 but diff               # show uncommitted changes
 but diff <branch>      # show diff for a branch
 but show <commit>      # show a specific commit
@@ -30,7 +30,7 @@ but show <commit>      # show a specific commit
 but branch new <name>                    # create a new branch
 but branch new -a <parent> <name>        # create a stacked branch on top of <parent>
 but branch list                          # list branches
-but branch delete <name>                 # delete a branch
+but branch -d <name>                     # delete a branch
 but apply <name>                         # activate a branch in workspace
 but unapply <name>                       # deactivate a branch from workspace
 ```
@@ -43,7 +43,6 @@ Multiple branches can be active simultaneously (parallel branches). You do NOT n
 but commit -m "message"                  # commit all unassigned changes (prompts if multiple branches)
 but commit -m "message" <branch>         # commit to a specific branch
 but commit -m "message" -p <file-id>     # commit specific files (IDs from `but status`)
-but commit --ai                          # generate commit message with AI
 but commit empty --before <commit>       # insert empty commit before another
 but commit empty --after <commit>        # insert empty commit after another
 ```
@@ -61,7 +60,7 @@ but discard <file>                       # discard uncommitted changes in a file
 
 ```bash
 but push <branch>                        # push a specific branch to remote
-but push --dry-run                       # preview what would be pushed
+but push -d                              # preview what would be pushed (dry-run)
 but pr                                   # open PRs for branches that don't have one
 ```
 
@@ -72,9 +71,9 @@ but pr                                   # open PRs for branches that don't have
 ```bash
 but reword <commit> -m "message"         # change a commit message
 but amend <file-id> <commit>             # fold a specific uncommitted file into an existing commit
-but uncommit                             # undo last commit, keep changes
+but uncommit <source>                    # undo a commit, keep changes
 but squash <commits> -m "message"        # squash commits together
-but move <commit>                        # move a commit to a different position or branch
+but move <source> <target>               # move a commit to a different position or branch (-a for after)
 but absorb                               # auto-distribute uncommitted changes into best matching existing commits
 ```
 
@@ -83,7 +82,7 @@ but absorb                               # auto-distribute uncommitted changes i
 ### Updating from Upstream
 
 ```bash
-but pull --check                         # preview what rebasing onto upstream would do
+but pull -c                              # preview what rebasing onto upstream would do
 but pull                                 # fetch upstream and rebase all branches on top
 ```
 
@@ -121,9 +120,9 @@ but push next-step                           # pushes base-feature + next-step o
 
 **Deleting** a mid-stack branch moves its commits to the branch below. Last branch in a stack cannot be deleted.
 
-**Reordering** branches in a stack: use `but move <commit>` to rearrange commits between branches. No dedicated reorder command.
+**Reordering** branches in a stack: use `but move <source> <target>` to rearrange commits between branches. No dedicated reorder command.
 
-`but status` shows stack structure visually. `but push --dry-run` shows `stacked_on` relationships per branch.
+`but st` shows stack structure visually. `but push -d` shows `stacked_on` relationships per branch.
 
 ### Key Differences from Git
 
