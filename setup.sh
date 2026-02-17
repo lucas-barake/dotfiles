@@ -10,7 +10,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
   echo "Installing packages..."
-  brew install stow neovim fzf ripgrep fd node fish
+  brew install stow neovim fzf ripgrep fd node fish dlvhdr/formulae/diffnav
 elif command -v apt-get &>/dev/null; then
   sudo apt-get update && sudo apt-get install -y stow
 elif command -v pacman &>/dev/null; then
