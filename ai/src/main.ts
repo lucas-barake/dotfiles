@@ -114,6 +114,19 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
         yield* fs.writeFileString(p.join(targetDir, configFile), yield* fs.readFileString(configPath))
       }
     }
+
+    if (target === "claude") {
+      const settingsPath = p.join(targetDir, "settings.json")
+      const config: Record<string, any> = (yield* fs.exists(settingsPath))
+        ? JSON.parse(yield* fs.readFileString(settingsPath))
+        : {}
+      const dirs: Array<string> = config.permissions?.additionalDirectories ?? []
+      if (!dirs.includes("~/src")) {
+        if (!config.permissions) config.permissions = {}
+        config.permissions.additionalDirectories = [...dirs, "~/src"]
+        yield* fs.writeFileString(settingsPath, JSON.stringify(config, null, 2) + "\n")
+      }
+    }
   })
 
 const sync = Command.make(
