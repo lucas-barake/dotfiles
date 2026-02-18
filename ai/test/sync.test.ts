@@ -234,6 +234,67 @@ describe("syncTarget", () => {
 
       expect(written.get("/out/opencode.json")).toBe(configContent)
     }))
+
+  it.effect("creates settings.json with additionalDirectories for claude when none exists", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/instructions.md": "# Rules\n",
+        "/src/agents/a.md": sampleAgent,
+        "/src/skills/s/SKILL.md": sampleSkill
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "claude").pipe(
+        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
+      )
+
+      const settings = JSON.parse(written.get("/out/settings.json")!)
+      expect(settings.permissions.additionalDirectories).toEqual(["~/src"])
+    }))
+
+  it.effect("adds additionalDirectories to existing claude settings without replacing", () =>
+    Effect.gen(function*() {
+      const existing = JSON.stringify({
+        permissions: {
+          allow: ["Bash(bun)", "WebSearch"]
+        }
+      })
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/instructions.md": "# Rules\n",
+        "/src/agents/a.md": sampleAgent,
+        "/src/skills/s/SKILL.md": sampleSkill,
+        "/out/settings.json": existing
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "claude").pipe(
+        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
+      )
+
+      const settings = JSON.parse(written.get("/out/settings.json")!)
+      expect(settings.permissions.additionalDirectories).toEqual(["~/src"])
+      expect(settings.permissions.allow).toEqual(["Bash(bun)", "WebSearch"])
+    }))
+
+  it.effect("does not overwrite settings.json when additionalDirectories already has ~/src", () =>
+    Effect.gen(function*() {
+      const existing = JSON.stringify({
+        permissions: {
+          allow: ["Bash(bun)"],
+          additionalDirectories: ["~/src"]
+        }
+      })
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/instructions.md": "# Rules\n",
+        "/src/agents/a.md": sampleAgent,
+        "/src/skills/s/SKILL.md": sampleSkill,
+        "/out/settings.json": existing
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "claude").pipe(
+        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
+      )
+
+      expect(written.has("/out/settings.json")).toBe(false)
+    }))
 })
 
 const CliTestLayer = Layer.mergeAll(
