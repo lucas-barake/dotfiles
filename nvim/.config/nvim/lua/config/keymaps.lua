@@ -48,6 +48,50 @@ map("n", "<leader>fP", copy_absolute_path, { desc = "Copy absolute path" })
 
 vim.api.nvim_create_user_command("CopyRelativePath", copy_relative_path, {})
 vim.api.nvim_create_user_command("CopyAbsolutePath", copy_absolute_path, {})
+
+vim.api.nvim_create_user_command("CopyGitHubLink", function(cmd_opts)
+  local file = vim.fn.expand("%:p")
+  local dir = vim.fn.fnamemodify(file, ":h")
+
+  local toplevel = vim.fn.system("git -C " .. vim.fn.shellescape(dir) .. " rev-parse --show-toplevel"):gsub("\n", "")
+  if vim.v.shell_error ~= 0 then
+    vim.notify("Not a git repository", vim.log.levels.ERROR)
+    return
+  end
+
+  local tracked = vim.fn.system("git -C " .. vim.fn.shellescape(dir) .. " ls-files --error-unmatch " .. vim.fn.shellescape(file) .. " 2>/dev/null")
+  if vim.v.shell_error ~= 0 then
+    vim.notify("File is not tracked by git", vim.log.levels.ERROR)
+    return
+  end
+
+  local remote_url = vim.fn.system("gh browse --no-browser -n 2>/dev/null"):gsub("\n", "")
+  if vim.v.shell_error ~= 0 then
+    vim.notify("Could not determine GitHub repo (is gh installed?)", vim.log.levels.ERROR)
+    return
+  end
+
+  local repo_url = remote_url:match("^(https://github%.com/[^/]+/[^/]+)")
+  if not repo_url then
+    vim.notify("Could not parse GitHub URL", vim.log.levels.ERROR)
+    return
+  end
+
+  local commit = vim.fn.system("git -C " .. vim.fn.shellescape(dir) .. " rev-parse HEAD"):gsub("\n", "")
+  local rel_path = file:sub(#toplevel + 2)
+
+  local line1 = cmd_opts.line1
+  local line2 = cmd_opts.line2
+  local link
+  if line1 == line2 then
+    link = repo_url .. "/blob/" .. commit .. "/" .. rel_path .. "#L" .. line1
+  else
+    link = repo_url .. "/blob/" .. commit .. "/" .. rel_path .. "#L" .. line1 .. "-L" .. line2
+  end
+
+  vim.fn.setreg("+", link)
+  vim.notify("Copied: " .. link)
+end, { range = true, desc = "Copy permanent GitHub link for current line(s)" })
 vim.api.nvim_create_user_command("ReloadFile", function()
   vim.cmd("edit!")
 end, { desc = "Discard changes and reload file from disk" })
