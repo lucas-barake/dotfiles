@@ -82,12 +82,22 @@ The agent reports what exists. You decide what's worth reusing, what's worth ext
 
 ### Step 4: Library Investigation
 
-If the task involves third-party libraries:
+If the task involves third-party libraries, you MUST investigate them before planning any code that uses them. LLMs default to training data patterns. If those patterns are outdated or wrong for the specific library version, the implementer will write bad code. Your job is to give the implementer the real patterns from the actual source.
 
-- Spawn deep-dive agents on `.context/oss/<lib>` to understand the library internals
-- Use fast-lookup agents to get exact API signatures, types, return values
-- If unsure about behavior: write a temporary test file, run it, confirm, delete the file
-- NEVER guess library behavior — verify it
+1. **Get the source.** Ensure `.context/oss/<lib>` exists (clone it if not). This is your source of truth, not training data.
+2. **Understand the API surface.** Spawn fast-lookup agents for exact signatures, types, return values of every API the plan will use. Do not guess a single parameter type or return value.
+3. **Find idiomatic usage from source code.** Spawn a deep-dive agent on the library source. Prioritize source code and test files over documentation. Docs go stale. Source code is the truth. Ask:
+   - How does the library's own test suite exercise this feature? (test files are the best usage examples)
+   - How does the library's internal code use this feature? (internal usage patterns)
+   - What setup, initialization, or composition patterns do the tests use?
+   - Are there any anti-patterns, deprecations, or "don't do this" that the source reveals?
+   - Only check docs/READMEs as a secondary source if the tests and source don't give a clear enough picture
+4. **Capture what the implementer needs.** Every finding flows into References (Section 7):
+   - Verbatim code showing the idiomatic usage pattern
+   - API signatures with exact types
+   - Anti-patterns to avoid (with explanation of what goes wrong)
+   - Any required setup, configuration, or initialization the library expects
+5. **Verify when uncertain.** If behavior is ambiguous even after investigation: write a temporary test file, run it, confirm, delete the file. NEVER leave uncertainty in the plan.
 
 ### Step 5: Clarify with User
 
@@ -174,6 +184,7 @@ The implementing agent will write the actual code. Your job is to describe WHAT 
 - The logic flow — what happens step by step
 - What CAN'T work and why (if you discovered this during investigation)
 - What WILL work and why (backed by your investigation)
+- **Reference links**: for any non-trivial library usage, point to the specific reference: "follow the pattern in Reference #N." The implementer should not have to guess which reference applies to which task
 
 You do NOT need to write final implementation code. Write conceptual code that conveys the intent unambiguously — the implementing agent turns it into real code. The key is: every decision is already made. The implementer executes, they don't decide.
 
@@ -186,11 +197,11 @@ Every file/module created MUST have tests. No exceptions.
 Before writing ANY test plan, you MUST understand how to test the code you're planning. This means investigating the source of whatever the tests depend on.
 
 1. **Check for an available testing skill first.** If a skill exists for testing library X (e.g., `effect-testing`, `effect-ai-testing`, `effect-rpc-testing`), check whether it covers the specific use case the plan requires. If it does, use it. If it doesn't cover the particular scenario, proceed to step 2.
-2. **No skill or insufficient skill coverage? Investigate the library source.** Spawn a deep-dive agent on `.context/oss/<lib>` (clone it first if not there) with these specific questions:
-   - How does the library itself test the feature/module you're using? Find their test files for the relevant module
-   - What test utilities, mocks, fakes, or helpers does the library provide for consumers?
-   - What's the canonical pattern for testing code that depends on this library? (Look at their own tests AND their docs/examples)
-   - What setup/teardown is required? (Layer composition, test harnesses, mock providers, etc.)
+2. **No skill or insufficient skill coverage? Investigate the library source.** Spawn a deep-dive agent on `.context/oss/<lib>` (clone it first if not there). Prioritize source code and test files over documentation. Docs go stale. The library's own test suite is the canonical reference for how to test code that uses it. Ask:
+   - Find the library's test files for the specific feature/module you're using. How do THEY test it?
+   - What test utilities, mocks, fakes, or helpers does the library provide for consumers? (look at their test infrastructure, not just their docs)
+   - What setup/teardown patterns do their tests use? (Layer composition, test harnesses, mock providers, etc.)
+   - What assertions and verification patterns do their tests demonstrate?
 3. **Capture everything the implementer needs.** The deep-dive findings MUST flow into the plan:
    - Exact test utility imports and their file paths in the library source
    - Verbatim code snippets showing how the library tests the relevant feature
@@ -227,9 +238,23 @@ How to verify the implementation works — test commands, expected behavior, man
 
 ### 7. References
 
-A numbered list (nested, no tables) of investigation findings that may be useful if the implementer hits issues. These are NOT a substitute for a comprehensive plan — the plan itself must be self-sufficient. References are a safety net for edge cases.
+A numbered list (nested, no tables) of investigation findings. References are the implementer's primary source of truth for writing correct code. The implementer agent pattern-matches on whatever examples it has. If you give it good examples from actual library source, it writes good code. If you give it nothing, it falls back to training data patterns that may be outdated or wrong.
 
-**Verbatim code is NON-NEGOTIABLE for references.** When referencing external code (library internals, upstream APIs, existing patterns to follow), always include the actual verbatim code snippet — not a paraphrase or summary of what it does. The implementer needs to see the real code to understand the exact signatures, patterns, and behavior they're working with.
+**What MUST be in references:**
+
+- **Idiomatic usage patterns**: verbatim code from the library's test files and source code showing the correct way to use the APIs the plan requires. This is the most important category. It overrides the implementer's training data biases. Prioritize test files as examples over docs
+- **API signatures and types**: exact function signatures, parameter types, return types from the actual source (not from memory)
+- **Anti-patterns**: what NOT to do, with explanation of what goes wrong. LLMs reach for common patterns by default. If the common pattern is wrong here, say so explicitly
+- **Test patterns**: how the library tests the feature (covered in Section 5, but the verbatim code lives here)
+- **Edge case handling**: realistic failure modes and how to handle them
+
+**What does NOT belong in references:**
+
+- Everything you found during investigation. Only include what the implementer will actually need
+- Paraphrases or summaries. Verbatim code or nothing
+- References that no checklist item points to. Every reference should be linked from at least one checklist item
+
+**Verbatim code is NON-NEGOTIABLE.** When referencing external code (library internals, upstream APIs, existing patterns to follow), always include the actual verbatim code snippet. The implementer needs to see the real code to understand the exact signatures, patterns, and behavior they're working with.
 
 Format:
 
@@ -242,5 +267,3 @@ Format:
      ```
    - Why it matters: when the implementer would need this and what it tells them
 ```
-
-Only include references that address realistic failure modes — not a dump of everything you found.
