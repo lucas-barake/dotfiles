@@ -60,16 +60,25 @@ Spawn deep-dive agents IN PARALLEL to map out the structure — not just the lay
 
 The goal is to map: how data flows end-to-end, what the existing code structure is, what conventions exist. The agents report back structure — YOU synthesize meaning and make decisions.
 
-### Step 3: Convention & Duplication Check
+### Step 3: DRY & Reuse Audit
 
-ONLY after Step 2 agents return, spawn a new deep-dive agent to:
+ONLY after Step 2 agents return, spawn a new deep-dive agent to find what already exists that you can reuse. The goal is NOT to mimic the project's conventions blindly. Most projects accumulate bad patterns, dead abstractions, and inconsistent conventions over time. Following those is cargo-culting, not engineering.
 
-- Search for existing utilities, helpers, patterns, components that could be reused
-- Identify the conventions the codebase follows (naming, file structure, error handling patterns, etc.)
-- Find similar features already implemented that this should mirror
-- Check for code that can be extended rather than duplicated
+**What the agent MUST find:**
 
-This step MUST wait for Step 2 to complete — you need the full picture before you can search for reusable code intelligently.
+- Existing utilities, helpers, modules, components that overlap with what you're about to build
+- Shared infrastructure (error handling, validation, HTTP clients, DB access patterns) that the plan should use instead of reinventing
+- Code that can be extended or composed with rather than duplicated
+
+**What you MUST evaluate (this is YOUR job, not the agent's):**
+
+- Is the existing code actually good? Does it follow sound principles, or is it legacy cruft?
+- If existing code is poorly structured: plan to use it where necessary but do NOT propagate its patterns into new code
+- If existing code is well-structured: reuse it and follow its patterns
+- What utilities or abstractions are MISSING that this plan will need to create?
+- What existing code will the plan need to refactor or extend to support the new feature?
+
+The agent reports what exists. You decide what's worth reusing, what's worth extending, and what should be ignored or replaced. Do NOT default to "follow existing conventions." Default to "follow sound engineering, reuse what's good, ignore what's bad."
 
 ### Step 4: Library Investigation
 
@@ -172,10 +181,23 @@ You do NOT need to write final implementation code. Write conceptual code that c
 
 Every file/module created MUST have tests. No exceptions.
 
-**How to figure out testing approach:**
+**Test source investigation (NON-NEGOTIABLE):**
 
-1. Look at the project's existing tests first — match the patterns, frameworks, and conventions already in use
-2. If working with an external library: spawn a deep-dive agent on it asking how to properly test modules that use it (mocking strategies, test utilities the lib provides, etc.)
+Before writing ANY test plan, you MUST understand how to test the code you're planning. This means investigating the source of whatever the tests depend on.
+
+1. **Check for an available testing skill first.** If a skill exists for testing library X (e.g., `effect-testing`, `effect-ai-testing`, `effect-rpc-testing`), check whether it covers the specific use case the plan requires. If it does, use it. If it doesn't cover the particular scenario, proceed to step 2.
+2. **No skill or insufficient skill coverage? Investigate the library source.** Spawn a deep-dive agent on `.context/oss/<lib>` (clone it first if not there) with these specific questions:
+   - How does the library itself test the feature/module you're using? Find their test files for the relevant module
+   - What test utilities, mocks, fakes, or helpers does the library provide for consumers?
+   - What's the canonical pattern for testing code that depends on this library? (Look at their own tests AND their docs/examples)
+   - What setup/teardown is required? (Layer composition, test harnesses, mock providers, etc.)
+3. **Capture everything the implementer needs.** The deep-dive findings MUST flow into the plan:
+   - Exact test utility imports and their file paths in the library source
+   - Verbatim code snippets showing how the library tests the relevant feature
+   - The testing pattern the implementer should follow, with concrete references
+   - Any gotchas, required setup, or non-obvious configuration
+
+The implementer agent has no context beyond the plan document. If you don't include the test patterns, references, and utility signatures, the implementer will guess and get it wrong. Every test-related reference belongs in the References section (Section 7) with verbatim code from the library source.
 
 **Test types by scope:**
 
@@ -197,6 +219,7 @@ For each file being created/modified:
 - Which test cases need updating or creating
 - Expected behavior for each test case
 - Conceptual test code describing what to assert and how
+- **Source references**: which library test patterns to follow, with paths to the relevant examples in `.context/oss/`
 
 ### 6. Verification
 
