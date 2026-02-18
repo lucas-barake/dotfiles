@@ -8,6 +8,9 @@
     }
   },
   "permission": {
+    "external_directory": {
+      "~/src/**": "allow"
+    },
     "bash": {
       "git push *": "ask",
       "git reset --hard *": "ask",
