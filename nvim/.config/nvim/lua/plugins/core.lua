@@ -259,6 +259,15 @@ return {
   { "echasnovski/mini.pairs", event = "InsertEnter", opts = {} },
 
   {
+    "rachartier/tiny-inline-diagnostic.nvim",
+    event = "LspAttach",
+    opts = {
+      preset = "modern",
+      multilines = { enabled = true },
+    },
+  },
+
+  {
     "smoka7/hop.nvim",
     keys = {
       { "gw", "<cmd>HopWord<cr>", mode = { "n", "x", "o" }, desc = "Jump to word" },

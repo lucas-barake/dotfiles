@@ -1,4 +1,3 @@
-require("config.diagnostic-virtual-lines")
 require("config.options")
 require("config.keymaps")
 require("config.autocmds")
