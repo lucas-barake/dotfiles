@@ -1,4 +1,7 @@
 ai/bin/dotai
+ai/dotai
 ai/node_modules/
 ai/bun.lock
+ai/.*.bun-build
+.claude/
 launchd/Library/LaunchAgents/org.git-scm.git.*.plist

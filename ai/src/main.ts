@@ -8,8 +8,9 @@ import * as FileSystem from "effect/FileSystem"
 import * as Path from "effect/Path"
 import { parseFrontmatter, transformAgent, transformSkill, type Target } from "./transform.ts"
 
-const configFiles: Partial<Record<Target, string>> = {
-  opencode: "opencode.json"
+const configFiles: Partial<Record<Target, { source: string; target: string; merge: boolean }>> = {
+  opencode: { source: "opencode.json", target: "opencode.json", merge: false },
+  claude: { source: "claude.json", target: "settings.json", merge: true }
 }
 
 const targetPaths: Record<Target, string> = {
@@ -68,6 +69,29 @@ export const scanModels = (sourceDir: string) =>
     return models
   })
 
+export const deepMerge = (target: Record<string, any>, source: Record<string, any>): boolean => {
+  let changed = false
+  for (const key of Object.keys(source)) {
+    if (Array.isArray(source[key]) && Array.isArray(target[key])) {
+      const merged = [...new Set([...target[key], ...source[key]])]
+      if (merged.length !== target[key].length) {
+        target[key] = merged
+        changed = true
+      }
+    } else if (
+      typeof source[key] === "object" && source[key] !== null &&
+      typeof target[key] === "object" && target[key] !== null &&
+      !Array.isArray(source[key])
+    ) {
+      if (deepMerge(target[key], source[key])) changed = true
+    } else if (!(key in target)) {
+      target[key] = source[key]
+      changed = true
+    }
+  }
+  return changed
+}
+
 export const syncTarget = (sourceDir: string, targetDir: string, target: Target, modelMap?: Record<string, string>) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
@@ -109,22 +133,21 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
 
     const configFile = configFiles[target]
     if (configFile) {
-      const configPath = p.join(sourceDir, configFile)
-      if (yield* fs.exists(configPath)) {
-        yield* fs.writeFileString(p.join(targetDir, configFile), yield* fs.readFileString(configPath))
-      }
-    }
+      const configPath = p.join(sourceDir, configFile.source)
+      if (!(yield* fs.exists(configPath))) return
+      const canonical = JSON.parse(yield* fs.readFileString(configPath))
+      const destPath = p.join(targetDir, configFile.target)
 
-    if (target === "claude") {
-      const settingsPath = p.join(targetDir, "settings.json")
-      const config: Record<string, any> = (yield* fs.exists(settingsPath))
-        ? JSON.parse(yield* fs.readFileString(settingsPath))
+      if (!configFile.merge) {
+        yield* fs.writeFileString(destPath, JSON.stringify(canonical, null, 2) + "\n")
+        return
+      }
+
+      const existing: Record<string, any> = (yield* fs.exists(destPath))
+        ? JSON.parse(yield* fs.readFileString(destPath))
         : {}
-      const dirs: Array<string> = config.permissions?.additionalDirectories ?? []
-      if (!dirs.includes("~/src")) {
-        if (!config.permissions) config.permissions = {}
-        config.permissions.additionalDirectories = [...dirs, "~/src"]
-        yield* fs.writeFileString(settingsPath, JSON.stringify(config, null, 2) + "\n")
+      if (deepMerge(existing, canonical)) {
+        yield* fs.writeFileString(destPath, JSON.stringify(existing, null, 2) + "\n")
       }
     }
   })

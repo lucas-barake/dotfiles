@@ -4,7 +4,7 @@ import { TestConsole } from "effect/testing"
 import { Command } from "effect/unstable/cli"
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner"
 import { transformAgent, transformSkill } from "../src/transform.ts"
-import { run, scanModels, syncTarget } from "../src/main.ts"
+import { deepMerge, run, scanModels, syncTarget } from "../src/main.ts"
 import * as MockTerminal from "./services/MockTerminal.ts"
 
 const sampleAgent = `---
@@ -145,6 +145,42 @@ describe("scanModels", () => {
     }))
 })
 
+describe("deepMerge", () => {
+  it("adds missing keys", () => {
+    const target = { a: 1 }
+    expect(deepMerge(target, { b: 2 })).toBe(true)
+    expect(target).toEqual({ a: 1, b: 2 })
+  })
+
+  it("does not overwrite existing primitive keys", () => {
+    const target = { a: 1 }
+    expect(deepMerge(target, { a: 99 })).toBe(false)
+    expect(target).toEqual({ a: 1 })
+  })
+
+  it("unions arrays", () => {
+    const target = { items: ["a", "b"] }
+    expect(deepMerge(target, { items: ["b", "c"] })).toBe(true)
+    expect(target.items).toEqual(["a", "b", "c"])
+  })
+
+  it("returns false when array already contains all items", () => {
+    const target = { items: ["a", "b"] }
+    expect(deepMerge(target, { items: ["a"] })).toBe(false)
+  })
+
+  it("recurses into nested objects", () => {
+    const target = { permissions: { allow: ["Bash"] } }
+    expect(deepMerge(target, { permissions: { additionalDirectories: ["~/src"] } })).toBe(true)
+    expect(target).toEqual({ permissions: { allow: ["Bash"], additionalDirectories: ["~/src"] } })
+  })
+
+  it("returns false when nothing changes", () => {
+    const target = { permissions: { additionalDirectories: ["~/src"] } }
+    expect(deepMerge(target, { permissions: { additionalDirectories: ["~/src"] } })).toBe(false)
+  })
+})
+
 describe("syncTarget", () => {
   it.effect("syncs instructions, agents, and skills for claude", () =>
     Effect.gen(function*() {
@@ -232,7 +268,7 @@ describe("syncTarget", () => {
       expect(skill).toContain(".context/plans")
       expect(skill).not.toMatch(/^model:/m)
 
-      expect(written.get("/out/opencode.json")).toBe(configContent)
+      expect(JSON.parse(written.get("/out/opencode.json")!)).toEqual(JSON.parse(configContent))
     }))
 
   it.effect("creates settings.json with additionalDirectories for claude when none exists", () =>
@@ -240,7 +276,8 @@ describe("syncTarget", () => {
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/instructions.md": "# Rules\n",
         "/src/agents/a.md": sampleAgent,
-        "/src/skills/s/SKILL.md": sampleSkill
+        "/src/skills/s/SKILL.md": sampleSkill,
+        "/src/claude.json": JSON.stringify({ permissions: { additionalDirectories: ["~/src"] } })
       }, ["/out"])
 
       yield* syncTarget("/src", "/out", "claude").pipe(
@@ -262,6 +299,7 @@ describe("syncTarget", () => {
         "/src/instructions.md": "# Rules\n",
         "/src/agents/a.md": sampleAgent,
         "/src/skills/s/SKILL.md": sampleSkill,
+        "/src/claude.json": JSON.stringify({ permissions: { additionalDirectories: ["~/src"] } }),
         "/out/settings.json": existing
       }, ["/out"])
 
@@ -286,6 +324,7 @@ describe("syncTarget", () => {
         "/src/instructions.md": "# Rules\n",
         "/src/agents/a.md": sampleAgent,
         "/src/skills/s/SKILL.md": sampleSkill,
+        "/src/claude.json": JSON.stringify({ permissions: { additionalDirectories: ["~/src"] } }),
         "/out/settings.json": existing
       }, ["/out"])
 
