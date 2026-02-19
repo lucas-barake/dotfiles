@@ -177,8 +177,8 @@ Findings that are purely about the project's own logic (wrong condition, missing
 
 1. Identify the library/framework in question
 2. Ensure source code is available:
-   - Check `.context/oss/<lib-name>` first
-   - If not present, clone it: `git clone --depth 1 <repo-url> .context/oss/<lib-name>`
+   - Check `~/src/oss/<lib-name>` first
+   - If not present, clone it: `git clone --depth 1 <repo-url> ~/src/oss/<lib-name>`
    - Fall back to `node_modules` only if cloning is not feasible
 3. Spawn a `deep-dive` agent targeting the library source with a specific question:
 
@@ -224,7 +224,7 @@ Why this is a bug.
 For findings that were verified against library source in Step 7, include the verification evidence:
 
 ```
-**Verified against:** `<library>` at `.context/oss/<lib>/path/to/file.ts:lines`
+**Verified against:** `<library>` at `~/src/oss/<lib>/path/to/file.ts:lines`
 <brief summary of what the source code confirmed>
 ```
 

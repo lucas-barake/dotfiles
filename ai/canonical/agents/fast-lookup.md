@@ -31,7 +31,7 @@ Every search should start with multiple tool calls in parallel. Search for the s
 - Type definition files (`.d.ts`) for type-only packages or compiled libraries
 - Barrel export files — but trace to the actual definition
 - Test files for usage examples
-- `.context/oss/` for third-party library source code before checking `node_modules`
+- `~/src/oss/` for third-party library source code before checking `node_modules`
 
 ## What You Return
 

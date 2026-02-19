@@ -60,8 +60,8 @@ Don't stop at the first thing you find. A thorough investigation means:
 
 ## Library Source Code
 
-- ALWAYS check `.context/oss/` FIRST for library source code — this has full, readable source
-- If the library is NOT in `.context/oss/`, clone it: `git clone --depth 1 <repo-url> .context/oss/<lib-name>`
+- ALWAYS check `~/src/oss/` FIRST for library source code — this has full, readable source
+- If the library is NOT in `~/src/oss/`, clone it: `git clone --depth 1 <repo-url> ~/src/oss/<lib-name>`
 - `node_modules` is the LAST resort — compiled/minified code is harder to investigate and often missing context
 
 When investigating a library:

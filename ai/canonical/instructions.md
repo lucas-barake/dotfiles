@@ -46,9 +46,9 @@
 ## Library Knowledge
 
 - NEVER trust training data for third-party libs
-- ALWAYS check `.context/oss/` FIRST for library source code - this is the primary source of truth
-- If `.context/oss/` does not exist, run `oss-link` first to create it
-- If the library is NOT in `.context/oss/`, `git clone --depth 1` it there before investigating (fast shallow clone)
+- ALWAYS check `~/src/oss/` FIRST for library source code - this is the primary source of truth
+- If `~/src/oss/` does not exist, run `oss-link` first to create it
+- If the library is NOT in `~/src/oss/`, `git clone --depth 1` it there before investigating (fast shallow clone)
 - `node_modules` is the LAST resort - only use when cloning is not feasible
 - Before using ANY library API: spawn the **fast-lookup** agent to get exact signatures, types, and return values
 - For understanding behavior, quirks, edge cases, or tracing internals: spawn the **deep-dive** agent

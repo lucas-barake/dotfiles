@@ -14,8 +14,8 @@ This document covers testing patterns for `@effect/cli` using MockTerminal and M
 ## IMPORTANT: MockTerminal/MockConsole Are NOT Exported
 
 **These test utilities are internal to @effect/cli and not publicly exported.** You must copy them into your test directory from:
-- `.context/oss/effect/packages/cli/test/services/MockTerminal.ts`
-- `.context/oss/effect/packages/cli/test/services/MockConsole.ts`
+- `~/src/oss/effect/packages/cli/test/services/MockTerminal.ts`
+- `~/src/oss/effect/packages/cli/test/services/MockConsole.ts`
 
 Or use the implementations below.
 

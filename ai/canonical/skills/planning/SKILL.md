@@ -56,7 +56,7 @@ Spawn deep-dive agents IN PARALLEL to map out the structure — not just the lay
 
 - If it's a frontend task: spawn one deep-dive on the frontend code AND one on the backend/API code simultaneously
 - If it's a backend task: spawn one deep-dive on the backend AND one on the frontend consumers simultaneously
-- If it touches a library: spawn a deep-dive on `.context/oss/<lib>` (or clone it first if not there)
+- If it touches a library: spawn a deep-dive on `~/src/oss/<lib>` (or clone it first if not there)
 
 The goal is to map: how data flows end-to-end, what the existing code structure is, what conventions exist. The agents report back structure — YOU synthesize meaning and make decisions.
 
@@ -84,7 +84,7 @@ The agent reports what exists. You decide what's worth reusing, what's worth ext
 
 If the task involves third-party libraries, you MUST investigate them before planning any code that uses them. LLMs default to training data patterns. If those patterns are outdated or wrong for the specific library version, the implementer will write bad code. Your job is to give the implementer the real patterns from the actual source.
 
-1. **Get the source.** Ensure `.context/oss/<lib>` exists (clone it if not). This is your source of truth, not training data.
+1. **Get the source.** Ensure `~/src/oss/<lib>` exists (clone it if not). This is your source of truth, not training data.
 2. **Understand the API surface.** Spawn fast-lookup agents for exact signatures, types, return values of every API the plan will use. Do not guess a single parameter type or return value.
 3. **Find idiomatic usage from source code.** Spawn a deep-dive agent on the library source. Prioritize source code and test files over documentation. Docs go stale. Source code is the truth. Ask:
    - How does the library's own test suite exercise this feature? (test files are the best usage examples)
@@ -197,7 +197,7 @@ Every file/module created MUST have tests. No exceptions.
 Before writing ANY test plan, you MUST understand how to test the code you're planning. This means investigating the source of whatever the tests depend on.
 
 1. **Check for an available testing skill first.** If a skill exists for testing library X (e.g., `effect-testing`, `effect-ai-testing`, `effect-rpc-testing`), check whether it covers the specific use case the plan requires. If it does, use it. If it doesn't cover the particular scenario, proceed to step 2.
-2. **No skill or insufficient skill coverage? Investigate the library source.** Spawn a deep-dive agent on `.context/oss/<lib>` (clone it first if not there). Prioritize source code and test files over documentation. Docs go stale. The library's own test suite is the canonical reference for how to test code that uses it. Ask:
+2. **No skill or insufficient skill coverage? Investigate the library source.** Spawn a deep-dive agent on `~/src/oss/<lib>` (clone it first if not there). Prioritize source code and test files over documentation. Docs go stale. The library's own test suite is the canonical reference for how to test code that uses it. Ask:
    - Find the library's test files for the specific feature/module you're using. How do THEY test it?
    - What test utilities, mocks, fakes, or helpers does the library provide for consumers? (look at their test infrastructure, not just their docs)
    - What setup/teardown patterns do their tests use? (Layer composition, test harnesses, mock providers, etc.)
@@ -230,7 +230,7 @@ For each file being created/modified:
 - Which test cases need updating or creating
 - Expected behavior for each test case
 - Conceptual test code describing what to assert and how
-- **Source references**: which library test patterns to follow, with paths to the relevant examples in `.context/oss/`
+- **Source references**: which library test patterns to follow, with paths to the relevant examples in `~/src/oss/`
 
 ### 6. Verification
 
