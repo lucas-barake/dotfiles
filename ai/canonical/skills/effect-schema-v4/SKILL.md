@@ -491,10 +491,37 @@ const PositiveIntSchema = Schema.Number.pipe(Schema.fromBrand("PositiveInt", Pos
 
 ### JSON
 
+`Schema.fromJsonString` parses a JSON string then validates with the given
+schema:
+
 ```ts
 const UserFromJson = Schema.fromJsonString(User)
 // Codec<User, string>: JSON string -> validated User
 ```
+
+`Schema.toCodecJson` converts a schema to produce JSON-safe encodings
+(e.g., `Date` -> ISO string, `BigInt` -> string):
+
+```ts
+const UserJsonCodec = Schema.toCodecJson(User)
+// Codec<User, unknown>: JSON-safe encoding
+```
+
+The canonical pattern for full JSON string round-trips (used by
+KeyValueStore and persistence layers):
+
+```ts
+const serializer = Schema.toCodecJson(User)
+const codec = Schema.fromJsonString(serializer)
+// Codec<User, string>: JSON string -> parse -> JSON-safe decode -> User
+
+const decoded = Schema.decodeUnknownSync(codec)('{"name":"Alice","createdAt":"2024-01-01T00:00:00.000Z"}')
+const encoded = Schema.encodeSync(codec)(user) // JSON string with JSON-safe values
+```
+
+`fromJsonString` alone does NOT apply JSON-safe transformations. If your
+schema has `Date`, `BigInt`, or other non-JSON types, wrap with
+`toCodecJson` first.
 
 ### UUID and ULID
 
@@ -612,6 +639,8 @@ without carrying the full bidirectional structure.
 | Brand | `Schema.brand("Name")` |
 | Recursive | `Schema.suspend(() => schema)` |
 | From JSON string | `Schema.fromJsonString(schema)` |
+| JSON-safe codec | `Schema.toCodecJson(schema)` |
+| Full JSON round-trip | `Schema.fromJsonString(Schema.toCodecJson(schema))` |
 | Pick fields | `struct.mapFields(Struct.pick(["a"]))` |
 | Omit fields | `struct.mapFields(Struct.omit(["b"]))` |
 | Omit _tag on encode | `Schema.tagDefaultOmit("tag")` |

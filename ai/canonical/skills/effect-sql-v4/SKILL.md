@@ -568,16 +568,18 @@ Effect.catchTags({
 })
 ```
 
-## Schema.parseJson for JSON Columns
+## Schema.fromJsonString for JSON Columns
 
-Use `Schema.parseJson` in Result schemas to parse JSON from the database, and in Request schemas to encode objects to JSON strings for storage.
+Use `Schema.fromJsonString` in Result schemas to parse JSON from the
+database, and in Request schemas to encode objects to JSON strings for
+storage:
 
 ```ts
 const ResultSchema = Schema.Struct({
   id: UserId,
   name: Schema.String,
-  variants: Schema.parseJson(Schema.Array(Variant)),
-  metadata: Schema.NullOr(Schema.parseJson(MetadataSchema)),
+  variants: Schema.fromJsonString(Schema.Array(Variant)),
+  metadata: Schema.NullOr(Schema.fromJsonString(MetadataSchema)),
 })
 
 const findWithVariants = SqlSchema.single({
@@ -601,10 +603,10 @@ const findWithVariants = SqlSchema.single({
 ```ts
 const InsertChat = Schema.Struct({
   id: ChatId,
-  config: Schema.parseJson(
+  config: Schema.fromJsonString(
     Schema.Struct({ model: Schema.String, temperature: Schema.Number }),
   ),
-  segments: Schema.parseJson(Schema.Array(Segment)),
+  segments: Schema.fromJsonString(Schema.Array(Segment)),
 })
 
 const insertChat = SqlSchema.single({
@@ -621,6 +623,19 @@ yield* insertChat({
   segments: [{ type: "text", content: "hello" }],
 })
 ```
+
+### `toCodecJson` for Non-JSON-Safe Types
+
+If your schema contains types that are not JSON-safe (e.g., `Date`,
+`BigInt`, `DateTime`), wrap with `Schema.toCodecJson` first. This is the
+canonical pattern used by KeyValueStore and persistence layers:
+
+```ts
+const codec = Schema.fromJsonString(Schema.toCodecJson(mySchema))
+```
+
+`fromJsonString` alone does NOT apply JSON-safe transformations. Without
+`toCodecJson`, `Date` fields will fail to round-trip through JSON.
 
 ### Model.JsonFromString
 
