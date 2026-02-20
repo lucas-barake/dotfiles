@@ -260,10 +260,10 @@ it("calls API and returns result", async () => {
 
 ```ts
 it("handles concurrent calls", async () => {
-  const latches: Array<Effect.Latch> = []
+  const latches: Array<Latch.Latch> = []
   let done = 0
   const count = Atom.fn((_: number) => {
-    const latch = Effect.unsafeMakeLatch()
+    const latch = Latch.makeUnsafe()
     latches.push(latch)
     return latch.await.pipe(Effect.tap(() => done++))
   }, { concurrent: true })
@@ -317,19 +317,17 @@ Mock `EventStream` with a controllable emit callback:
 
 ```ts
 const makeEventStreamMock = () => {
-  let publishCallback: ((event: unknown) => void) | null = null
+  let queue: Queue.Queue<MyEvent, Cause.Done> | null = null
 
   const layer = Layer.mock(EventStream)({
-    changes: Stream.async<MyEvent>((emit) => {
-      publishCallback = (event) => {
-        emit.single(event as MyEvent)
-      }
-    }),
+    changes: Stream.callback<MyEvent>((q) =>
+      Effect.sync(() => { queue = q })
+    ),
     publish: (event) => Effect.sync(() => true),
   })
 
   const emitEvent = (event: MyEvent) => {
-    publishCallback?.(event)
+    if (queue) Queue.offerUnsafe(queue, event)
   }
 
   return { layer, emitEvent }

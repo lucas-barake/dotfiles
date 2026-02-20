@@ -623,16 +623,6 @@ Effect.gen(function*() { ... }).pipe(
 )
 ```
 
-## Key Differences from v3 Testing
-
-| v3 (@effect/ai) | v4 (effect/unstable/ai) |
-|---|---|
-| `import * as TestUtils from "@effect/ai/test/utilities"` | Copy `withLanguageModel` from source (not exported) |
-| `AiError._tag` is `"MalformedOutput"` etc. | `AiError.reason._tag` is `"ToolParameterValidationError"` etc. |
-| No preliminary results in tool handlers | `ctx.preliminary(result)` emits streaming progress |
-| No `Tool.dynamic` | `Tool.dynamic` handler receives `unknown` params |
-| `EmbeddingModel` testable | No `EmbeddingModel` in v4 core |
-
 ## `it.effect` vs `it.scoped`
 
 - `it.effect`: No Scope requirement. Use for LanguageModel and Tool tests.

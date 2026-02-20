@@ -359,7 +359,7 @@ Share a MemoMap across runtimes:
 ```ts
 import { Layer } from "effect"
 
-const sharedMemoMap = Layer.unsafeMakeMemoMap()
+const sharedMemoMap = Layer.makeMemoMapUnsafe()
 const runtime1 = ManagedRuntime.make(layer, { memoMap: sharedMemoMap })
 const runtime2 = ManagedRuntime.make(layer, { memoMap: sharedMemoMap })
 ```
