@@ -1,6 +1,6 @@
 ---
 name: effect-sql-v4
-description: Effect SQL v4 patterns with effect/unstable/sql and @effect/sql-pg. Use when working with database code, repositories, SQL queries, migrations, SqlResolver, or PostgreSQL in Effect v4. Triggers on effect/unstable/sql, SqlClient, PgClient, SqlSchema, SqlResolver, migration.
+description: Effect SQL v4 patterns with effect/unstable/sql and @effect/sql-pg. Use when working with database code, repositories, SQL queries, migrations, SqlResolver, SqlModel, or PostgreSQL in Effect v4. Triggers on effect/unstable/sql, SqlClient, PgClient, SqlSchema, SqlResolver, SqlModel, migration.
 ---
 
 # Effect SQL (v4 / effect-smol)
@@ -16,7 +16,7 @@ Patterns for database access using `effect/unstable/sql` and `@effect/sql-pg` in
 sql<{ id: string; name: string }>`SELECT * FROM users`
 
 // CORRECT - always use SqlSchema for validation
-SqlSchema.findMany({
+SqlSchema.findAll({
   Request: Schema.Void,
   Result: UserModel,
   execute: () => sql`SELECT * FROM users`,
@@ -30,17 +30,24 @@ SqlSchema validates both request and result at runtime. Non-negotiable.
 SQL modules live under `effect/unstable/sql`. PgClient is a separate package.
 
 ```ts
-import { SqlClient, SqlSchema, SqlError, SqlResolver, Migrator, Statement } from "effect/unstable/sql"
+import { SqlClient, SqlSchema, SqlError, SqlResolver, SqlModel, Migrator, Statement } from "effect/unstable/sql"
 import { Model } from "effect/unstable/schema"
 import { PgClient, PgMigrator } from "@effect/sql-pg"
 ```
 
 ## SqlSchema Methods
 
-v4 uses `SchemaError` (not `ParseError`). `findMany` and `single` fail with `NoSuchElementError` if the result set is empty.
+v4 uses `SchemaError` (not `ParseError`).
 
 ```ts
-SqlSchema.findMany({
+SqlSchema.findAll({
+  Request: Schema.Schema,
+  Result: Schema.Schema,
+  execute: (encodedRequest) => sql`...`
+})
+// Returns: (request) => Effect<Array<A>, E | SchemaError>
+
+SqlSchema.findNonEmpty({
   Request: Schema.Schema,
   Result: Schema.Schema,
   execute: (encodedRequest) => sql`...`
@@ -52,14 +59,14 @@ SqlSchema.findOne({
   Result: Schema.Schema,
   execute: (encodedRequest) => sql`...`
 })
-// Returns: (request) => Effect<Option<A>, E | SchemaError>
+// Returns: (request) => Effect<A, E | SchemaError | NoSuchElementError>
 
-SqlSchema.single({
+SqlSchema.findOneOption({
   Request: Schema.Schema,
   Result: Schema.Schema,
   execute: (encodedRequest) => sql`...`
 })
-// Returns: (request) => Effect<A, E | SchemaError | NoSuchElementError>
+// Returns: (request) => Effect<Option<A>, E | SchemaError>
 
 SqlSchema.void({
   Request: Schema.Schema,
@@ -68,7 +75,13 @@ SqlSchema.void({
 // Returns: (request) => Effect<void, E | SchemaError>
 ```
 
-Key difference from v3: `findMany` returns `NonEmptyArray` and fails if empty. Use `findOne` for queries that may return no results.
+| Method | Returns | Fails on empty |
+|---|---|---|
+| `findAll` | `Array<A>` | No (returns `[]`) |
+| `findNonEmpty` | `NonEmptyArray<A>` | Yes (`NoSuchElementError`) |
+| `findOne` | `A` | Yes (`NoSuchElementError`) |
+| `findOneOption` | `Option<A>` | No (returns `None`) |
+| `void` | `void` | N/A |
 
 ## SqlClient
 
@@ -81,14 +94,24 @@ export const SqlClient = ServiceMap.Service<SqlClient>("effect/sql/SqlClient")
 The client IS the template literal tag (it extends `Constructor`):
 
 ```ts
-const sql = yield* SqlClient.SqlClient
+const sql = yield* SqlClient
 const rows = yield* sql`SELECT * FROM users WHERE id = ${id}`
 ```
 
-Statements are effects. Use `.asEffect()` when the type system needs an explicit `Effect`:
+Statements are effects. They extend `Effect.Effect<ReadonlyArray<A>, SqlError>` directly.
+
+### SqlClient Methods
 
 ```ts
-sql`CREATE TABLE ...`.asEffect()
+const sql = yield* SqlClient
+
+sql`SELECT ...`                            // Statement<A> (is an Effect)
+sql.safe                                   // client with safe mode
+sql.withoutTransforms()                    // client without row transforms
+sql.reserve                                // Effect<Connection, SqlError, Scope>
+sql.withTransaction(effect)                // wraps effect in a transaction
+sql.reactive(keys, effect)                 // Stream that re-runs on key changes
+sql.reactiveMailbox(keys, effect)          // Dequeue that re-runs on key changes
 ```
 
 ## PostgreSQL Client Configuration
@@ -165,7 +188,6 @@ PgClient.layerFromPool({
 ```ts
 import { PgClient } from "@effect/sql-pg"
 import { Data, Effect, Layer, Redacted, ServiceMap, String } from "effect"
-import { PostgreSqlContainer } from "@testcontainers/postgresql"
 
 class ContainerError extends Data.TaggedError("ContainerError")<{
   cause: unknown
@@ -199,10 +221,10 @@ class PgContainer extends ServiceMap.Service<PgContainer, {
 
 ## Query Patterns with SqlSchema
 
-### SqlSchema.single
+### SqlSchema.findOne
 
 ```ts
-const findById = SqlSchema.single({
+const findById = SqlSchema.findOne({
   Request: Schema.Struct({ id: UserId, orgId: OrgId }),
   Result: UserModel,
   execute: ({ id, orgId }) => sql`
@@ -214,10 +236,10 @@ const findById = SqlSchema.single({
 const user = yield* findById({ id, orgId })
 ```
 
-### SqlSchema.findOne
+### SqlSchema.findOneOption
 
 ```ts
-const findByEmail = SqlSchema.findOne({
+const findByEmail = SqlSchema.findOneOption({
   Request: Schema.String,
   Result: UserModel,
   execute: (email) => sql`
@@ -228,12 +250,12 @@ const findByEmail = SqlSchema.findOne({
 const maybeUser = yield* findByEmail("user@example.com")
 ```
 
-### SqlSchema.findMany
+### SqlSchema.findAll
 
-Returns `NonEmptyArray`. Fails with `NoSuchElementError` if no rows found.
+Returns `Array<A>`. Returns empty array if no rows found.
 
 ```ts
-const listByOrg = SqlSchema.findMany({
+const listByOrg = SqlSchema.findAll({
   Request: Schema.Struct({ orgId: OrgId, limit: Schema.Number }),
   Result: UserModel,
   execute: ({ orgId, limit }) => sql`
@@ -244,6 +266,21 @@ const listByOrg = SqlSchema.findMany({
 })
 
 const users = yield* listByOrg({ orgId, limit: 100 })
+```
+
+### SqlSchema.findNonEmpty
+
+Returns `NonEmptyArray<A>`. Fails with `NoSuchElementError` if no rows found.
+
+```ts
+const listActiveByOrg = SqlSchema.findNonEmpty({
+  Request: Schema.Struct({ orgId: OrgId }),
+  Result: UserModel,
+  execute: ({ orgId }) => sql`
+    SELECT * FROM users
+    WHERE organization_id = ${orgId} AND active = true
+  `,
+})
 ```
 
 ### SqlSchema.void
@@ -263,7 +300,7 @@ yield* deleteUser({ id, orgId })
 ## SQL Template Helpers
 
 ```ts
-const sql = yield* SqlClient.SqlClient
+const sql = yield* SqlClient
 
 // Safe parameter interpolation
 sql`SELECT * FROM users WHERE id = ${userId}`
@@ -301,33 +338,32 @@ sql`SELECT * FROM accounts WHERE ${sql.or([cond1, cond2])}`
 sql.csv(["col1", "col2"])
 sql.csv("ORDER BY", ["col1", "col2"])
 
-// JSON value (PgClient-specific, wraps for jsonb parameter)
-sql`INSERT INTO people ${sql.insert({ name: "Tim", data: sql.json({ a: 1 }) })}`
-
 // Raw SQL (use sparingly)
 sql.unsafe("SELECT * FROM users")
 sql.literal("NOW()")
 
 // Dialect branching
-sql.onDialect({ pg: () => ..., sqlite: () => ..., mysql: () => ... })
+sql.onDialect({ pg: () => ..., sqlite: () => ..., mysql: () => ..., mssql: () => ..., clickhouse: () => ... })
 sql.onDialectOrElse({ pg: () => ..., orElse: () => ... })
 ```
 
 ### Statement Properties
 
 ```ts
-sql`SELECT * FROM users`.stream       // Stream<A, SqlError>
-sql`SELECT * FROM users`.raw          // raw driver result
-sql`SELECT * FROM users`.values       // rows as arrays
-sql`SELECT * FROM users`.unprepared   // skip prepared statements
-sql`SELECT * FROM users`.compile()    // [sqlString, params] tuple
-sql`CREATE TABLE ...`.asEffect()      // explicit Effect when needed
+sql`SELECT * FROM users`.stream           // Stream<A, SqlError>
+sql`SELECT * FROM users`.raw              // raw driver result
+sql`SELECT * FROM users`.values           // rows as arrays
+sql`SELECT * FROM users`.unprepared       // skip prepared statements
+sql`SELECT * FROM users`.withoutTransform // rows without name transforms
+sql`SELECT * FROM users`.compile()        // [sqlString, params] tuple
 ```
+
+Statement extends `Effect.Effect<ReadonlyArray<A>, SqlError>` directly. No `.asEffect()` needed. Just `yield* sql\`...\``.
 
 ## Transactions
 
 ```ts
-const sql = yield* SqlClient.SqlClient
+const sql = yield* SqlClient
 
 yield* sql.withTransaction(
   Effect.gen(function* () {
@@ -341,7 +377,7 @@ yield* sql.withTransaction(
   Effect.gen(function* () {
     yield* sql`INSERT INTO ...`
     yield* sql.withTransaction(
-      sql`INSERT INTO ...`.asEffect()  // SAVEPOINT effect_sql_1
+      sql`INSERT INTO ...`  // SAVEPOINT
     )
   }),
 )
@@ -397,48 +433,105 @@ All DateTime modifiers auto-generate the current time on insert (and on update f
 | `Model.DateTimeUpdateFromDate` | Date | auto-now | auto-now |
 | `Model.DateTimeUpdateFromNumber` | number | auto-now | auto-now |
 
+### UUID Field Modifier
+
+`Model.UuidV4Insert` auto-generates a UUID v4 on insert:
+
+```ts
+class Token extends Model.Class<Token>("Token")({
+  id: Model.UuidV4Insert("TokenId"),
+  name: Schema.String,
+}) {}
+```
+
+## SqlModel (CRUD from Model schemas)
+
+### SqlModel.makeRepository
+
+Creates simple CRUD operations from a Model. Requires `SqlClient`.
+
+```ts
+import { SqlModel } from "effect/unstable/sql"
+
+const repo = yield* SqlModel.makeRepository(User, {
+  tableName: "users",
+  spanPrefix: "UserRepo",
+  idColumn: "id",
+})
+
+repo.insert(User.insert.make({ name: "Alice", email: "alice@example.com" }))
+repo.insertVoid(User.insert.make({ name: "Bob", email: "bob@example.com" }))
+repo.update(User.update.make({ id: userId, name: "Alice Updated" }))
+repo.updateVoid(User.update.make({ id: userId, name: "Alice Updated" }))
+repo.findById(userId)    // Effect<User, NoSuchElementError | SchemaError | SqlError>
+repo.delete(userId)
+```
+
+### SqlModel.makeDataLoaders
+
+Creates batched CRUD operations using SqlResolver. Requires `SqlClient | Scope`.
+
+```ts
+const loaders = yield* SqlModel.makeDataLoaders(User, {
+  tableName: "users",
+  spanPrefix: "UserLoader",
+  idColumn: "id",
+  window: "50 millis",
+  maxBatchSize: 100,
+})
+
+loaders.insert(User.insert.make({ ... }))
+loaders.insertVoid(User.insert.make({ ... }))
+loaders.findById(userId)
+loaders.delete(userId)
+```
 
 ## SqlResolver (Batched Request Resolvers)
+
+Resolvers return `RequestResolver` directly (not effects). Use `SqlResolver.request(resolver)` to create the execute function.
 
 ### SqlResolver.ordered
 
 1:1 mapping. Results must match request count and order.
 
 ```ts
-const Insert = yield* SqlResolver.ordered("InsertPerson", {
+const InsertResolver = SqlResolver.ordered({
   Request: InsertPersonSchema,
   Result: Person,
   execute: (requests) =>
     sql`INSERT INTO people ${sql.insert(requests)} RETURNING people.*`,
 })
 
+const insertPerson = SqlResolver.request(InsertResolver)
+
 const [john, joe] = yield* Effect.all(
-  [Insert.execute({ name: "John" }), Insert.execute({ name: "Joe" })],
+  [insertPerson({ name: "John" }), insertPerson({ name: "Joe" })],
   { batching: true },
 )
 ```
 
 ### SqlResolver.findById
 
-Returns `Option<A>`. Missing rows become `Option.none()`.
+Returns `Res["Type"]` directly. Missing rows fail with `NoSuchElementError`.
 
 ```ts
-const GetById = yield* SqlResolver.findById("GetPersonById", {
+const GetByIdResolver = SqlResolver.findById({
   Id: Schema.Number,
   Result: Person,
   ResultId: (result) => result.id,
   execute: (ids) => sql`SELECT * FROM people WHERE id IN ${sql.in(ids)}`,
 })
 
-const result = yield* GetById.execute(42)
+const getPersonById = SqlResolver.request(GetByIdResolver)
+const person = yield* getPersonById(42)
 ```
 
 ### SqlResolver.grouped
 
-Many results per request, grouped by key.
+Many results per request, grouped by key. Returns `NonEmptyArray<A>` per group. Missing groups fail with `NoSuchElementError`.
 
 ```ts
-const GetByName = yield* SqlResolver.grouped("GetPersonByName", {
+const GetByNameResolver = SqlResolver.grouped({
   Request: Schema.String,
   RequestGroupKey: (name) => name,
   Result: Person,
@@ -446,6 +539,8 @@ const GetByName = yield* SqlResolver.grouped("GetPersonByName", {
   execute: (names) =>
     sql`SELECT * FROM people WHERE name IN ${sql.in(names)}`,
 })
+
+const getPersonsByName = SqlResolver.request(GetByNameResolver)
 ```
 
 ### SqlResolver.void
@@ -453,21 +548,28 @@ const GetByName = yield* SqlResolver.grouped("GetPersonByName", {
 Side-effect only (no result decoding).
 
 ```ts
-const DeleteById = yield* SqlResolver.void("DeletePerson", {
+const DeleteByIdResolver = SqlResolver.void({
   Request: Schema.Number,
   execute: (ids) => sql`DELETE FROM people WHERE id IN ${sql.in(ids)}`,
 })
+
+const deletePerson = SqlResolver.request(DeleteByIdResolver)
 ```
 
-### Resolver Methods
+### Configuring Resolvers
 
-All resolvers expose:
+Resolvers are `RequestResolver` values. Use `RequestResolver` combinators for batching config:
 
 ```ts
-resolver.execute(input)          // batched effectful execution
-resolver.cachePopulate(id, val)  // pre-populate cache
-resolver.cacheInvalidate(id)     // invalidate cache entry
-resolver.request(input)          // create request without executing
+import { RequestResolver } from "effect"
+
+const resolver = SqlResolver.findById({ ... }).pipe(
+  RequestResolver.setDelay("50 millis"),
+  RequestResolver.batchN(100),
+  RequestResolver.withSpan("PersonRepo.findById"),
+)
+
+const findById = SqlResolver.request(resolver)
 ```
 
 ## Repository as ServiceMap.Service
@@ -483,9 +585,9 @@ class UserRepo extends ServiceMap.Service<UserRepo, {
   readonly findById: (id: UserId, orgId: OrgId) => Effect.Effect<User, UserNotFoundError>
 }>()("UserRepo", {
   make: Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
+    const sql = yield* SqlClient
 
-    const insertQuery = SqlSchema.single({
+    const insertQuery = SqlSchema.findOne({
       Request: User.insert,
       Result: User,
       execute: (request) => sql`
@@ -493,7 +595,7 @@ class UserRepo extends ServiceMap.Service<UserRepo, {
       `,
     })
 
-    const findByIdQuery = SqlSchema.single({
+    const findByIdQuery = SqlSchema.findOne({
       Request: Schema.Struct({ id: UserId, orgId: OrgId }),
       Result: User,
       execute: ({ id, orgId }) => sql`
@@ -508,6 +610,7 @@ class UserRepo extends ServiceMap.Service<UserRepo, {
           Effect.catchTags({
             SchemaError: Effect.die,
             SqlError: Effect.die,
+            NoSuchElementError: Effect.die,
           }),
         ),
       findById: (id: UserId, orgId: OrgId) =>
@@ -515,7 +618,7 @@ class UserRepo extends ServiceMap.Service<UserRepo, {
           Effect.catchTags({
             SchemaError: Effect.die,
             SqlError: Effect.die,
-            NoSuchElementError: () => new UserNotFoundError().asEffect(),
+            NoSuchElementError: () => new UserNotFoundError({ id }),
           }),
         ),
     }
@@ -545,27 +648,15 @@ const insertUser = (request: typeof User.insert.Type) =>
 
 ### Convert to domain errors
 
-Use `.asEffect()` on tagged errors to convert them to effects in `catchTags` handlers:
-
 ```ts
 const findById = (id: UserId, orgId: OrgId) =>
   findByIdQuery({ id, orgId }).pipe(
     Effect.catchTags({
       SchemaError: Effect.die,
       SqlError: Effect.die,
-      NoSuchElementError: () => new UserNotFoundError({ id }).asEffect(),
+      NoSuchElementError: () => new UserNotFoundError({ id }),
     }),
   )
-```
-
-For no-field errors:
-
-```ts
-Effect.catchTags({
-  SchemaError: Effect.die,
-  SqlError: Effect.die,
-  NoSuchElementError: () => new UserNotFoundError().asEffect(),
-})
 ```
 
 ## Schema.fromJsonString for JSON Columns
@@ -582,7 +673,7 @@ const ResultSchema = Schema.Struct({
   metadata: Schema.NullOr(Schema.fromJsonString(MetadataSchema)),
 })
 
-const findWithVariants = SqlSchema.single({
+const findWithVariants = SqlSchema.findOne({
   Request: Schema.Struct({ id: ExperimentId }),
   Result: ResultSchema,
   execute: ({ id }) => sql`
@@ -609,7 +700,7 @@ const InsertChat = Schema.Struct({
   segments: Schema.fromJsonString(Schema.Array(Segment)),
 })
 
-const insertChat = SqlSchema.single({
+const insertChat = SqlSchema.findOne({
   Request: InsertChat,
   Result: ChatModel,
   execute: (request) => sql`
@@ -648,6 +739,16 @@ class Chat extends Model.Class<Chat>("Chat")({
     Schema.Struct({ model: Schema.String, temperature: Schema.Number }),
   ),
 }) {}
+```
+
+## PostgreSQL JSON Parameters
+
+PgClient exposes a `json` method for wrapping values as jsonb parameters. This is PgClient-specific, not on the base Constructor:
+
+```ts
+const sql = yield* PgClient.PgClient
+
+sql`INSERT INTO people ${sql.insert({ name: "Tim", data: sql.json({ a: 1 }) })}`
 ```
 
 ## PostgreSQL LISTEN/NOTIFY
@@ -696,7 +797,7 @@ import { SqlClient } from "effect/unstable/sql"
 import { Effect } from "effect"
 
 export default Effect.gen(function* () {
-  const sql = yield* SqlClient.SqlClient
+  const sql = yield* SqlClient
 
   yield* sql`
     CREATE TABLE users (
@@ -708,6 +809,18 @@ export default Effect.gen(function* () {
     )
   `
 })
+```
+
+## Statement.Transformer
+
+Intercept and modify SQL statements at the fiber level:
+
+```ts
+import { Statement } from "effect/unstable/sql"
+
+Statement.withTransformer(effect, (statement, sql, fiberRefs, span) => ...)
+Statement.withTransformerDisabled(effect)
+Statement.setTransformer(fn) // Layer
 ```
 
 ## Testing Database Code
@@ -733,18 +846,6 @@ it.layer(TestLive, { timeout: "30 seconds" })("UserRepo", (it) => {
     }),
   )
 })
-```
-
-## Statement.Transformer
-
-Intercept and modify SQL statements at the fiber level:
-
-```ts
-import { Statement } from "effect/unstable/sql"
-
-Statement.withTransformer(effect, (statement, sql, fiberRefs, span) => ...)
-Statement.withTransformerDisabled(effect)
-Statement.setTransformer(fn) // Layer
 ```
 
 ## Common Query Patterns
