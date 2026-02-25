@@ -1,8 +1,10 @@
 function mic-reset
     echo "Restarting CoreAudio..."
     sudo killall coreaudiod
-    sleep 2
-    echo "Setting default input to BlackHole 2ch..."
+    while not SwitchAudioSource -t input -c >/dev/null 2>&1
+        sleep 0.5
+    end
+    sleep 1
     SwitchAudioSource -t input -s "BlackHole 2ch"
     echo "Done. Default input: $(SwitchAudioSource -t input -c)"
 end
