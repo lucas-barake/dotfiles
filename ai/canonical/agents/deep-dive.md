@@ -73,17 +73,13 @@ When investigating a library:
 
 ## Output Format
 
-Structure your response so the caller can act on it immediately.
+Your output is consumed by another agent, not a human. Return **file references with line ranges**, not verbatim code. The caller has a Read tool and will read what it needs. Your value is the analysis, the dependency map, and the precise locations. Not regurgitating file contents.
 
 **Files Found** (most relevant first, with why each matters)
-- `/absolute/path/to/file.ts:123` — what this file's role is in the investigation
+- `/absolute/path/to/file.ts:123-145` — what this file's role is in the investigation
+  - Read with: `file_path="/absolute/path/to/file.ts" offset=123 limit=23`
 - `/absolute/path/to/other.ts:45-67` — what this file reveals
-
-**Code Snippets** (verbatim, with enough context to understand)
-```ts
-// /absolute/path/to/file.ts:123-145
-<exact code from file>
-```
+  - Read with: `file_path="/absolute/path/to/other.ts" offset=45 limit=23`
 
 **Dependency Map** (how the pieces connect)
 - What imports/depends on what
@@ -92,9 +88,9 @@ Structure your response so the caller can act on it immediately.
 
 **Findings** (direct answers backed by evidence)
 - Answer to the question asked, with file:line references for every claim
-- Behavior discovered, with the code that proves it
-- Patterns identified, with multiple examples
-- Potential issues/bugs, with the specific code that's problematic
+- Behavior discovered, with the file:line references that prove it
+- Patterns identified, with multiple file:line references as examples
+- Potential issues/bugs, with file:line references to the problematic code
 
 **Recommended Further Investigation** (only if the caller might need to go deeper)
 - `/absolute/path/to/x.ts` — what investigating this would reveal and why it might matter
@@ -103,8 +99,8 @@ Structure your response so the caller can act on it immediately.
 
 Your output is used to make implementation decisions. If your investigation is wrong or incomplete, the wrong code gets written. So:
 
+- NEVER paste verbatim code snippets. Always return file path + line range references with `offset` and `limit` params
 - Every file path must be absolute and verified (you read the file)
 - Every line number must be accurate (you saw the code at that line)
-- Every code snippet must be verbatim (copied from the file, not paraphrased)
-- Every behavioral claim must reference the specific code that proves it
+- Every behavioral claim must reference the specific file:line that proves it
 - If you're uncertain about something, say so explicitly rather than guessing
