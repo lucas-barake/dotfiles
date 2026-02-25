@@ -1,6 +1,7 @@
 fish_add_path $HOME/.local/bin
 
 if status is-interactive
+    set -g fish_prompt_pwd_dir_length 3
     set -gx EDITOR nvim
     set -gx VISUAL nvim
     eval (direnv hook fish)
