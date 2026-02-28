@@ -59,17 +59,19 @@ Aim to answer in 2-3 waves of parallel tool calls. If you haven't answered by wa
 Your output is consumed by another agent, not a human. Return **file references with line ranges**, not verbatim code. The caller has a Read tool and will read what it needs.
 
 **Target**
-- `/absolute/path/to/file.ts:42-58` — what this module/function is and does
+- `/absolute/path/to/file.ts:42-58` — token validation and claims extraction
   - Read with: `file_path="/absolute/path/to/file.ts" offset=42 limit=17`
 
 **Direct Consumers** (if asked or relevant)
-- `/absolute/path/to/consumer.ts:15-30` — how it uses the target
+- `/absolute/path/to/consumer.ts:15-30` — auth middleware, rejects invalid tokens as 401
 
 **Direct Dependencies** (if asked or relevant)
-- `/absolute/path/to/dep.ts:30-45` — what role this dependency plays
+- `/absolute/path/to/dep.ts:30-45` — key rotation wrapper around jose
 
 **Tests** (if found)
-- `/absolute/path/to/file.test.ts:10-25` — key test cases and what they reveal
+- `/absolute/path/to/file.test.ts:10-25` — covers expired, malformed, and valid token paths
+
+Every reference MUST include a brief plain-language summary after the `—` describing the purpose/role of what's at that location. Do NOT restate the code (no signatures, no type names, no parameter lists). The caller uses these summaries to decide what to read. Bare paths with generic labels like "how it uses the target" are useless.
 
 **Answer**
 A concise (2-5 sentence) answer to the question asked, with file:line references for every claim.

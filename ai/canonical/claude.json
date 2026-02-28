@@ -1,5 +1,21 @@
 {
   "permissions": {
-    "additionalDirectories": ["~/src"]
+    "additionalDirectories": ["~/src"],
+    "defaultMode": "acceptEdits",
+    "ask": [
+      "Bash(rm *)",
+      "Bash(rm -*)",
+      "Bash(sudo *)",
+      "Bash(gh api *)",
+      "Bash(gh repo delete *)",
+      "Bash(gh pr close *)",
+      "Bash(gh issue close *)",
+      "Bash(gh release delete *)",
+      "Bash(git push *)",
+      "Bash(git push)"
+    ],
+    "allow": [
+      "Bash(*)"
+    ]
   }
 }

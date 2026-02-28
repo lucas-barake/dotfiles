@@ -267,3 +267,96 @@ Format:
      ```
    - Why it matters: when the implementer would need this and what it tells them
 ```
+
+### Step 9: Offer Plan Review
+
+After writing the plan, ask the user whether they want to run a review pass. Not every plan warrants one. A small additive feature with no library interactions and straightforward logic may not benefit from the overhead. A plan that touches complex library APIs, concurrent systems, or subtle integration points almost certainly will.
+
+Present it as a choice. If the user declines, stop. The plan is final.
+
+If the user accepts, proceed:
+
+**Select relevant reviewers.** Analyze the plan and select which review agents to spawn. Not every plan needs all reviewers.
+
+Available reviewers and when to include them:
+
+1. **Correctness & Logic** (`reviewer-logic`) — Are the implementation steps logically sound? Are there data flow errors, incorrect transformations, missing steps, or dependency ordering issues in the checklist? Will the described logic actually produce correct results?
+   **Always include.**
+
+2. **Completeness & Integration** (`reviewer-behavioral`) — Does the plan account for all files that need modification? Will the planned changes break existing callers, consumers, or public interfaces? Are there downstream impacts not addressed? Are there missing imports, exports, or wiring steps?
+   **Always include.**
+
+3. **Error Handling & Edge Cases** (`reviewer-data-integrity`) — Does the plan account for failure modes, error paths, and data consistency? Are there missing validations, unhandled errors, or partial failure states that the implementer would silently ship?
+   **Include when:** the plan involves data persistence, I/O, type conversions, external services, or any code path that can fail.
+
+4. **Security** (`reviewer-security`) — Are there security implications the plan doesn't address? Input validation gaps, auth considerations, injection vectors, or unsafe patterns in the planned approach?
+   **Include when:** the plan touches user input, authentication, database queries, file paths, redirects, or environment variables.
+
+5. **Performance & Concurrency** (`reviewer-concurrency`) — Will the planned approach scale? Are there potential race conditions, resource leaks, accidentally quadratic algorithms, missing cleanup, or TOCTOU bugs in the design?
+   **Include when:** the plan involves async operations, shared mutable state, workers/threads, subscriptions, event listeners, or resource lifecycle management.
+
+6. **Project Rules** (`reviewer-rules`) — Does the planned approach violate project conventions or CLAUDE.md rules? Are there missing migrations, config updates, or integration steps the plan omits?
+   **Include when:** project rules (CLAUDE.md) exist, or the plan touches dependencies, config files, migrations, or public interfaces consumed elsewhere.
+
+7. **Test Sufficiency** (`test-reviewer`) — Is the test plan thorough? Are there missing test cases, untested edge cases, or incorrect testing patterns? Do the recommended test utilities actually exist?
+   **Always include.**
+
+**Agent prompts.** Each agent receives:
+
+```
+You are reviewing an implementation plan, NOT a code diff. Your goal is to find errors, gaps,
+and incorrect assumptions that would cause the implementer to write wrong code or get stuck.
+
+Plan file: <absolute path to the plan file>
+
+Project rules:
+<CLAUDE.md contents if found, or "None">
+
+Instructions:
+1. Read the plan file thoroughly — the Implementation Checklist, Test Plan, and References sections
+   are the primary targets
+2. For claims about existing code (file paths, line numbers, function signatures, existing behavior),
+   read the actual source files to verify
+3. For API usage patterns and library references in the References section, verify against the actual
+   library source in ~/src/oss/ or node_modules/
+4. Check <domain-specific focus from the reviewer descriptions above>
+
+For each finding:
+- What the plan states or assumes (quote the relevant section)
+- What the actual code or library source shows (with file paths and line numbers)
+- Impact: what goes wrong for the implementer if this is not corrected
+- Specific correction: exactly how the plan should be updated
+
+Only report findings where the plan is demonstrably wrong, incomplete, or would lead to incorrect
+implementation. Do NOT report stylistic preferences, alternative approaches that are equally valid,
+or hypothetical concerns without evidence.
+```
+
+**Do NOT paste the plan contents into agent prompts.** Agents have full tool access. They will read the plan file and investigate the codebase themselves.
+
+Spawn all selected reviewers in a **single turn** (parallel).
+
+### Step 10: Validate and Revise the Plan
+
+After all reviewers return:
+
+**Deduplicate.** Check if any two findings point to the same underlying issue (same plan section, same root cause). Merge duplicates, keeping the richer description and better correction.
+
+**Validate.** For each finding, verify it yourself. You wrote the plan, so you already know what it says. Focus on verifying the reviewer's counter-evidence:
+
+1. Read the source code the finding references. Does it actually show what the reviewer claims?
+2. Is the finding factually correct?
+3. Does it point to a real problem the implementer would hit, or is it a false alarm?
+4. For claims about library behavior: if the finding is uncertain but plausible, spawn a `deep-dive` agent against the library source (clone to `~/src/oss/` if needed) with the specific behavioral question. Spawn all verification deep-dives in a single turn
+
+Drop findings that are incorrect, that point to valid alternative approaches rather than actual errors, or where the plan already handles the concern in a different section.
+
+**Revise.** Update the plan document to address every valid finding:
+
+- Fix incorrect API signatures, patterns, or code references
+- Add missing implementation steps to the checklist
+- Add missing error handling, edge case coverage, or validation steps
+- Update the test plan with missing test cases or corrected testing patterns
+- Fix inaccurate references or add missing ones
+
+Do NOT append a "review findings" section. Integrate corrections directly into the relevant plan sections so the final document reads as a single coherent plan with no known gaps. The implementer should never see seams between the original plan and the revisions.
