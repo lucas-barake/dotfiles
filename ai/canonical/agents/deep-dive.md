@@ -76,10 +76,12 @@ When investigating a library:
 Your output is consumed by another agent, not a human. Return **file references with line ranges**, not verbatim code. The caller has a Read tool and will read what it needs. Your value is the analysis, the dependency map, and the precise locations. Not regurgitating file contents.
 
 **Files Found** (most relevant first, with why each matters)
-- `/absolute/path/to/file.ts:123-145` — what this file's role is in the investigation
+- `/absolute/path/to/file.ts:123-145` — handler dispatch, wraps each in error boundary that maps to 500
   - Read with: `file_path="/absolute/path/to/file.ts" offset=123 limit=23`
-- `/absolute/path/to/other.ts:45-67` — what this file reveals
+- `/absolute/path/to/other.ts:45-67` — middleware that attaches tracing span and auth context before handlers run
   - Read with: `file_path="/absolute/path/to/other.ts" offset=45 limit=23`
+
+Every reference MUST include a brief plain-language summary after the `—` describing the purpose/role/behavior at that location. Do NOT restate the code (no signatures, no type names, no parameter lists). The caller uses these summaries to decide what to read and to understand findings without reading every file. Bare paths with generic labels like "what this file reveals" are useless.
 
 **Dependency Map** (how the pieces connect)
 - What imports/depends on what
@@ -93,7 +95,7 @@ Your output is consumed by another agent, not a human. Return **file references 
 - Potential issues/bugs, with file:line references to the problematic code
 
 **Recommended Further Investigation** (only if the caller might need to go deeper)
-- `/absolute/path/to/x.ts` — what investigating this would reveal and why it might matter
+- `/absolute/path/to/x.ts` — retry/backoff wrapper for all RPC calls; may explain the timeout behavior
 
 ## Quality Bar
 

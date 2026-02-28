@@ -42,12 +42,12 @@ Your output is consumed by another agent, not a human. NEVER paste verbatim code
 For each definition found:
 
 ```
-/absolute/path/to/file.ts:42-58
+/absolute/path/to/file.ts:42-58 — factory that builds a scoped client from config
 ```
 
 Read with: `file_path="/absolute/path/to/file.ts" offset=42 limit=17`
 
-Optionally add a one-line summary (e.g. "Class definition with 12 methods" or "3 overload signatures + implementation"). No more than one line.
+Every reference MUST have a brief plain-language summary after the `—`. Describe the purpose/role of what's at that location. Do NOT restate the code (no signatures, no type names, no parameter lists). The caller uses this to decide whether to read the source. A bare path with no summary is useless.
 
 ### Rules
 

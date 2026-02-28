@@ -6,5 +6,6 @@ function mic-reset
     end
     sleep 1
     SwitchAudioSource -t input -s "BlackHole 2ch"
+    osascript -e 'set volume input volume 100'
     echo "Done. Default input: $(SwitchAudioSource -t input -c)"
 end

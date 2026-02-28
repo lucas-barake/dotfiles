@@ -25,7 +25,7 @@ return {
     keys = {
       { "<leader>ff", function() require("fzf-lua").files() end, desc = "Find files" },
       { "<leader>fg", function() require("fzf-lua").live_grep() end, desc = "Grep" },
-      { "<leader>bf", function() require("fzf-lua").buffers() end, desc = "Find buffer" },
+      { "<Tab>", function() require("fzf-lua").buffers() end, desc = "Find buffer" },
       { "<leader>fr", function() require("fzf-lua").oldfiles() end, desc = "Recent files" },
       { "<leader>sg", function() require("fzf-lua").live_grep() end, desc = "Grep" },
       { "<leader>sw", function() require("fzf-lua").grep_cword() end, desc = "Grep word" },
