@@ -217,20 +217,27 @@ The implementer agent has no context beyond the plan document. If you don't incl
 - **Frontend tests**: assert that X is rendered when Y happens. Protect against UX regressions. Tests must reflect actual product use-cases, not implementation details
 - **When integration tests aren't feasible** (third-party APIs, external services): mock at the boundary and test the logic around it
 
-**Non-negotiable test quality:**
+**Non-negotiable test principles:**
 
-- No superfluous tests — don't test the same behavior twice with trivial variations
-- No testing implementation details — test behavior and outcomes
-- Every test must be actually useful: if it can't catch a real regression, don't write it
-- Cover realistic edge cases: empty inputs, null values, error paths that users can trigger
+- **Test against real code.** Tests run the actual production modules. No reconstructing component trees, service graphs, or pipelines in the test file. Import the real thing, provide its real dependencies, and assert on its real behavior
+- **Mock only at boundaries.** The only things that get mocked are services that interact with something you cannot run in a test: external HTTP APIs, third-party SaaS, hardware. Everything else uses the real implementation. If a library provides a test harness or in-memory implementation (e.g., test databases, fake clocks), use that instead of mocking
+- **Do not test the framework.** If a library or framework guarantees behavior X, do not write a test asserting X. Test YOUR code's behavior that depends on X. Example: don't test that Effect.catchTag catches a tagged error. Test that your service returns the right fallback when the error occurs
+- **No superfluous or redundant tests.** Each test must protect against a distinct regression. If two tests would fail for the same bug, keep only the more meaningful one. Trivial variations of the same scenario are noise
+- **Exhaustive coverage of YOUR logic.** Every branch, edge case, and error path in the code the plan introduces or modifies MUST have a test. Happy path alone is never sufficient. Cover: empty inputs, boundary values, error paths users can trigger, concurrent access (if applicable), and state transitions
+- **No testing implementation details.** Assert on observable behavior and outcomes, not on internal method calls, internal state, or execution order (unless order IS the behavior being tested)
 
-For each file being created/modified:
+**Exact test cases — NON-NEGOTIABLE:**
 
-- Whether a test file already exists
-- Which test cases need updating or creating
-- Expected behavior for each test case
-- Conceptual test code describing what to assert and how
+The plan must specify every test case. The implementer should not have to invent test cases. For each file being created or modified, list:
+
+- Test file path (whether it already exists or needs creating)
+- Each test case by name: `it("should <expected behavior> when <condition>")`
+- What the test does: setup, action, assertion (conceptual, not copy-paste code)
+- Which production module/function it exercises
+- What regression it protects against (why this test exists)
 - **Source references**: which library test patterns to follow, with paths to the relevant examples in `~/src/oss/`
+
+The implementer writes the test code. Your job is to decide exactly WHICH tests exist and WHAT each one asserts. Every decision about test coverage is made in the plan, not left to the implementer.
 
 ### 6. Verification
 

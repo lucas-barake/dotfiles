@@ -76,6 +76,15 @@ return {
 
       vim.lsp.enable("ts_ls", false)
 
+      vim.lsp.config("tsgo", {
+        root_dir = function(bufnr, on_dir)
+          local root = vim.fs.root(bufnr, { "pnpm-lock.yaml", "package-lock.json", "yarn.lock", "bun.lockb", "bun.lock" })
+            or vim.fs.root(bufnr, { ".git" })
+            or vim.fn.getcwd()
+          on_dir(root)
+        end,
+      })
+
       vim.lsp.config("vtsls", {
         cmd = { "vtsls", "--stdio" },
         filetypes = { "typescript", "typescriptreact", "javascript", "javascriptreact" },
@@ -95,7 +104,9 @@ return {
       })
 
       local saved = get_saved_ts_server()
-      if saved == "vtsls" then
+      local current_ts = saved == "vtsls" and "vtsls" or "tsgo"
+
+      if current_ts == "vtsls" then
         vim.lsp.enable("tsgo", false)
         vim.lsp.enable({ "lua_ls", "vtsls", "rust_analyzer", "jsonls", "yamlls" })
       else
@@ -104,16 +115,16 @@ return {
       end
 
       vim.api.nvim_create_user_command("TsSwitch", function()
-        local tsgo_active = #vim.lsp.get_clients({ name = "tsgo" }) > 0
-
-        if tsgo_active then
+        if current_ts == "tsgo" then
           vim.lsp.enable("tsgo", false)
           vim.lsp.enable("vtsls")
+          current_ts = "vtsls"
           save_ts_server("vtsls")
           vim.notify("Switched to vtsls (saved)")
         else
           vim.lsp.enable("vtsls", false)
           vim.lsp.enable("tsgo")
+          current_ts = "tsgo"
           save_ts_server("tsgo")
           vim.notify("Switched to tsgo (saved)")
         end

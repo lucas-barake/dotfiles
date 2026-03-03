@@ -204,7 +204,7 @@
           "type.builtin": { "color": "#f8ca73" },
           "variable.builtin": { "color": "#AC9CFF" },
 
-          "type": { "color": "#e0e0e0" },
+          "type": { "color": "#f8ca73" },
 
           "type.parameter": { "color": "#FF82C3" },
 
