@@ -2,7 +2,10 @@
   // ─────────────────────────────────────────────────────────────
   // File Scanning & Search
   // ─────────────────────────────────────────────────────────────
-  "helix_mode": true,
+  "telemetry": {
+    "diagnostics": false,
+    "metrics": false,
+  },
   "file_scan_exclusions": [
     "**/.git",
     "**/.svn",
@@ -40,13 +43,17 @@
   // ─────────────────────────────────────────────────────────────
   // Theme & Appearance
   // ─────────────────────────────────────────────────────────────
-  "vim_mode": false,
+  "vim_mode": true,
   "theme": {
     "mode": "system",
     "light": "One Light",
     "dark": "Dim Night",
   },
-  "icon_theme": "Charmed Icons+",
+  "icon_theme": {
+    "mode": "system",
+    "light": "Charmed Icons+",
+    "dark": "Charmed Icons+",
+  },
   "cursor_shape": "bar",
   "experimental.theme_overrides": {
     "players": [
@@ -60,8 +67,8 @@
   // ─────────────────────────────────────────────────────────────
   // Fonts
   // ─────────────────────────────────────────────────────────────
-  "ui_font_family": "Inter",
-  "ui_font_size": 15,
+  "ui_font_family": "Monaspace Neon Var",
+  "ui_font_size": 16,
   "buffer_font_family": "Monaspace Neon Var",
   "buffer_font_size": 18,
   "buffer_font_weight": 500.0,
@@ -93,11 +100,11 @@
   // ─────────────────────────────────────────────────────────────
   // Editor Behavior
   // ─────────────────────────────────────────────────────────────
+  "semantic_tokens": "combined",
   "base_keymap": "VSCode",
   "soft_wrap": "editor_width",
   "show_whitespaces": "trailing",
   "format_on_save": "on",
-  "formatter": "prettier",
   "vertical_scroll_margin": 5,
   "hover_popover_delay": 150,
 
@@ -154,7 +161,7 @@
   // ─────────────────────────────────────────────────────────────
   "terminal": {
     "button": false,
-    "font_size": 15,
+    "font_size": 18,
     "shell": { "program": "/opt/homebrew/bin/fish" },
   },
 
@@ -163,18 +170,18 @@
   // ─────────────────────────────────────────────────────────────
   "languages": {
     "TypeScript": {
-      "language_servers": ["tsgo", "!vtsls", "!typescript-language-server"],
+      "language_servers": ["tsgo", "vtsls", "oxc", "!typescript-language-server"],
       "show_edit_predictions": true,
       "code_actions_on_format": { "source.fixAll.eslint": true },
       "colorize_brackets": true,
     },
     "TSX": {
-      "language_servers": ["tsgo", "!vtsls", "!typescript-language-server"],
+      "language_servers": ["tsgo", "vtsls", "oxc", "!typescript-language-server"],
       "code_actions_on_format": { "source.fixAll.eslint": true },
       "colorize_brackets": true,
     },
     "JavaScript": {
-      "language_servers": ["tsgo", "!vtsls", "!typescript-language-server"],
+      "language_servers": ["tsgo", "vtsls", "oxc", "!typescript-language-server"],
       "code_actions_on_format": { "source.fixAll.eslint": true },
       "colorize_brackets": true,
     },
@@ -241,6 +248,30 @@
         },
       },
     },
+  },
+
+  "global_lsp_settings": {
+    "semantic_token_rules": [
+      { "token_type": "variable", "style": ["variable"] },
+      { "token_type": "parameter", "style": ["variable.parameter"] },
+      { "token_type": "property", "style": ["property"] },
+      { "token_type": "namespace", "style": ["variable.namespace"] },
+      { "token_type": "function", "style": ["function"] },
+      { "token_type": "method", "style": ["function.method"] },
+      { "token_type": "type", "style": ["type.class"] },
+      { "token_type": "class", "style": ["type.class"] },
+      { "token_type": "interface", "foreground_color": "#f8ca73" },
+      { "token_type": "struct", "foreground_color": "#f8ca73" },
+      { "token_type": "enum", "style": ["enum"] },
+      { "token_type": "enumMember", "foreground_color": "#f8ca73" },
+      { "token_type": "typeParameter", "style": ["type.parameter"] },
+      { "token_type": "macro", "style": ["keyword"] },
+      { "token_type": "keyword", "style": ["keyword"] },
+      { "token_type": "comment", "style": ["comment"] },
+      { "token_type": "string", "style": ["string"] },
+      { "token_type": "number", "style": ["number"] },
+      { "token_type": "operator", "style": ["operator"] }
+    ]
   },
 
   // ─────────────────────────────────────────────────────────────

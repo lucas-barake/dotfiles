@@ -17,6 +17,13 @@ for _, pattern in ipairs(file_exclusions) do
   fd_extra[#fd_extra + 1] = "--exclude=" .. pattern
 end
 
+local nav_winopts = {
+  on_create = function()
+    vim.keymap.set("t", "j", "<Down>", { buffer = true })
+    vim.keymap.set("t", "k", "<Up>", { buffer = true })
+  end,
+}
+
 return {
   {
     "ibhagwan/fzf-lua",
@@ -62,55 +69,25 @@ return {
       buffers = {
         sort_lastused = true,
         ignore_current_buffer = true,
-        winopts = {
-          on_create = function()
-            vim.keymap.set("t", "j", "<Down>", { buffer = true })
-            vim.keymap.set("t", "k", "<Up>", { buffer = true })
-          end,
-        },
+        winopts = nav_winopts,
       },
-      oldfiles = {
-        winopts = {
-          on_create = function()
-            vim.keymap.set("t", "j", "<Down>", { buffer = true })
-            vim.keymap.set("t", "k", "<Up>", { buffer = true })
-          end,
-        },
-      },
+      oldfiles = { winopts = nav_winopts },
       git = {
-        commits = {
-          winopts = {
-            on_create = function()
-              vim.keymap.set("t", "j", "<Down>", { buffer = true })
-              vim.keymap.set("t", "k", "<Up>", { buffer = true })
-            end,
-          },
-        },
-        bcommits = {
-          winopts = {
-            on_create = function()
-              vim.keymap.set("t", "j", "<Down>", { buffer = true })
-              vim.keymap.set("t", "k", "<Up>", { buffer = true })
-            end,
-          },
-        },
-        status = {
-          winopts = {
-            on_create = function()
-              vim.keymap.set("t", "j", "<Down>", { buffer = true })
-              vim.keymap.set("t", "k", "<Up>", { buffer = true })
-            end,
-          },
-        },
-        branches = {
-          winopts = {
-            on_create = function()
-              vim.keymap.set("t", "j", "<Down>", { buffer = true })
-              vim.keymap.set("t", "k", "<Up>", { buffer = true })
-            end,
-          },
-        },
+        commits = { winopts = nav_winopts },
+        bcommits = { winopts = nav_winopts },
+        status = { winopts = nav_winopts },
+        branches = { winopts = nav_winopts },
       },
+      lsp = {
+        definitions = { winopts = nav_winopts },
+        references = { winopts = nav_winopts },
+        implementations = { winopts = nav_winopts },
+        typedefs = { winopts = nav_winopts },
+        code_actions = { winopts = nav_winopts },
+        document_symbols = { winopts = nav_winopts },
+        diagnostics = { winopts = nav_winopts },
+      },
+      diagnostics = { winopts = nav_winopts },
       winopts = {
         height = 0.95,
         width = 0.95,
