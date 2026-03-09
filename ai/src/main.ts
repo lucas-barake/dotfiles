@@ -6,7 +6,7 @@ import * as Console from "effect/Console"
 import * as Effect from "effect/Effect"
 import * as FileSystem from "effect/FileSystem"
 import * as Path from "effect/Path"
-import { parseFrontmatter, transformAgent, transformSkill, type Target } from "./transform.ts"
+import { agentToToml, parseFrontmatter, transformAgent, transformSkill, type Target } from "./transform.ts"
 
 const configFiles: Partial<Record<Target, { source: string; target: string; merge: boolean }>> = {
   opencode: { source: "opencode.json", target: "opencode.json", merge: false },
@@ -15,12 +15,14 @@ const configFiles: Partial<Record<Target, { source: string; target: string; merg
 
 const targetPaths: Record<Target, string> = {
   claude: `${process.env.HOME}/.claude`,
-  opencode: `${process.env.HOME}/.config/opencode`
+  opencode: `${process.env.HOME}/.config/opencode`,
+  codex: `${process.env.HOME}/.codex`
 }
 
 const instructionsFileName: Record<Target, string> = {
   claude: "CLAUDE.md",
-  opencode: "AGENTS.md"
+  opencode: "AGENTS.md",
+  codex: "AGENTS.md"
 }
 
 const readModelMap = (home: string) =>
@@ -92,6 +94,35 @@ export const deepMerge = (target: Record<string, any>, source: Record<string, an
   return changed
 }
 
+const CODEX_AGENTS_START = "# --- dotai agents start ---"
+const CODEX_AGENTS_END = "# --- dotai agents end ---"
+
+const escapeTomlStr = (s: string) => JSON.stringify(s)
+
+const mergeCodexConfig = (targetDir: string, agents: Array<{ name: string; description: string }>) =>
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const p = yield* Path.Path
+    const configPath = p.join(targetDir, "config.toml")
+
+    const existing = (yield* fs.exists(configPath)) ? yield* fs.readFileString(configPath) : ""
+
+    const startIdx = existing.indexOf(CODEX_AGENTS_START)
+    const endIdx = existing.indexOf(CODEX_AGENTS_END)
+    const before = startIdx >= 0 ? existing.slice(0, startIdx) : existing.trimEnd() + "\n\n"
+    const after = endIdx >= 0 ? existing.slice(endIdx + CODEX_AGENTS_END.length + 1) : ""
+
+    const agentLines = agents
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((a) =>
+        `[agents.${a.name}]\ndescription = ${escapeTomlStr(a.description)}\nconfig_file = "agents/${a.name}.toml"`
+      )
+      .join("\n\n")
+
+    const section = `${CODEX_AGENTS_START}\n${agentLines}\n${CODEX_AGENTS_END}`
+    yield* fs.writeFileString(configPath, `${before}${section}${after.length ? after : "\n"}`)
+  })
+
 export const syncTarget = (sourceDir: string, targetDir: string, target: Target, modelMap?: Record<string, string>) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
@@ -105,17 +136,38 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     const instructions = extras ? `${base}\n${extras}` : base
     yield* fs.writeFileString(p.join(targetDir, instructionsFileName[target]), instructions)
 
-    yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
     const agentFiles = yield* fs.readDirectory(p.join(sourceDir, "agents"))
-    yield* Effect.forEach(
-      agentFiles.filter((f) => f.endsWith(".md")),
-      (file) =>
-        Effect.gen(function*() {
-          const content = yield* fs.readFileString(p.join(sourceDir, "agents", file))
-          yield* fs.writeFileString(p.join(targetDir, "agents", file), transformAgent(content, target, modelMap))
-        }),
-      { concurrency: "unbounded" }
-    )
+    if (target === "codex") {
+      yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
+      const agentEntries: Array<{ name: string; description: string }> = []
+      yield* Effect.forEach(
+        agentFiles.filter((f) => f.endsWith(".md")),
+        (file) =>
+          Effect.gen(function*() {
+            const content = yield* fs.readFileString(p.join(sourceDir, "agents", file))
+            const result = transformAgent(content, target, modelMap) as { description: string; developerInstructions: string }
+            const name = file.replace(/\.md$/, "")
+            agentEntries.push({ name, description: result.description })
+            yield* fs.writeFileString(
+              p.join(targetDir, "agents", `${name}.toml`),
+              agentToToml(name, result.developerInstructions)
+            )
+          }),
+        { concurrency: "unbounded" }
+      )
+      yield* mergeCodexConfig(targetDir, agentEntries)
+    } else {
+      yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
+      yield* Effect.forEach(
+        agentFiles.filter((f) => f.endsWith(".md")),
+        (file) =>
+          Effect.gen(function*() {
+            const content = yield* fs.readFileString(p.join(sourceDir, "agents", file))
+            yield* fs.writeFileString(p.join(targetDir, "agents", file), transformAgent(content, target, modelMap) as string)
+          }),
+        { concurrency: "unbounded" }
+      )
+    }
 
     const skillDirs = yield* fs.readDirectory(p.join(sourceDir, "skills"))
     yield* Effect.forEach(
@@ -155,9 +207,9 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
 const sync = Command.make(
   "sync",
   {
-    target: Flag.choice("target", ["claude", "opencode", "all"]).pipe(
+    target: Flag.choice("target", ["claude", "opencode", "codex", "all"]).pipe(
       Flag.withDefault("all" as const),
-      Flag.withDescription("Target to sync: claude, opencode, or all")
+      Flag.withDescription("Target to sync: claude, opencode, codex, or all")
     ),
     home: Flag.directory("home").pipe(
       Flag.withDefault(dirname(dirname(realpathSync(process.execPath)))),
@@ -167,7 +219,7 @@ const sync = Command.make(
   ({ target, home }) =>
     Effect.gen(function*() {
       const modelMap = yield* readModelMap(home)
-      const targets: ReadonlyArray<Target> = target === "all" ? ["claude", "opencode"] : [target]
+      const targets: ReadonlyArray<Target> = target === "all" ? ["claude", "opencode", "codex"] : [target]
       for (const t of targets) {
         const skipped = yield* syncTarget(`${home}/canonical`, targetPaths[t], t, modelMap)
         yield* Console.log(skipped ? `Skipped ${t} (directory not found)` : `Synced ${t}`)

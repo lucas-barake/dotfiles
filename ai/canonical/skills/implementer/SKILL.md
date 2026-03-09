@@ -53,6 +53,28 @@ Use the references section if you hit unexpected behavior.
 
 Write any remaining tests described in the test plan that weren't already covered by TDD items. Run all tests to confirm they pass.
 
-### Step 6: Verify
+### Step 6: Simplification pass
+
+After all implementation and tests are complete, spawn two agents **in parallel** with the full list of files you created or modified during implementation:
+
+1. **`code-simplifier`** — finds within-file simplifications: redundant variables, verbose control flow, unnecessary async/types, dead indirection, nested Pipeable calls, overengineered patterns, overly defensive code
+2. **`reuse-reviewer`** — finds cross-file issues: reimplemented utilities, duplicate helpers across files, pass-through wrappers, dead private helpers, redundant normalization layers
+
+**Each agent prompt must include:**
+
+- The complete list of files created or modified (full paths)
+- A note that these files were just implemented from a plan
+
+**When results come back**, validate each suggestion yourself:
+
+1. Read the code each agent flagged
+2. For each suggestion, verify that the change genuinely preserves behavior. Check callers, tests, and contracts
+3. Apply changes that are clearly correct and beneficial
+4. Skip suggestions that would remove intentional guarantees, reduce clarity, or break contracts
+5. If you apply any changes, re-run linter, typechecker, and tests to confirm nothing broke
+
+Do not blindly apply all suggestions. Both agents maximize recall. Your job is precision.
+
+### Step 7: Verify
 
 Follow the verification section to confirm the implementation works end-to-end.
