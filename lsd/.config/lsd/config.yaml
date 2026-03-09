@@ -1,0 +1,18 @@
+classic: false
+blocks:
+  - size
+  - date
+  - name
+color:
+  when: auto
+date: relative
+icons:
+  when: auto
+  theme: fancy
+  separator: " "
+layout: grid
+sorting:
+  column: time
+  reverse: false
+  dir-grouping: first
+size: default
