@@ -1,13 +1,14 @@
 # dotai
 
-Centralized AI tool configuration. Define agents, skills, and instructions once in `canonical/` — sync to Claude Code (`~/.claude/`) and OpenCode (`~/.config/opencode/`).
+Centralized AI tool configuration. Define agents, skills, and instructions once in `canonical/` — sync to Claude Code (`~/.claude/`), OpenCode (`~/.config/opencode/`), and Codex (`~/.codex/`).
 
 ## Project Structure
 
 ```
 canonical/
-  instructions.md              # Source of truth for ~/.claude/CLAUDE.md and ~/.config/opencode/AGENTS.md
+  instructions.md              # Source of truth for CLAUDE.md / AGENTS.md across all targets
   instructions.opencode.md     # OpenCode-only additions (appended to instructions.md during sync)
+  instructions.codex.md        # Codex-only additions (appended to instructions.md during sync)
   opencode.json                # OpenCode config file (copied verbatim)
   agents/                      # Agent definitions (frontmatter + markdown body)
     fast-lookup.md
@@ -32,6 +33,7 @@ All agents and skills use Claude Code frontmatter as the superset format. The sy
 
 - **Claude Code**: keeps all fields verbatim
 - **OpenCode**: drops `name`/`model` from agents, adds `mode: subagent`, converts `tools` to a deny-object. Drops `model`/`context` from skills
+- **Codex**: generates per-agent TOML files with `developer_instructions` (body text) and merges `[agents.<name>]` entries into `~/.codex/config.toml`. Drops `model`/`context` from skills
 
 Both targets use `.context/plans` for plan files (no template expansion needed).
 
@@ -40,9 +42,10 @@ Both targets use `.context/plans` for plan files (no template expansion needed).
 Edit files in `canonical/`, then sync:
 
 ```bash
-bun run sync                    # syncs to both targets
+bun run sync                    # syncs to all targets
 bun run sync --target claude    # Claude Code only
 bun run sync --target opencode  # OpenCode only
+bun run sync --target codex     # Codex only
 ```
 
 For development (without building the binary):

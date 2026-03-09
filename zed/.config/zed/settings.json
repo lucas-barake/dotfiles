@@ -26,7 +26,6 @@
     "**/.cache",
     "**/.parcel-cache",
     "**/.venv",
-    "**/.env",
     "**/venv",
     "**/__pycache__",
     "**/.pytest_cache",
@@ -170,18 +169,33 @@
   // ─────────────────────────────────────────────────────────────
   "languages": {
     "TypeScript": {
-      "language_servers": ["tsgo", "vtsls", "oxc", "!typescript-language-server"],
+      "language_servers": [
+        "tsgo",
+        "!vtsls",
+        "oxc",
+        "!typescript-language-server",
+      ],
       "show_edit_predictions": true,
       "code_actions_on_format": { "source.fixAll.eslint": true },
       "colorize_brackets": true,
     },
     "TSX": {
-      "language_servers": ["tsgo", "vtsls", "oxc", "!typescript-language-server"],
+      "language_servers": [
+        "tsgo",
+        "!vtsls",
+        "oxc",
+        "!typescript-language-server",
+      ],
       "code_actions_on_format": { "source.fixAll.eslint": true },
       "colorize_brackets": true,
     },
     "JavaScript": {
-      "language_servers": ["tsgo", "vtsls", "oxc", "!typescript-language-server"],
+      "language_servers": [
+        "tsgo",
+        "!vtsls",
+        "oxc",
+        "!typescript-language-server",
+      ],
       "code_actions_on_format": { "source.fixAll.eslint": true },
       "colorize_brackets": true,
     },
@@ -270,8 +284,8 @@
       { "token_type": "comment", "style": ["comment"] },
       { "token_type": "string", "style": ["string"] },
       { "token_type": "number", "style": ["number"] },
-      { "token_type": "operator", "style": ["operator"] }
-    ]
+      { "token_type": "operator", "style": ["operator"] },
+    ],
   },
 
   // ─────────────────────────────────────────────────────────────

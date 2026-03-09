@@ -1,4 +1,4 @@
-export type Target = "claude" | "opencode"
+export type Target = "claude" | "opencode" | "codex"
 
 export const parseFrontmatter = (content: string) => {
   const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
@@ -49,6 +49,11 @@ export const transformAgent = (content: string, target: Target, modelMap?: Recor
     return `${serializeFrontmatter(fields)}\n${body}`
   }
 
+  if (target === "codex") {
+    const description = getField(fields, "description") ?? ""
+    return { description, developerInstructions: body.trim() }
+  }
+
   const description = getField(fields, "description") ?? ""
   const toolsStr = getField(fields, "tools")
 
@@ -78,3 +83,9 @@ export const transformSkill = (content: string, target: Target, modelMap?: Recor
   const keptFields = fields.filter(([key]) => key !== "model" && key !== "context")
   return `${serializeFrontmatter(keptFields)}\n${body}`
 }
+
+export const escapeTomlString = (s: string) =>
+  s.replace(/\\/g, "\\\\").replace(/"""/g, '"\\""')
+
+export const agentToToml = (name: string, developerInstructions: string) =>
+  `developer_instructions = """\n${escapeTomlString(developerInstructions)}\n"""\n`
