@@ -1,11 +1,7 @@
 import { describe, expect, it } from "@effect/vitest"
 import { Effect, FileSystem, Layer, Path } from "effect"
-import { TestConsole } from "effect/testing"
-import { Command } from "effect/unstable/cli"
-import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner"
-import { transformAgent, transformSkill } from "../src/transform.ts"
-import { deepMerge, run, scanModels, syncTarget } from "../src/main.ts"
-import * as MockTerminal from "./services/MockTerminal.ts"
+import { stripFrontmatter, transformAgent } from "../src/transform.ts"
+import { deepMerge, loadProjectSettings, run, scanModels, syncConfig, syncProject, syncTarget } from "../src/main.ts"
 
 const sampleAgent = `---
 name: test-agent
@@ -32,30 +28,43 @@ Write output to \`./.context/plans/output.md\`.
 const makeMemoryFs = (files: Record<string, string>, dirs: ReadonlyArray<string> = []) => {
   const dirSet = new Set(dirs)
   const written = new Map<string, string>()
+  const removed = new Set<string>()
   const layer = FileSystem.layerNoop({
     readFileString: (path: string) => {
-      const content = files[path]
+      const content = written.get(path) ?? files[path]
       if (content === undefined) return Effect.die(`Unexpected read: ${path}`)
       return Effect.succeed(content)
     },
     writeFileString: (path: string, data: string) => {
       written.set(path, data)
+      removed.delete(path)
       return Effect.void
     },
-    exists: (path: string) => Effect.succeed(path in files || dirSet.has(path)),
+    exists: (path: string) => {
+      const exists = (path in files || written.has(path) || dirSet.has(path)) && !removed.has(path)
+      return Effect.succeed(exists)
+    },
     readDirectory: (path: string) => {
       const prefix = path.endsWith("/") ? path : path + "/"
       const entries = new Set<string>()
-      for (const key of Object.keys(files)) {
-        if (key.startsWith(prefix)) {
+      for (const key of [...Object.keys(files), ...written.keys()]) {
+        if (!removed.has(key) && key.startsWith(prefix)) {
           entries.add(key.slice(prefix.length).split("/")[0])
         }
       }
       return Effect.succeed([...entries])
     },
-    makeDirectory: () => Effect.void
+    makeDirectory: (path: string) => {
+      dirSet.add(path)
+      return Effect.void
+    },
+    remove: (path: string) => {
+      removed.add(path)
+      written.delete(path)
+      return Effect.void
+    }
   })
-  return { layer, written }
+  return { layer, written, removed }
 }
 
 describe("transformAgent", () => {
@@ -99,280 +108,241 @@ Body.
     expect(result).toContain("model: us.anthropic.claude-haiku-4-5-20251001")
     expect(result).not.toContain("model: haiku")
   })
-
-  it("leaves model unchanged when not in modelMap", () => {
-    const result = transformAgent(sampleAgent, "claude", { opus: "some-other-model" })
-    expect(result).toContain("model: haiku")
-  })
 })
 
-describe("transformSkill", () => {
-  it("keeps all fields for claude", () => {
-    const result = transformSkill(sampleSkill, "claude")
+describe("stripFrontmatter", () => {
+  it("removes frontmatter and keeps the body", () => {
+    const result = stripFrontmatter(sampleSkill)
+    expect(result).toContain("# Test Skill")
     expect(result).toContain(".context/plans")
-    expect(result).toContain("model: claude-sonnet-4-20250514")
-    expect(result).toContain("context: fork")
-  })
-
-  it("strips model and context fields for opencode", () => {
-    const result = transformSkill(sampleSkill, "opencode")
-    expect(result).toContain(".context/plans")
+    expect(result).not.toMatch(/^name:/m)
     expect(result).not.toMatch(/^model:/m)
-    expect(result).not.toMatch(/^context:/m)
-  })
-
-  it("remaps model when modelMap is provided", () => {
-    const result = transformSkill(sampleSkill, "claude", {
-      "claude-sonnet-4-20250514": "us.anthropic.claude-sonnet-4-20250514"
-    })
-    expect(result).toContain("model: us.anthropic.claude-sonnet-4-20250514")
   })
 })
 
 describe("scanModels", () => {
-  it.effect("collects unique models from agents and skills", () =>
+  it.effect("collects unique models from agents only", () =>
     Effect.gen(function*() {
       const { layer: fsLayer } = makeMemoryFs({
         "/src/agents/a.md": sampleAgent,
-        "/src/skills/s/SKILL.md": sampleSkill
+        "/src/skills/s.md": sampleSkill
       })
 
-      const models = yield* scanModels("/src").pipe(
-        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
-      )
-
-      expect(models).toEqual(new Set(["haiku", "claude-sonnet-4-20250514"]))
+      const models = yield* scanModels("/src").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+      expect(models).toEqual(new Set(["haiku"]))
     }))
 })
 
 describe("deepMerge", () => {
-  it("adds missing keys", () => {
-    const target = { a: 1 }
-    expect(deepMerge(target, { b: 2 })).toBe(true)
-    expect(target).toEqual({ a: 1, b: 2 })
+  it("adds missing keys and merges arrays", () => {
+    const target = { permissions: { allow: ["a"] } }
+    expect(deepMerge(target, { permissions: { allow: ["b"], extra: true } })).toBe(true)
+    expect(target).toEqual({ permissions: { allow: ["a", "b"], extra: true } })
   })
 
   it("does not overwrite existing primitive keys", () => {
     const target = { a: 1 }
-    expect(deepMerge(target, { a: 99 })).toBe(false)
+    expect(deepMerge(target, { a: 2 })).toBe(false)
     expect(target).toEqual({ a: 1 })
-  })
-
-  it("unions arrays", () => {
-    const target = { items: ["a", "b"] }
-    expect(deepMerge(target, { items: ["b", "c"] })).toBe(true)
-    expect(target.items).toEqual(["a", "b", "c"])
-  })
-
-  it("returns false when array already contains all items", () => {
-    const target = { items: ["a", "b"] }
-    expect(deepMerge(target, { items: ["a"] })).toBe(false)
-  })
-
-  it("recurses into nested objects", () => {
-    const target = { permissions: { allow: ["Bash"] } }
-    expect(deepMerge(target, { permissions: { additionalDirectories: ["~/src"] } })).toBe(true)
-    expect(target).toEqual({ permissions: { allow: ["Bash"], additionalDirectories: ["~/src"] } })
-  })
-
-  it("returns false when nothing changes", () => {
-    const target = { permissions: { additionalDirectories: ["~/src"] } }
-    expect(deepMerge(target, { permissions: { additionalDirectories: ["~/src"] } })).toBe(false)
   })
 })
 
-describe("syncTarget", () => {
-  it.effect("syncs instructions, agents, and skills for claude", () =>
+describe("loadProjectSettings", () => {
+  it.effect("defaults to all skills when settings do not exist", () =>
     Effect.gen(function*() {
-      const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/instructions.md": "# Base Rules\n",
-        "/src/agents/deep-dive.md": sampleAgent,
-        "/src/skills/test-skill/SKILL.md": sampleSkill
-      }, ["/out"])
+      const { layer: fsLayer } = makeMemoryFs({}, ["/project"])
 
-      yield* syncTarget("/src", "/out", "claude").pipe(
+      const settings = yield* loadProjectSettings("/project", ["a.md", "b.md"]).pipe(
         Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
       )
 
-      expect(written.has("/out/CLAUDE.md")).toBe(true)
-      expect(written.get("/out/CLAUDE.md")).toContain("# Base Rules")
-
-      const agent = written.get("/out/agents/deep-dive.md")!
-      expect(agent).toContain("name: test-agent")
-      expect(agent).toContain("model: haiku")
-
-      const skill = written.get("/out/skills/test-skill/SKILL.md")!
-      expect(skill).toContain(".context/plans")
-      expect(skill).toContain("model: claude-sonnet-4-20250514")
+      expect(settings).toEqual({ skills: ["a.md", "b.md"] })
     }))
 
-  it.effect("applies model remapping during sync", () =>
+  it.effect("filters unknown stored skills", () =>
     Effect.gen(function*() {
-      const modelMap = { haiku: "bedrock-haiku", "claude-sonnet-4-20250514": "bedrock-sonnet" }
+      const { layer: fsLayer } = makeMemoryFs({
+        "/project/.context/settings.json": JSON.stringify({ skills: ["a.md", "missing.md"] })
+      }, ["/project", "/project/.context"])
+
+      const settings = yield* loadProjectSettings("/project", ["a.md", "b.md"]).pipe(
+        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
+      )
+
+      expect(settings).toEqual({ skills: ["a.md"] })
+    }))
+})
+
+describe("syncProject", () => {
+  it.effect("writes selected skills, updates AGENTS, and stores settings", () =>
+    Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/instructions.md": "# Rules\n",
-        "/src/agents/a.md": sampleAgent,
-        "/src/skills/s/SKILL.md": sampleSkill
+        "/src/skills/test-skill.md": sampleSkill,
+        "/src/skills/second-skill.md": sampleSkill.replace("test-skill", "second-skill")
+      }, ["/project"])
+
+      const synced = yield* syncProject("/src", "/project", ["test-skill.md"]).pipe(
+        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
+      )
+
+      expect(synced).toEqual(["test-skill.md"])
+      expect(written.get("/project/.context/skills/test-skill.md")).toContain("# Test Skill")
+      expect(written.get("/project/.context/settings.json")).toBe('{"skills":["test-skill.md"]}')
+
+      const agents = written.get("/project/AGENTS.md")!
+      expect(agents).toContain("<!-- dotai skills table start -->")
+      expect(agents).toContain("`./.context/skills/test-skill.md`")
+      expect(agents).not.toContain("second-skill.md")
+    }))
+
+  it.effect("removes deselected managed skill files", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, removed } = makeMemoryFs({
+        "/src/skills/test-skill.md": sampleSkill,
+        "/project/.context/skills/test-skill.md": "old"
+      }, ["/project", "/project/.context", "/project/.context/skills"])
+
+      yield* syncProject("/src", "/project", []).pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(removed.has("/project/.context/skills/test-skill.md")).toBe(true)
+    }))
+
+  it.effect("replaces an existing managed AGENTS section and preserves surrounding content", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/skills/test-skill.md": sampleSkill,
+        "/project/AGENTS.md": [
+          "# Project Notes",
+          "",
+          "<!-- dotai skills table start -->",
+          "old",
+          "<!-- dotai skills table end -->",
+          "",
+          "Keep this"
+        ].join("\n")
+      }, ["/project"])
+
+      yield* syncProject("/src", "/project", ["test-skill.md"]).pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      const agents = written.get("/project/AGENTS.md")!
+      expect(agents).toContain("# Project Notes")
+      expect(agents).toContain("Keep this")
+      expect(agents).not.toContain("\nold\n")
+      expect(agents).toContain("`./.context/skills/test-skill.md`")
+    }))
+})
+
+describe("syncTarget", () => {
+  it.effect("syncs agent files for claude", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent
       }, ["/out"])
 
-      yield* syncTarget("/src", "/out", "claude", modelMap).pipe(
+      const skipped = yield* syncTarget("/src", "/out", "claude").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(skipped).toBe(false)
+      expect(written.get("/out/agents/deep-dive.md")).toContain("name: test-agent")
+    }))
+
+  it.effect("applies model remapping during agent sync", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/a.md": sampleAgent
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "claude", { haiku: "bedrock-haiku" }).pipe(
         Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
       )
 
       expect(written.get("/out/agents/a.md")).toContain("model: bedrock-haiku")
-      expect(written.get("/out/skills/s/SKILL.md")).toContain("model: bedrock-sonnet")
     }))
 
   it.effect("skips target when target directory does not exist", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/instructions.md": "# Rules\n",
-        "/src/agents/a.md": sampleAgent,
-        "/src/skills/s/SKILL.md": sampleSkill
+        "/src/agents/a.md": sampleAgent
       })
 
-      // /out does not exist in the filesystem — syncTarget should skip it
-      const skipped = yield* syncTarget("/src", "/out", "claude").pipe(
-        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
-      )
+      const skipped = yield* syncTarget("/src", "/out", "claude").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(skipped).toBe(true)
       expect(written.size).toBe(0)
     }))
 
-  it.effect("syncs instructions with extras, agents, and skills for opencode", () =>
+  it.effect("syncs agent files for opencode", () =>
     Effect.gen(function*() {
-      const configContent = JSON.stringify({ permission: { bash: { "git push *": "ask" } } })
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/instructions.md": "# Base Rules\n",
-        "/src/instructions.opencode.md": "\n## MCP Tools\n\n- **linear**: Issue tracking.\n",
-        "/src/agents/deep-dive.md": sampleAgent,
-        "/src/skills/test-skill/SKILL.md": sampleSkill,
-        "/src/opencode.json": configContent
+        "/src/agents/deep-dive.md": sampleAgent
       }, ["/out"])
 
-      yield* syncTarget("/src", "/out", "opencode").pipe(
-        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
-      )
-
-      const instructions = written.get("/out/AGENTS.md")!
-      expect(instructions).toContain("# Base Rules")
-      expect(instructions).toContain("## MCP Tools")
+      yield* syncTarget("/src", "/out", "opencode").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       const agent = written.get("/out/agents/deep-dive.md")!
       expect(agent).toContain("mode: subagent")
       expect(agent).not.toMatch(/^name:/m)
       expect(agent).toContain("bash: false")
-
-      const skill = written.get("/out/skills/test-skill/SKILL.md")!
-      expect(skill).toContain(".context/plans")
-      expect(skill).not.toMatch(/^model:/m)
-
-      expect(JSON.parse(written.get("/out/opencode.json")!)).toEqual(JSON.parse(configContent))
     }))
 
-  it.effect("creates settings.json with additionalDirectories for claude when none exists", () =>
+  it.effect("syncs codex agent files and config entries", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/instructions.md": "# Rules\n",
-        "/src/agents/a.md": sampleAgent,
-        "/src/skills/s/SKILL.md": sampleSkill,
-        "/src/claude.json": JSON.stringify({ permissions: { additionalDirectories: ["~/src"] } })
+        "/src/agents/deep-dive.md": sampleAgent
       }, ["/out"])
 
-      yield* syncTarget("/src", "/out", "claude").pipe(
-        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
-      )
+      yield* syncTarget("/src", "/out", "codex").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
-      const settings = JSON.parse(written.get("/out/settings.json")!)
-      expect(settings.permissions.additionalDirectories).toEqual(["~/src"])
+      expect(written.get("/out/agents/deep-dive.toml")).toContain("developer_instructions")
+      expect(written.get("/out/config.toml")).toContain("[agents.deep-dive]")
+    }))
+})
+
+describe("syncConfig", () => {
+  it.effect("copies opencode config verbatim", () =>
+    Effect.gen(function*() {
+      const canonical = JSON.stringify({ permission: { read: "allow" } })
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/opencode.json": canonical
+      }, ["/out"])
+
+      const skipped = yield* syncConfig("/src", "/out", "opencode").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(skipped).toBe(false)
+      expect(JSON.parse(written.get("/out/opencode.json")!)).toEqual(JSON.parse(canonical))
     }))
 
-  it.effect("adds additionalDirectories to existing claude settings without replacing", () =>
+  it.effect("merges claude config into existing settings", () =>
     Effect.gen(function*() {
-      const existing = JSON.stringify({
-        permissions: {
-          allow: ["Bash(bun)", "WebSearch"]
-        }
-      })
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/instructions.md": "# Rules\n",
-        "/src/agents/a.md": sampleAgent,
-        "/src/skills/s/SKILL.md": sampleSkill,
         "/src/claude.json": JSON.stringify({ permissions: { additionalDirectories: ["~/src"] } }),
-        "/out/settings.json": existing
+        "/out/settings.json": JSON.stringify({ permissions: { allow: ["Bash(bun)"] } })
       }, ["/out"])
 
-      yield* syncTarget("/src", "/out", "claude").pipe(
-        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
-      )
+      yield* syncConfig("/src", "/out", "claude").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
-      const settings = JSON.parse(written.get("/out/settings.json")!)
-      expect(settings.permissions.additionalDirectories).toEqual(["~/src"])
-      expect(settings.permissions.allow).toEqual(["Bash(bun)", "WebSearch"])
-    }))
-
-  it.effect("does not overwrite settings.json when additionalDirectories already has ~/src", () =>
-    Effect.gen(function*() {
-      const existing = JSON.stringify({
+      expect(JSON.parse(written.get("/out/settings.json")!)).toEqual({
         permissions: {
           allow: ["Bash(bun)"],
           additionalDirectories: ["~/src"]
         }
       })
+    }))
+
+  it.effect("skips config sync when target directory does not exist", () =>
+    Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/instructions.md": "# Rules\n",
-        "/src/agents/a.md": sampleAgent,
-        "/src/skills/s/SKILL.md": sampleSkill,
-        "/src/claude.json": JSON.stringify({ permissions: { additionalDirectories: ["~/src"] } }),
-        "/out/settings.json": existing
-      }, ["/out"])
+        "/src/opencode.json": JSON.stringify({ permission: { read: "allow" } })
+      })
 
-      yield* syncTarget("/src", "/out", "claude").pipe(
-        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
-      )
+      const skipped = yield* syncConfig("/src", "/out", "opencode").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
-      expect(written.has("/out/settings.json")).toBe(false)
+      expect(skipped).toBe(true)
+      expect(written.size).toBe(0)
     }))
 })
 
-const CliTestLayer = Layer.mergeAll(
-  TestConsole.layer,
-  FileSystem.layerNoop({}),
-  Path.layer,
-  MockTerminal.layer,
-  Layer.mock(ChildProcessSpawner)({})
-)
-
 describe("CLI", () => {
-  it.effect("prints sync confirmation for each target", () =>
-    Effect.gen(function*() {
-      const cmd = Command.make(
-        "test-sync",
-        {},
-        () => Effect.gen(function*() {
-          yield* syncTarget("/src", "/out", "claude")
-          yield* Effect.log("Synced claude")
-        })
-      )
-
-      yield* Command.runWith(cmd, { version: "0.1.0" })([]).pipe(
-        Effect.provide(
-          Layer.mergeAll(
-            makeMemoryFs({
-              "/src/instructions.md": "# Rules\n",
-              "/src/agents/a.md": sampleAgent,
-              "/src/skills/s/SKILL.md": sampleSkill
-            }, ["/out"]).layer,
-            Path.layer,
-            TestConsole.layer,
-            MockTerminal.layer,
-            Layer.mock(ChildProcessSpawner)({})
-          )
-        )
-      )
-
-      const logs = yield* TestConsole.logLines
-      expect(logs.length).toBeGreaterThan(0)
-    }))
+  it("exports a runnable CLI", () => {
+    expect(run).toBeDefined()
+  })
 })

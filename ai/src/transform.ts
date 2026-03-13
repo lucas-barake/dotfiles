@@ -72,16 +72,10 @@ export const transformAgent = (content: string, target: Target, modelMap?: Recor
   return `${serializeFrontmatter(entries)}\n${body}`
 }
 
-export const transformSkill = (content: string, target: Target, modelMap?: Record<string, string>) => {
-  const { fields: rawFields, body } = parseFrontmatter(content)
-  const fields = remapModelField(rawFields, modelMap)
-
-  if (target === "claude") {
-    return `${serializeFrontmatter(fields)}\n${body}`
-  }
-
-  const keptFields = fields.filter(([key]) => key !== "model" && key !== "context")
-  return `${serializeFrontmatter(keptFields)}\n${body}`
+export const stripFrontmatter = (content: string) => {
+  const { body } = parseFrontmatter(content)
+  const stripped = body.replace(/^\n/, "")
+  return stripped.endsWith("\n") ? stripped : `${stripped}\n`
 }
 
 export const escapeTomlString = (s: string) =>

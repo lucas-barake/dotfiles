@@ -1,14 +1,11 @@
 # dotai
 
-Centralized AI tool configuration. Define agents, skills, and instructions once in `canonical/` — sync to Claude Code (`~/.claude/`), OpenCode (`~/.config/opencode/`), and Codex (`~/.codex/`).
+Centralized AI tool configuration. Define agents and skills once in `canonical/`, sync agents to Claude Code (`~/.claude/`), OpenCode (`~/.config/opencode/`), and Codex (`~/.codex/`), and write project local skills into `.context/skills`.
 
 ## Project Structure
 
 ```
 canonical/
-  instructions.md              # Source of truth for CLAUDE.md / AGENTS.md across all targets
-  instructions.opencode.md     # OpenCode-only additions (appended to instructions.md during sync)
-  instructions.codex.md        # Codex-only additions (appended to instructions.md during sync)
   opencode.json                # OpenCode config file (copied verbatim)
   agents/                      # Agent definitions (frontmatter + markdown body)
     fast-lookup.md
@@ -16,8 +13,8 @@ canonical/
     deep-dive.md
     deep-reviewer.md
     web-search.md
-  skills/                      # Skill definitions (frontmatter + markdown body)
-    <skill-name>/SKILL.md
+  skills/                      # Flat skill definitions (frontmatter + markdown body)
+    <skill-name>.md
 src/
   bin.ts                       # Entry point (provides BunServices, calls run)
   main.ts                      # CLI commands + sync logic
@@ -35,17 +32,18 @@ All agents and skills use Claude Code frontmatter as the superset format. The sy
 - **OpenCode**: drops `name`/`model` from agents, adds `mode: subagent`, converts `tools` to a deny-object. Drops `model`/`context` from skills
 - **Codex**: generates per-agent TOML files with `developer_instructions` (body text) and merges `[agents.<name>]` entries into `~/.codex/config.toml`. Drops `model`/`context` from skills
 
-Both targets use `.context/plans` for plan files (no template expansion needed).
+Project sync writes selected skills to `./.context/skills/<skill-name>.md` with frontmatter removed, stores the selection in `./.context/settings.json`, and updates `./AGENTS.md` with a managed skill reference table.
 
 ## Workflow
 
 Edit files in `canonical/`, then sync:
 
 ```bash
-bun run sync                    # syncs to all targets
-bun run sync --target claude    # Claude Code only
-bun run sync --target opencode  # OpenCode only
-bun run sync --target codex     # Codex only
+bun run sync                    # syncs project skills in the current directory
+bun run agents                  # syncs agents to all targets
+bun run src/bin.ts agents --target claude
+bun run src/bin.ts agents --target opencode
+bun run src/bin.ts agents --target codex
 ```
 
 For development (without building the binary):
@@ -100,4 +98,4 @@ Running `dotai models` again preserves your custom values and adds entries for a
 
 ## Key Invariant
 
-`canonical/instructions.md` is the source of truth for global instructions. Never edit `~/.claude/CLAUDE.md` directly — edit `canonical/instructions.md` and run `dotai sync`.
+`canonical/agents/` is the source of truth for synced provider agents. `canonical/skills/` is the source of truth for project local skill documents.
