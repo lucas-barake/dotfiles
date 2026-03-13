@@ -16,22 +16,22 @@ In v4, `Effect.Service` is replaced by `ServiceMap.Service`. There is no `Defaul
 ### Defining a Repository
 
 ```ts
-import { Effect, Layer, ServiceMap } from "effect"
-import { SqlClient, SqlSchema } from "effect/unstable/sql"
+import { Effect, Layer, ServiceMap } from "effect";
+import { SqlClient, SqlSchema } from "effect/unstable/sql";
 
 class UserRepo extends ServiceMap.Service<UserRepo, {
-  readonly insert: (request: typeof User.insert.Type) => Effect.Effect<User>
-  readonly findById: (id: UserId) => Effect.Effect<User, UserNotFoundError>
+  readonly insert: (request: typeof User.insert.Type) => Effect.Effect<User>;
+  readonly findById: (id: UserId) => Effect.Effect<User, UserNotFoundError>;
 }>()("UserRepo", {
-  make: Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
+  make: Effect.gen(function*() {
+    const sql = yield* SqlClient.SqlClient;
     // ... build queries
-    return { insert, findById }
+    return { insert, findById };
   }),
 }) {
   static layer = Layer.effect(this, this.make).pipe(
     Layer.provide(PgLive),
-  )
+  );
 }
 ```
 
@@ -44,19 +44,19 @@ Since there is no `Default` or `DefaultWithoutDependencies`, construct the layer
 // Then provide test deps instead of production deps
 const TestLive = Layer.effect(UserRepo, UserRepo.make).pipe(
   Layer.provide(PgContainer.ClientLive),
-)
+);
 ```
 
 The `make` property is the raw constructor effect with its requirements exposed in the type. Production layers wire in production deps via `Layer.provide`. Test layers wire in test deps the same way.
 
-### v4 Layer Naming Convention
+### Layer Naming Convention
 
-v4 uses `layer` (lowercase) instead of `Default` or `Live`:
+Treat names like `layer`, `Live`, `layerTest`, and `ClientLive` as local conventions. Effect itself does not require one naming style:
 
-| Purpose | Name |
-|---|---|
-| Primary layer | `Service.layer` |
-| Test layer | `Service.layerTest` |
+| Purpose            | Name                  |
+| ------------------ | --------------------- |
+| Primary layer      | `Service.layer`       |
+| Test layer         | `Service.layerTest`   |
 | Config-based layer | `Service.layerConfig` |
 
 ## Testcontainers Setup
@@ -64,16 +64,16 @@ v4 uses `layer` (lowercase) instead of `Default` or `Live`:
 ### Container Service
 
 ```ts
-import { PgClient } from "@effect/sql-pg"
-import { PostgreSqlContainer } from "@testcontainers/postgresql"
-import { Data, Effect, Layer, Redacted, ServiceMap, String } from "effect"
+import { PgClient } from "@effect/sql-pg";
+import { PostgreSqlContainer } from "@testcontainers/postgresql";
+import { Data, Effect, Layer, Redacted, ServiceMap, String } from "effect";
 
 class ContainerError extends Data.TaggedError("ContainerError")<{
-  cause: unknown
+  cause: unknown;
 }> {}
 
 class PgContainer extends ServiceMap.Service<PgContainer, {
-  readonly getConnectionUri: () => string
+  readonly getConnectionUri: () => string;
 }>()("test/PgContainer", {
   make: Effect.acquireRelease(
     Effect.tryPromise({
@@ -83,27 +83,27 @@ class PgContainer extends ServiceMap.Service<PgContainer, {
     (container) => Effect.promise(() => container.stop()),
   ),
 }) {
-  static layer = Layer.scoped(this, this.make)
+  static layer = Layer.effect(this, this.make);
 
-  static ClientLive = Layer.unwrapEffect(
-    Effect.gen(function* () {
-      const container = yield* PgContainer
+  static ClientLive = Layer.unwrap(
+    Effect.gen(function*() {
+      const container = yield* PgContainer;
       return PgClient.layer({
         url: Redacted.make(container.getConnectionUri()),
-      })
+      });
     }),
-  ).pipe(Layer.provide(this.layer))
+  ).pipe(Layer.provide(this.layer));
 
-  static ClientTransformLive = Layer.unwrapEffect(
-    Effect.gen(function* () {
-      const container = yield* PgContainer
+  static ClientTransformLive = Layer.unwrap(
+    Effect.gen(function*() {
+      const container = yield* PgContainer;
       return PgClient.layer({
         url: Redacted.make(container.getConnectionUri()),
         transformResultNames: String.snakeToCamel,
         transformQueryNames: String.camelToSnake,
-      })
+      });
     }),
-  ).pipe(Layer.provide(this.layer))
+  ).pipe(Layer.provide(this.layer));
 }
 ```
 
@@ -113,51 +113,50 @@ For faster test suites, start one container for all tests:
 
 ```ts
 // vitest.global-setup.ts
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from "@testcontainers/postgresql"
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from "@testcontainers/postgresql";
 
-let container: StartedPostgreSqlContainer
+let container: StartedPostgreSqlContainer;
 
-export async function setup({ provide }: { provide: (key: string, value: unknown) => void }) {
-  container = await new PostgreSqlContainer("postgres:alpine").start()
-  provide("dbUrl", container.getConnectionUri())
+export async function setup({ provide }: { provide: (key: string, value: unknown) => void; }) {
+  container = await new PostgreSqlContainer("postgres:alpine").start();
+  provide("dbUrl", container.getConnectionUri());
 }
 
 export async function teardown() {
-  await container?.stop()
+  await container?.stop();
 }
 ```
 
 ```ts
 // test/utils.ts
-import { PgClient } from "@effect/sql-pg"
-import { Layer, Redacted } from "effect"
-import { inject } from "vitest"
+import { PgClient } from "@effect/sql-pg";
+import { Layer, Redacted } from "effect";
+import { inject } from "vitest";
 
 export const SharedPgClientLive = PgClient.layer({
   url: Redacted.make(inject("dbUrl")),
-})
+});
 ```
 
 ## Using it.layer for Database Tests
 
 ```ts
-import { it } from "@effect/vitest"
-import { SqlClient } from "effect/unstable/sql"
-import { Effect } from "effect"
+import { it } from "@effect/vitest";
+import { Effect } from "effect";
+import { SqlClient } from "effect/unstable/sql";
 
 it.layer(PgContainer.ClientLive, { timeout: "30 seconds" })("UserRepo", (it) => {
   it.effect("creates and retrieves user", () =>
-    Effect.gen(function* () {
-      const sql = yield* SqlClient.SqlClient
+    Effect.gen(function*() {
+      const sql = yield* SqlClient.SqlClient;
 
-      yield* sql`CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT NOT NULL)`
-      yield* sql`INSERT INTO users (name) VALUES ('Alice')`
+      yield* sql`CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT NOT NULL)`;
+      yield* sql`INSERT INTO users (name) VALUES ('Alice')`;
 
-      const rows = yield* sql`SELECT * FROM users WHERE name = 'Alice'`
-      expect(rows[0].name).toBe("Alice")
-    }),
-  )
-})
+      const rows = yield* sql`SELECT * FROM users WHERE name = 'Alice'`;
+      expect(rows[0].name).toBe("Alice");
+    }));
+});
 ```
 
 ## Transaction Rollback in Tests
@@ -167,20 +166,19 @@ it.layer(PgContainer.ClientLive, { timeout: "30 seconds" })("UserRepo", (it) => 
 The canonical v4 pattern uses `Effect.fail` inside `withTransaction` piped to `Effect.ignore`:
 
 ```ts
-it.scoped("withTransaction rollback", () =>
-  Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
+it.effect("withTransaction rollback", () =>
+  Effect.gen(function*() {
+    const sql = yield* SqlClient.SqlClient;
 
     yield* sql`INSERT INTO test (name) VALUES ('hello')`.pipe(
       Effect.andThen(Effect.fail("boom")),
       sql.withTransaction,
       Effect.ignore,
-    )
+    );
 
-    const rows = yield* sql`SELECT * FROM test`
-    assert.deepStrictEqual(rows, [])
-  }),
-)
+    const rows = yield* sql`SELECT * FROM test`;
+    assert.deepStrictEqual(rows, []);
+  }));
 ```
 
 ### Nested Transaction Rollback (SAVEPOINTs)
@@ -188,9 +186,9 @@ it.scoped("withTransaction rollback", () =>
 Inner transactions use SAVEPOINTs. Rolling back inner leaves outer intact:
 
 ```ts
-it.scoped("nested rollback", () =>
-  Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
+it.effect("nested rollback", () =>
+  Effect.gen(function*() {
+    const sql = yield* SqlClient.SqlClient;
 
     yield* sql`INSERT INTO test (name) VALUES ('outer')`.pipe(
       Effect.andThen(() =>
@@ -198,15 +196,14 @@ it.scoped("nested rollback", () =>
           Effect.andThen(Effect.fail("boom")),
           sql.withTransaction,
           Effect.ignore,
-        ),
+        )
       ),
       sql.withTransaction,
-    )
+    );
 
-    const rows = yield* sql`SELECT * FROM test`
-    assert.strictEqual(rows.length, 1)
-  }),
-)
+    const rows = yield* sql`SELECT * FROM test`;
+    assert.strictEqual(rows.length, 1);
+  }));
 ```
 
 ### Exit-Based Rollback Assertion
@@ -215,22 +212,21 @@ Use `Effect.exit` to assert the transaction failed without losing the error:
 
 ```ts
 it.effect("transaction rolls back on error", () =>
-  Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
+  Effect.gen(function*() {
+    const sql = yield* SqlClient.SqlClient;
 
     const result = yield* sql.withTransaction(
-      Effect.gen(function* () {
-        yield* sql`INSERT INTO users ${sql.insert({ name: "Alice" })}`
-        return yield* Effect.fail(new Error("rollback"))
+      Effect.gen(function*() {
+        yield* sql`INSERT INTO users ${sql.insert({ name: "Alice" })}`;
+        return yield* Effect.fail("rollback");
       }),
-    ).pipe(Effect.exit)
+    ).pipe(Effect.exit);
 
-    if (Exit.isSuccess(result)) assert.fail("should not succeed")
+    if (Exit.isSuccess(result)) assert.fail("should not succeed");
 
-    const rows = yield* sql`SELECT * FROM users`
-    assert.deepStrictEqual(rows, [])
-  }),
-)
+    const rows = yield* sql`SELECT * FROM users`;
+    assert.deepStrictEqual(rows, []);
+  }));
 ```
 
 ## Testing SqlResolver
@@ -239,117 +235,118 @@ it.effect("transaction rolls back on error", () =>
 
 ```ts
 it.effect("ordered resolver batches inserts", () =>
-  Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
-    const batches: Array<ReadonlyArray<string>> = []
+  Effect.gen(function*() {
+    const sql = yield* SqlClient.SqlClient;
+    const batches: Array<ReadonlyArray<string>> = [];
 
-    const Insert = yield* SqlResolver.ordered("Insert", {
+    const Insert = SqlResolver.ordered({
       Request: Schema.String,
       Result: Schema.Struct({ id: Schema.Number, name: Schema.String }),
       execute: (names) => {
-        batches.push(names)
-        return sql`INSERT INTO test ${sql.insert(names.map((name) => ({ name })))} RETURNING *`
+        batches.push(names);
+        return sql`INSERT INTO test ${sql.insert(names.map((name) => ({ name })))} RETURNING *`;
       },
-    })
+    });
 
+    const execute = SqlResolver.request(Insert);
     const result = yield* Effect.all(
-      { one: Insert.execute("one"), two: Insert.execute("two") },
-      { batching: true },
-    )
+      { one: execute("one"), two: execute("two") },
+      { concurrency: "unbounded" },
+    );
 
     assert.deepStrictEqual(result, {
       one: { id: 1, name: "one" },
       two: { id: 2, name: "two" },
-    })
-    assert.deepStrictEqual(batches, [["one", "two"]])
-  }),
-)
+    });
+    assert.deepStrictEqual(batches, [["one", "two"]]);
+  }));
 ```
 
-### findById (returns Option)
+### findById
 
 ```ts
 it.effect("findById resolver", () =>
-  Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
+  Effect.gen(function*() {
+    const sql = yield* SqlClient.SqlClient;
 
-    const FindById = yield* SqlResolver.findById("FindById", {
+    const FindById = SqlResolver.findById({
       Id: Schema.Number,
       Result: Schema.Struct({ id: Schema.Number, name: Schema.String }),
       ResultId: (result) => result.id,
       execute: (ids) => sql`SELECT * FROM test WHERE id IN ${sql.in(ids)}`,
-    })
+    });
 
+    const execute = SqlResolver.request(FindById);
     const result = yield* Effect.all(
       {
-        one: FindById.execute(1),
-        two: FindById.execute(2),
-        missing: FindById.execute(999),
+        one: execute(1),
+        two: execute(2),
       },
-      { batching: true },
-    )
+      { concurrency: "unbounded" },
+    );
 
     assert.deepStrictEqual(result, {
-      one: Option.some({ id: 1, name: "name1" }),
-      two: Option.some({ id: 2, name: "name2" }),
-      missing: Option.none(),
-    })
-  }),
-)
+      one: { id: 1, name: "name1" },
+      two: { id: 2, name: "name2" },
+    });
+
+    const missing = yield* execute(999).pipe(Effect.flip);
+    assert.strictEqual(missing._tag, "NoSuchElementError");
+  }));
 ```
 
 ### grouped (many results per request)
 
 ```ts
 it.effect("grouped resolver", () =>
-  Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
+  Effect.gen(function*() {
+    const sql = yield* SqlClient.SqlClient;
 
-    const FindByName = yield* SqlResolver.grouped("FindByName", {
+    const FindByName = SqlResolver.grouped({
       Request: Schema.String,
       RequestGroupKey: (name) => name,
       Result: Schema.Struct({ id: Schema.Number, name: Schema.String }),
       ResultGroupKey: (result) => result.name,
       execute: (names) => sql`SELECT * FROM test WHERE name IN ${sql.in(names)}`,
-    })
+    });
 
+    const execute = SqlResolver.request(FindByName);
     const result = yield* Effect.all(
       {
-        alice: FindByName.execute("alice"),
-        bob: FindByName.execute("bob"),
-        nobody: FindByName.execute("nobody"),
+        alice: execute("alice"),
+        bob: execute("bob"),
       },
-      { batching: true },
-    )
+      { concurrency: "unbounded" },
+    );
 
-    assert.strictEqual(result.alice.length, 2)
-    assert.strictEqual(result.bob.length, 1)
-    assert.deepStrictEqual(result.nobody, [])
-  }),
-)
+    assert.strictEqual(result.alice.length, 2);
+    assert.strictEqual(result.bob.length, 1);
+
+    const missing = yield* execute("nobody").pipe(Effect.flip);
+    assert.strictEqual(missing._tag, "NoSuchElementError");
+  }));
 ```
 
 ## Testing Streaming
 
 ```ts
-import { Chunk, Stream } from "effect"
+import { Chunk, Stream } from "effect";
 
 it.effect("stream query results", () =>
-  Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
+  Effect.gen(function*() {
+    const sql = yield* SqlClient.SqlClient;
 
     const rows = yield* sql`SELECT generate_series(1, 3)`.stream.pipe(
       Stream.runCollect,
       Effect.map(Chunk.toReadonlyArray),
-    )
+    );
 
     assert.deepStrictEqual(rows, [
       { generate_series: 1 },
       { generate_series: 2 },
       { generate_series: 3 },
-    ])
-  }),
-)
+    ]);
+  }));
 ```
 
 ## Layer.mock for Partial Service Mocking
@@ -357,51 +354,50 @@ it.effect("stream query results", () =>
 Mock only the methods your test needs. Unimplemented methods become defects:
 
 ```ts
-import { Layer } from "effect"
+import { Layer } from "effect";
 
-const MockUserRepo = Layer.mock(UserRepo, {
-  _tag: "UserRepo",
+const MockUserRepo = Layer.mock(UserRepo)({
   findById: (id) => Effect.succeed(Option.some(new User({ id, name: "Mock", age: 30 }))),
-})
+});
 
 it.effect("uses mocked repo", () =>
-  Effect.gen(function* () {
-    const repo = yield* UserRepo
-    const user = yield* repo.findById(1)
-    assert.deepStrictEqual(Option.map(user, (u) => u.name), Option.some("Mock"))
-  }).pipe(Effect.provide(MockUserRepo)),
-)
+  Effect.gen(function*() {
+    const repo = yield* UserRepo;
+    const user = yield* repo.findById(1);
+    assert.deepStrictEqual(Option.map(user, (u) => u.name), Option.some("Mock"));
+  }).pipe(Effect.provide(MockUserRepo)));
 ```
 
 ### Dynamic Mock with Effect
 
 ```ts
-const DynamicMock = Layer.unwrapEffect(
-  Effect.gen(function* () {
-    const now = yield* DateTime.now
-    return Layer.mock(AuditService, {
-      _tag: "AuditService",
+const DynamicMock = Layer.unwrap(
+  Effect.gen(function*() {
+    const now = yield* DateTime.now;
+    return Layer.mock(AuditService)({
       log: (event) => Effect.succeed({ ...event, timestamp: now }),
-    })
+    });
   }),
-)
+);
 ```
 
 ### Side-Effect Tracking
 
 ```ts
-let calls: Array<unknown> = []
+let calls: Array<unknown> = [];
 
 const TrackingMock = Layer.mock(UserRepo, {
   _tag: "UserRepo",
   insert: (user) =>
     Effect.sync(() => {
-      calls.push(user)
-      return new User({ id: 1, ...user })
+      calls.push(user);
+      return new User({ id: 1, ...user });
     }),
-})
+});
 
-beforeEach(() => { calls = [] })
+beforeEach(() => {
+  calls = [];
+});
 ```
 
 ## Composing Test Layers for Services
@@ -444,7 +440,7 @@ it.layer(UserRepo.layerTest, { timeout: "30 seconds" })("UserRepo", (it) => {
 ```ts
 const TestLive = Layer.effect(UserRepo, UserRepo.make).pipe(
   Layer.provide(PgContainer.ClientLive),
-)
+);
 ```
 
 ### Multiple Services Sharing a Database
@@ -456,17 +452,16 @@ const TestLive = Layer.mergeAll(
 ).pipe(
   Layer.provideMerge(MigrationLayer),
   Layer.provideMerge(PgContainer.ClientLive),
-)
+);
 
 it.layer(TestLive, { timeout: "30 seconds" })("Repositories", (it) => {
   it.effect("cross-repo query", () =>
-    Effect.gen(function* () {
-      const users = yield* UserRepo
-      const orders = yield* OrderRepo
+    Effect.gen(function*() {
+      const users = yield* UserRepo;
+      const orders = yield* OrderRepo;
       // ...
-    }),
-  )
-})
+    }));
+});
 ```
 
 ### Full Mock (no database)
@@ -475,10 +470,10 @@ it.layer(TestLive, { timeout: "30 seconds" })("Repositories", (it) => {
 class UserRepo extends ServiceMap.Service<UserRepo, { ... }>()("UserRepo", {
   make: Effect.gen(function* () { ... }),
 }) {
-  static layerMock = Layer.succeed(this, new UserRepo({
+  static layerMock = Layer.succeed(this, {
     insert: () => Effect.succeed(new User({ id: 1, name: "Mock", age: 30 })),
     findById: () => Effect.succeed(Option.none()),
-  }))
+  })
 }
 ```
 
@@ -487,14 +482,14 @@ class UserRepo extends ServiceMap.Service<UserRepo, { ... }>()("UserRepo", {
 Run migrations once per test layer setup:
 
 ```ts
-import { PgMigrator } from "@effect/sql-pg"
-import { Layer } from "effect"
+import { PgMigrator } from "@effect/sql-pg";
+import { Layer } from "effect";
 
-const MigrationLayer = Layer.scopedDiscard(
+const MigrationLayer = Layer.effectDiscard(
   PgMigrator.run({
     loader: PgMigrator.fromFileSystem(path.join(__dirname, "../migrations")),
   }),
-)
+);
 
 const TestLive = Layer.mergeAll(
   Layer.effect(UserRepo, UserRepo.make),
@@ -502,7 +497,7 @@ const TestLive = Layer.mergeAll(
 ).pipe(
   Layer.provideMerge(MigrationLayer),
   Layer.provideMerge(PgContainer.ClientLive),
-)
+);
 ```
 
 ## Test Data Isolation
@@ -510,48 +505,46 @@ const TestLive = Layer.mergeAll(
 When sharing a database across tests, make test data unique:
 
 ```ts
-const uniqueEmail = () => `test-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`
+const uniqueEmail = () => `test-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 
 it.effect("insert unique user", () =>
-  Effect.gen(function* () {
-    const repo = yield* UserRepo
+  Effect.gen(function*() {
+    const repo = yield* UserRepo;
     const user = yield* repo.insert(
       User.insert.make({ name: "Test", email: uniqueEmail() }),
-    )
-    expect(user.name).toBe("Test")
-  }),
-)
+    );
+    expect(user.name).toBe("Test");
+  }));
 ```
 
 ## Testing LISTEN/NOTIFY
 
 ```ts
-import { PgClient } from "@effect/sql-pg"
-import { Stream } from "effect"
+import { PgClient } from "@effect/sql-pg";
+import { Stream } from "effect";
 
-it.scoped("listen receives notifications", () =>
-  Effect.gen(function* () {
-    const sql = yield* PgClient.PgClient
+it.effect("listen receives notifications", () =>
+  Effect.gen(function*() {
+    const sql = yield* PgClient.PgClient;
 
-    const collected: Array<string> = []
+    const collected: Array<string> = [];
 
     yield* sql.listen("test_channel").pipe(
       Stream.take(2),
       Stream.tap((msg) => Effect.sync(() => collected.push(msg))),
       Stream.runDrain,
       Effect.fork,
-    )
+    );
 
-    yield* Effect.sleep("200 millis")
+    yield* Effect.sleep("200 millis");
 
-    yield* sql.notify("test_channel", "hello")
-    yield* sql.notify("test_channel", "world")
+    yield* sql.notify("test_channel", "hello");
+    yield* sql.notify("test_channel", "world");
 
-    yield* Effect.sleep("200 millis")
+    yield* Effect.sleep("200 millis");
 
-    assert.deepStrictEqual(collected, ["hello", "world"])
-  }),
-)
+    assert.deepStrictEqual(collected, ["hello", "world"]);
+  }));
 ```
 
-The `Effect.sleep("200 millis")` before notify ensures the listener fiber has started. Use `it.scoped` (or `it.scopedLive`) since listen requires `Scope`.
+The `Effect.sleep("200 millis")` before notify ensures the listener fiber has started. Use `it.effect` or `it.live` depending on whether the test needs the real clock.
