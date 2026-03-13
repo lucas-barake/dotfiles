@@ -7,32 +7,40 @@ description: Effect SQL v4 patterns with effect/unstable/sql and @effect/sql-pg.
 
 Patterns for database access using `effect/unstable/sql` and `@effect/sql-pg` in Effect v4.
 
-## CRITICAL: Always Use SqlSchema
+## Prefer SqlSchema For Runtime Validated Queries
 
-**NEVER** use inline type parameters on the sql template literal:
+Use `SqlSchema` when you want request and result validation at runtime. Plain typed `sql<A>\`...\`` statements are also valid when runtime schema validation is not needed:
 
 ```ts
-// WRONG - no validation, unsafe
-sql<{ id: string; name: string }>`SELECT * FROM users`
+// valid typed statement without runtime validation
+sql<{ id: string; name: string; }>`SELECT * FROM users`;
 
-// CORRECT - always use SqlSchema for validation
+// runtime validated query
 SqlSchema.findAll({
   Request: Schema.Void,
   Result: UserModel,
   execute: () => sql`SELECT * FROM users`,
-})
+});
 ```
 
-SqlSchema validates both request and result at runtime. Non-negotiable.
+Use `SqlSchema` for runtime validation. Use plain typed statements when that is enough.
 
 ## Imports
 
 SQL modules live under `effect/unstable/sql`. PgClient is a separate package.
 
 ```ts
-import { SqlClient, SqlSchema, SqlError, SqlResolver, SqlModel, Migrator, Statement } from "effect/unstable/sql"
-import { Model } from "effect/unstable/schema"
-import { PgClient, PgMigrator } from "@effect/sql-pg"
+import { PgClient, PgMigrator } from "@effect/sql-pg";
+import { Model } from "effect/unstable/schema";
+import {
+  Migrator,
+  SqlClient,
+  SqlError,
+  SqlModel,
+  SqlResolver,
+  SqlSchema,
+  Statement,
+} from "effect/unstable/sql";
 ```
 
 ## SqlSchema Methods
@@ -43,59 +51,59 @@ v4 uses `SchemaError` (not `ParseError`).
 SqlSchema.findAll({
   Request: Schema.Schema,
   Result: Schema.Schema,
-  execute: (encodedRequest) => sql`...`
-})
+  execute: (encodedRequest) => sql`...`,
+});
 // Returns: (request) => Effect<Array<A>, E | SchemaError>
 
 SqlSchema.findNonEmpty({
   Request: Schema.Schema,
   Result: Schema.Schema,
-  execute: (encodedRequest) => sql`...`
-})
+  execute: (encodedRequest) => sql`...`,
+});
 // Returns: (request) => Effect<NonEmptyArray<A>, E | SchemaError | NoSuchElementError>
 
 SqlSchema.findOne({
   Request: Schema.Schema,
   Result: Schema.Schema,
-  execute: (encodedRequest) => sql`...`
-})
+  execute: (encodedRequest) => sql`...`,
+});
 // Returns: (request) => Effect<A, E | SchemaError | NoSuchElementError>
 
 SqlSchema.findOneOption({
   Request: Schema.Schema,
   Result: Schema.Schema,
-  execute: (encodedRequest) => sql`...`
-})
+  execute: (encodedRequest) => sql`...`,
+});
 // Returns: (request) => Effect<Option<A>, E | SchemaError>
 
 SqlSchema.void({
   Request: Schema.Schema,
-  execute: (encodedRequest) => sql`...`
-})
+  execute: (encodedRequest) => sql`...`,
+});
 // Returns: (request) => Effect<void, E | SchemaError>
 ```
 
-| Method | Returns | Fails on empty |
-|---|---|---|
-| `findAll` | `Array<A>` | No (returns `[]`) |
-| `findNonEmpty` | `NonEmptyArray<A>` | Yes (`NoSuchElementError`) |
-| `findOne` | `A` | Yes (`NoSuchElementError`) |
-| `findOneOption` | `Option<A>` | No (returns `None`) |
-| `void` | `void` | N/A |
+| Method          | Returns            | Fails on empty             |
+| --------------- | ------------------ | -------------------------- |
+| `findAll`       | `Array<A>`         | No (returns `[]`)          |
+| `findNonEmpty`  | `NonEmptyArray<A>` | Yes (`NoSuchElementError`) |
+| `findOne`       | `A`                | Yes (`NoSuchElementError`) |
+| `findOneOption` | `Option<A>`        | No (returns `None`)        |
+| `void`          | `void`             | N/A                        |
 
 ## SqlClient
 
 `SqlClient` is defined via `ServiceMap.Service` (not `Context.Tag`):
 
 ```ts
-export const SqlClient = ServiceMap.Service<SqlClient>("effect/sql/SqlClient")
+export const SqlClient = ServiceMap.Service<SqlClient>("effect/sql/SqlClient");
 ```
 
 The client IS the template literal tag (it extends `Constructor`):
 
 ```ts
-const sql = yield* SqlClient
-const rows = yield* sql`SELECT * FROM users WHERE id = ${id}`
+const sql = yield * SqlClient.SqlClient;
+const rows = yield * sql`SELECT * FROM users WHERE id = ${id}`;
 ```
 
 Statements are effects. They extend `Effect.Effect<ReadonlyArray<A>, SqlError>` directly.
@@ -103,15 +111,15 @@ Statements are effects. They extend `Effect.Effect<ReadonlyArray<A>, SqlError>` 
 ### SqlClient Methods
 
 ```ts
-const sql = yield* SqlClient
+const sql = yield * SqlClient.SqlClient;
 
-sql`SELECT ...`                            // Statement<A> (is an Effect)
-sql.safe                                   // client with safe mode
-sql.withoutTransforms()                    // client without row transforms
-sql.reserve                                // Effect<Connection, SqlError, Scope>
-sql.withTransaction(effect)                // wraps effect in a transaction
-sql.reactive(keys, effect)                 // Stream that re-runs on key changes
-sql.reactiveMailbox(keys, effect)          // Dequeue that re-runs on key changes
+sql`SELECT ...`; // Statement<A> (is an Effect)
+sql.safe; // client copy for SafeQL style tooling
+sql.withoutTransforms(); // client without row transforms
+sql.reserve; // Effect<Connection, SqlError, Scope>
+sql.withTransaction(effect); // wraps effect in a transaction
+sql.reactive(keys, effect); // Stream that re-runs on key changes
+sql.reactiveMailbox(keys, effect); // Dequeue that re-runs on key changes
 ```
 
 ## PostgreSQL Client Configuration
@@ -119,16 +127,16 @@ sql.reactiveMailbox(keys, effect)          // Dequeue that re-runs on key change
 ### Production Layer
 
 ```ts
-import { PgClient } from "@effect/sql-pg"
-import { Config, Effect, Layer, Redacted, String } from "effect"
+import { PgClient } from "@effect/sql-pg";
+import { Config, Effect, Layer, Redacted, String } from "effect";
 
-export const PgLive = Layer.unwrapEffect(
-  Effect.gen(function* () {
+export const PgLive = Layer.unwrap(
+  Effect.gen(function*() {
     const env = yield* Config.literal("local")("ENV").pipe(
       Config.orElse(() => Config.succeed("prod" as const)),
-    )
-    const ssl = env !== "local" ? { rejectUnauthorized: false } : false
-    const databaseUrl = yield* Config.redacted("DATABASE_URL")
+    );
+    const ssl = env !== "local" ? { rejectUnauthorized: false } : false;
+    const databaseUrl = yield* Config.redacted("DATABASE_URL");
 
     return PgClient.layer({
       url: databaseUrl,
@@ -138,9 +146,9 @@ export const PgLive = Layer.unwrapEffect(
       transformQueryNames: String.camelToSnake,
       transformResultNames: String.snakeToCamel,
       transformJson: true,
-    })
+    });
   }),
-).pipe(Layer.orDie)
+).pipe(Layer.orDie);
 ```
 
 `PgClient.layer` provides both `PgClient` AND `SqlClient` services.
@@ -161,6 +169,10 @@ PgClient.layer({
   maxConnections?: number,
   minConnections?: number,
   connectionTTL?: DurationInput,
+  path?: string,
+  stream?: boolean,
+  spanAttributes?: Readonly<Record<string, unknown>>,
+  types?: Record<number, { parse: (value: string) => unknown }>,
   applicationName?: string,
   transformResultNames?: (str: string) => string,
   transformQueryNames?: (str: string) => string,
@@ -171,7 +183,7 @@ PgClient.layer({
 ### Layer from Existing Pool
 
 ```ts
-import * as Pg from "pg"
+import * as Pg from "pg";
 
 PgClient.layerFromPool({
   acquire: Effect.acquireRelease(
@@ -180,21 +192,21 @@ PgClient.layerFromPool({
   ),
   transformResultNames: String.snakeToCamel,
   transformQueryNames: String.camelToSnake,
-})
+});
 ```
 
 ### Test Layer with Testcontainers
 
 ```ts
-import { PgClient } from "@effect/sql-pg"
-import { Data, Effect, Layer, Redacted, ServiceMap, String } from "effect"
+import { PgClient } from "@effect/sql-pg";
+import { Data, Effect, Layer, Redacted, ServiceMap, String } from "effect";
 
 class ContainerError extends Data.TaggedError("ContainerError")<{
-  cause: unknown
+  cause: unknown;
 }> {}
 
 class PgContainer extends ServiceMap.Service<PgContainer, {
-  readonly getConnectionUri: () => string
+  readonly getConnectionUri: () => string;
 }>()("test/PgContainer", {
   make: Effect.acquireRelease(
     Effect.tryPromise({
@@ -204,18 +216,18 @@ class PgContainer extends ServiceMap.Service<PgContainer, {
     (container) => Effect.promise(() => container.stop()),
   ),
 }) {
-  static layer = Layer.scoped(this, this.make)
+  static layer = Layer.effect(this, this.make);
 
-  static ClientLive = Layer.unwrapEffect(
-    Effect.gen(function* () {
-      const container = yield* PgContainer
+  static ClientLive = Layer.unwrap(
+    Effect.gen(function*() {
+      const container = yield* PgContainer;
       return PgClient.layer({
         url: Redacted.make(container.getConnectionUri()),
         transformResultNames: String.snakeToCamel,
         transformQueryNames: String.camelToSnake,
-      })
+      });
     }),
-  ).pipe(Layer.provide(this.layer))
+  ).pipe(Layer.provide(this.layer));
 }
 ```
 
@@ -227,13 +239,14 @@ class PgContainer extends ServiceMap.Service<PgContainer, {
 const findById = SqlSchema.findOne({
   Request: Schema.Struct({ id: UserId, orgId: OrgId }),
   Result: UserModel,
-  execute: ({ id, orgId }) => sql`
+  execute: ({ id, orgId }) =>
+    sql`
     SELECT * FROM users
     WHERE id = ${id} AND organization_id = ${orgId}
   `,
-})
+});
 
-const user = yield* findById({ id, orgId })
+const user = yield * findById({ id, orgId });
 ```
 
 ### SqlSchema.findOneOption
@@ -242,12 +255,13 @@ const user = yield* findById({ id, orgId })
 const findByEmail = SqlSchema.findOneOption({
   Request: Schema.String,
   Result: UserModel,
-  execute: (email) => sql`
+  execute: (email) =>
+    sql`
     SELECT * FROM users WHERE email = ${email}
   `,
-})
+});
 
-const maybeUser = yield* findByEmail("user@example.com")
+const maybeUser = yield * findByEmail("user@example.com");
 ```
 
 ### SqlSchema.findAll
@@ -258,14 +272,15 @@ Returns `Array<A>`. Returns empty array if no rows found.
 const listByOrg = SqlSchema.findAll({
   Request: Schema.Struct({ orgId: OrgId, limit: Schema.Number }),
   Result: UserModel,
-  execute: ({ orgId, limit }) => sql`
+  execute: ({ orgId, limit }) =>
+    sql`
     SELECT * FROM users
     WHERE organization_id = ${orgId}
     LIMIT ${limit}
   `,
-})
+});
 
-const users = yield* listByOrg({ orgId, limit: 100 })
+const users = yield * listByOrg({ orgId, limit: 100 });
 ```
 
 ### SqlSchema.findNonEmpty
@@ -276,11 +291,12 @@ Returns `NonEmptyArray<A>`. Fails with `NoSuchElementError` if no rows found.
 const listActiveByOrg = SqlSchema.findNonEmpty({
   Request: Schema.Struct({ orgId: OrgId }),
   Result: UserModel,
-  execute: ({ orgId }) => sql`
+  execute: ({ orgId }) =>
+    sql`
     SELECT * FROM users
     WHERE organization_id = ${orgId} AND active = true
   `,
-})
+});
 ```
 
 ### SqlSchema.void
@@ -288,19 +304,20 @@ const listActiveByOrg = SqlSchema.findNonEmpty({
 ```ts
 const deleteUser = SqlSchema.void({
   Request: Schema.Struct({ id: UserId, orgId: OrgId }),
-  execute: ({ id, orgId }) => sql`
+  execute: ({ id, orgId }) =>
+    sql`
     DELETE FROM users
     WHERE id = ${id} AND organization_id = ${orgId}
   `,
-})
+});
 
-yield* deleteUser({ id, orgId })
+yield * deleteUser({ id, orgId });
 ```
 
 ## SQL Template Helpers
 
 ```ts
-const sql = yield* SqlClient
+const sql = yield* SqlClient.SqlClient
 
 // Safe parameter interpolation
 sql`SELECT * FROM users WHERE id = ${userId}`
@@ -323,9 +340,11 @@ sql`UPDATE people SET name = data.name FROM ${
   sql.updateValues([{ name: "Tim" }, { name: "John" }], "data")
 }`
 
-// IN clause (empty array produces 1=0)
+// IN clause helper
 sql`SELECT * FROM accounts WHERE id IN ${sql.in(ids)}`
+// empty `ids` here compiles to `()`
 sql`DELETE FROM users WHERE ${sql.in("id", userIds)}`
+// empty `userIds` here becomes `1=0`
 
 // AND / OR combinators (fallback: 1=1 when empty)
 sql`SELECT * FROM accounts WHERE ${sql.and([
@@ -350,37 +369,37 @@ sql.onDialectOrElse({ pg: () => ..., orElse: () => ... })
 ### Statement Properties
 
 ```ts
-sql`SELECT * FROM users`.stream           // Stream<A, SqlError>
-sql`SELECT * FROM users`.raw              // raw driver result
-sql`SELECT * FROM users`.values           // rows as arrays
-sql`SELECT * FROM users`.unprepared       // skip prepared statements
-sql`SELECT * FROM users`.withoutTransform // rows without name transforms
-sql`SELECT * FROM users`.compile()        // [sqlString, params] tuple
+sql`SELECT * FROM users`.stream; // Stream<A, SqlError>
+sql`SELECT * FROM users`.raw; // raw driver result
+sql`SELECT * FROM users`.values; // rows as arrays
+sql`SELECT * FROM users`.unprepared; // skip prepared statements
+sql`SELECT * FROM users`.withoutTransform; // rows without name transforms
+sql`SELECT * FROM users`.compile(); // [sqlString, params] tuple
 ```
 
-Statement extends `Effect.Effect<ReadonlyArray<A>, SqlError>` directly. No `.asEffect()` needed. Just `yield* sql\`...\``.
+Statement extends `Effect.Effect<ReadonlyArray<A>, SqlError>` directly, so `yield* sql\`...\``works in generators. In callback based APIs,`.asEffect()` can still be useful.
 
 ## Transactions
 
 ```ts
-const sql = yield* SqlClient
+const sql = yield * SqlClient.SqlClient;
 
-yield* sql.withTransaction(
-  Effect.gen(function* () {
-    yield* sql`INSERT INTO orders ${sql.insert(order)}`
-    yield* sql`UPDATE inventory SET quantity = quantity - ${qty} WHERE id = ${itemId}`
+yield * sql.withTransaction(
+  Effect.gen(function*() {
+    yield* sql`INSERT INTO orders ${sql.insert(order)}`;
+    yield* sql`UPDATE inventory SET quantity = quantity - ${qty} WHERE id = ${itemId}`;
   }),
-)
+);
 
 // Nested transactions automatically use SAVEPOINTs
-yield* sql.withTransaction(
-  Effect.gen(function* () {
-    yield* sql`INSERT INTO ...`
+yield * sql.withTransaction(
+  Effect.gen(function*() {
+    yield* sql`INSERT INTO ...`;
     yield* sql.withTransaction(
-      sql`INSERT INTO ...`  // SAVEPOINT
-    )
+      sql`INSERT INTO ...`, // SAVEPOINT
+    );
   }),
-)
+);
 ```
 
 ## Model System
@@ -390,10 +409,10 @@ Define domain models with variant schemas. Model lives under `effect/unstable/sc
 ### Model.Class
 
 ```ts
-import { Model } from "effect/unstable/schema"
-import { Schema } from "effect"
+import { Schema } from "effect";
+import { Model } from "effect/unstable/schema";
 
-const GroupId = Schema.Number.pipe(Schema.brand("GroupId"))
+const GroupId = Schema.Number.pipe(Schema.brand("GroupId"));
 
 class Group extends Model.Class<Group>("Group")({
   id: Model.Generated(GroupId),
@@ -402,47 +421,49 @@ class Group extends Model.Class<Group>("Group")({
   updatedAt: Model.DateTimeUpdateFromDate,
 }) {}
 
-Group          // select schema (all fields)
-Group.insert   // omits Generated fields (id)
-Group.update   // includes Generated fields
-Group.json     // JSON API schema
-Group.jsonCreate  // omits Generated + GeneratedByApp
-Group.jsonUpdate  // omits Generated + GeneratedByApp
+Group; // select schema (all fields)
+Group.insert; // omits Generated fields (id)
+Group.update; // includes Generated fields
+Group.json; // JSON API schema
+Group.jsonCreate; // omits Generated + GeneratedByApp
+Group.jsonUpdate; // omits Generated + GeneratedByApp
 ```
 
 ### Field Modifiers
 
-| Modifier | select | insert | update | json | jsonCreate | jsonUpdate |
-|---|---|---|---|---|---|---|
-| `Model.Generated(s)` | yes | no | yes | yes | no | no |
-| `Model.GeneratedByApp(s)` | yes | yes | yes | yes | no | no |
-| `Model.Sensitive(s)` | yes | yes | yes | no | no | no |
-| `Model.FieldOption(s)` | nullable | nullable | nullable | optional | optional+nullable | optional+nullable |
-| `Model.JsonFromString(s)` | parseJson | parseJson | parseJson | object | object | object |
+| Modifier                  | select            | insert            | update            | json                      | jsonCreate                | jsonUpdate                |
+| ------------------------- | ----------------- | ----------------- | ----------------- | ------------------------- | ------------------------- | ------------------------- |
+| `Model.Generated(s)`      | yes               | no                | yes               | yes                       | no                        | no                        |
+| `Model.GeneratedByApp(s)` | yes               | yes               | yes               | yes                       | no                        | no                        |
+| `Model.Sensitive(s)`      | yes               | yes               | yes               | no                        | no                        | no                        |
+| `Model.FieldOption(s)`    | `Option` via null | `Option` via null | `Option` via null | optional or null `Option` | optional or null `Option` | optional or null `Option` |
+| `Model.JsonFromString(s)` | parseJson         | parseJson         | parseJson         | object                    | object                    | object                    |
 
 ### DateTime Field Modifiers
 
 All DateTime modifiers auto-generate the current time on insert (and on update for Update variants).
 
-| Modifier | DB format | Insert | Update |
-|---|---|---|---|
-| `Model.DateTimeInsert` | string | auto-now | omitted |
-| `Model.DateTimeInsertFromDate` | Date | auto-now | omitted |
-| `Model.DateTimeInsertFromNumber` | number | auto-now | omitted |
-| `Model.DateTimeUpdate` | string | auto-now | auto-now |
-| `Model.DateTimeUpdateFromDate` | Date | auto-now | auto-now |
-| `Model.DateTimeUpdateFromNumber` | number | auto-now | auto-now |
+| Modifier                         | DB format | Insert   | Update   |
+| -------------------------------- | --------- | -------- | -------- |
+| `Model.DateTimeInsert`           | string    | auto-now | omitted  |
+| `Model.DateTimeInsertFromDate`   | Date      | auto-now | omitted  |
+| `Model.DateTimeInsertFromNumber` | number    | auto-now | omitted  |
+| `Model.DateTimeUpdate`           | string    | auto-now | auto-now |
+| `Model.DateTimeUpdateFromDate`   | Date      | auto-now | auto-now |
+| `Model.DateTimeUpdateFromNumber` | number    | auto-now | auto-now |
 
 ### UUID Field Modifier
 
-`Model.UuidV4Insert` auto-generates a UUID v4 on insert:
+`Model.UuidV4Insert` works with a branded `Uint8Array` schema and auto-generates UUID v4 bytes on insert:
 
 ```ts
 class Token extends Model.Class<Token>("Token")({
-  id: Model.UuidV4Insert("TokenId"),
+  id: Model.UuidV4Insert(TokenId),
   name: Schema.String,
 }) {}
 ```
+
+Here `TokenId` should be a branded `Schema.Uint8Array` schema.
 
 ## SqlModel (CRUD from Model schemas)
 
@@ -498,16 +519,15 @@ Resolvers return `RequestResolver` directly (not effects). Use `SqlResolver.requ
 const InsertResolver = SqlResolver.ordered({
   Request: InsertPersonSchema,
   Result: Person,
-  execute: (requests) =>
-    sql`INSERT INTO people ${sql.insert(requests)} RETURNING people.*`,
-})
+  execute: (requests) => sql`INSERT INTO people ${sql.insert(requests)} RETURNING people.*`,
+});
 
-const insertPerson = SqlResolver.request(InsertResolver)
+const insertPerson = SqlResolver.request(InsertResolver);
 
-const [john, joe] = yield* Effect.all(
+const [john, joe] = yield * Effect.all(
   [insertPerson({ name: "John" }), insertPerson({ name: "Joe" })],
-  { batching: true },
-)
+  { concurrency: "unbounded" },
+);
 ```
 
 ### SqlResolver.findById
@@ -520,10 +540,10 @@ const GetByIdResolver = SqlResolver.findById({
   Result: Person,
   ResultId: (result) => result.id,
   execute: (ids) => sql`SELECT * FROM people WHERE id IN ${sql.in(ids)}`,
-})
+});
 
-const getPersonById = SqlResolver.request(GetByIdResolver)
-const person = yield* getPersonById(42)
+const getPersonById = SqlResolver.request(GetByIdResolver);
+const person = yield * getPersonById(42);
 ```
 
 ### SqlResolver.grouped
@@ -536,11 +556,10 @@ const GetByNameResolver = SqlResolver.grouped({
   RequestGroupKey: (name) => name,
   Result: Person,
   ResultGroupKey: (result) => result.name,
-  execute: (names) =>
-    sql`SELECT * FROM people WHERE name IN ${sql.in(names)}`,
-})
+  execute: (names) => sql`SELECT * FROM people WHERE name IN ${sql.in(names)}`,
+});
 
-const getPersonsByName = SqlResolver.request(GetByNameResolver)
+const getPersonsByName = SqlResolver.request(GetByNameResolver);
 ```
 
 ### SqlResolver.void
@@ -551,9 +570,9 @@ Side-effect only (no result decoding).
 const DeleteByIdResolver = SqlResolver.void({
   Request: Schema.Number,
   execute: (ids) => sql`DELETE FROM people WHERE id IN ${sql.in(ids)}`,
-})
+});
 
-const deletePerson = SqlResolver.request(DeleteByIdResolver)
+const deletePerson = SqlResolver.request(DeleteByIdResolver);
 ```
 
 ### Configuring Resolvers
@@ -577,32 +596,34 @@ const findById = SqlResolver.request(resolver)
 In v4, services use `ServiceMap.Service`. There is no `Default` layer or `dependencies` option. Build layers explicitly with `Layer.effect(this, this.make)`.
 
 ```ts
-import { Effect, Layer, ServiceMap } from "effect"
-import { SqlClient, SqlSchema } from "effect/unstable/sql"
+import { Effect, Layer, ServiceMap } from "effect";
+import { SqlClient, SqlSchema } from "effect/unstable/sql";
 
 class UserRepo extends ServiceMap.Service<UserRepo, {
-  readonly insert: (request: typeof User.insert.Type) => Effect.Effect<User>
-  readonly findById: (id: UserId, orgId: OrgId) => Effect.Effect<User, UserNotFoundError>
+  readonly insert: (request: typeof User.insert.Type) => Effect.Effect<User>;
+  readonly findById: (id: UserId, orgId: OrgId) => Effect.Effect<User, UserNotFoundError>;
 }>()("UserRepo", {
-  make: Effect.gen(function* () {
-    const sql = yield* SqlClient
+  make: Effect.gen(function*() {
+    const sql = yield* SqlClient.SqlClient;
 
     const insertQuery = SqlSchema.findOne({
       Request: User.insert,
       Result: User,
-      execute: (request) => sql`
+      execute: (request) =>
+        sql`
         INSERT INTO users ${sql.insert(request).returning("*")}
       `,
-    })
+    });
 
     const findByIdQuery = SqlSchema.findOne({
       Request: Schema.Struct({ id: UserId, orgId: OrgId }),
       Result: User,
-      execute: ({ id, orgId }) => sql`
+      execute: ({ id, orgId }) =>
+        sql`
         SELECT * FROM users
         WHERE id = ${id} AND organization_id = ${orgId}
       `,
-    })
+    });
 
     return {
       insert: (request: typeof User.insert.Type) =>
@@ -621,12 +642,12 @@ class UserRepo extends ServiceMap.Service<UserRepo, {
             NoSuchElementError: () => new UserNotFoundError({ id }),
           }),
         ),
-    }
+    };
   }),
 }) {
   static layer = Layer.effect(this, this.make).pipe(
     Layer.provide(PgLive),
-  )
+  );
 }
 ```
 
@@ -643,7 +664,7 @@ const insertUser = (request: typeof User.insert.Type) =>
       SchemaError: Effect.die,
       SqlError: Effect.die,
     }),
-  )
+  );
 ```
 
 ### Convert to domain errors
@@ -656,7 +677,7 @@ const findById = (id: UserId, orgId: OrgId) =>
       SqlError: Effect.die,
       NoSuchElementError: () => new UserNotFoundError({ id }),
     }),
-  )
+  );
 ```
 
 ## Schema.fromJsonString for JSON Columns
@@ -671,12 +692,13 @@ const ResultSchema = Schema.Struct({
   name: Schema.String,
   variants: Schema.fromJsonString(Schema.Array(Variant)),
   metadata: Schema.NullOr(Schema.fromJsonString(MetadataSchema)),
-})
+});
 
 const findWithVariants = SqlSchema.findOne({
   Request: Schema.Struct({ id: ExperimentId }),
   Result: ResultSchema,
-  execute: ({ id }) => sql`
+  execute: ({ id }) =>
+    sql`
     SELECT
       e.id, e.name,
       COALESCE(JSON_AGG(v.*), '[]')::text AS variants,
@@ -686,7 +708,7 @@ const findWithVariants = SqlSchema.findOne({
     WHERE e.id = ${id}
     GROUP BY e.id
   `,
-})
+});
 ```
 
 ### Storing JSON (Request side)
@@ -698,21 +720,22 @@ const InsertChat = Schema.Struct({
     Schema.Struct({ model: Schema.String, temperature: Schema.Number }),
   ),
   segments: Schema.fromJsonString(Schema.Array(Segment)),
-})
+});
 
 const insertChat = SqlSchema.findOne({
   Request: InsertChat,
   Result: ChatModel,
-  execute: (request) => sql`
+  execute: (request) =>
+    sql`
     INSERT INTO chats ${sql.insert(request).returning("*")}
   `,
-})
+});
 
-yield* insertChat({
+yield * insertChat({
   id: chatId,
   config: { model: "gpt-4", temperature: 0.7 },
   segments: [{ type: "text", content: "hello" }],
-})
+});
 ```
 
 ### `toCodecJson` for Non-JSON-Safe Types
@@ -722,7 +745,7 @@ If your schema contains types that are not JSON-safe (e.g., `Date`,
 canonical pattern used by KeyValueStore and persistence layers:
 
 ```ts
-const codec = Schema.fromJsonString(Schema.toCodecJson(mySchema))
+const codec = Schema.fromJsonString(Schema.toCodecJson(mySchema));
 ```
 
 `fromJsonString` alone does NOT apply JSON-safe transformations. Without
@@ -746,23 +769,23 @@ class Chat extends Model.Class<Chat>("Chat")({
 PgClient exposes a `json` method for wrapping values as jsonb parameters. This is PgClient-specific, not on the base Constructor:
 
 ```ts
-const sql = yield* PgClient.PgClient
+const sql = yield * PgClient.PgClient;
 
-sql`INSERT INTO people ${sql.insert({ name: "Tim", data: sql.json({ a: 1 }) })}`
+sql`INSERT INTO people ${sql.insert({ name: "Tim", data: sql.json({ a: 1 }) })}`;
 ```
 
 ## PostgreSQL LISTEN/NOTIFY
 
 ```ts
-const sql = yield* PgClient.PgClient
+const sql = yield * PgClient.PgClient;
 
-yield* sql.listen("channel_name").pipe(
+yield * sql.listen("channel_name").pipe(
   Stream.tap((message) => Console.log("Received message", message)),
   Stream.runDrain,
   Effect.forkScoped,
-)
+);
 
-yield* sql.notify("channel_name", "Hello, world!")
+yield * sql.notify("channel_name", "Hello, world!");
 ```
 
 ## Migrations
@@ -770,22 +793,22 @@ yield* sql.notify("channel_name", "Hello, world!")
 ### PgMigrator
 
 ```ts
-import { PgMigrator } from "@effect/sql-pg"
+import { PgMigrator } from "@effect/sql-pg";
 
 const runMigrations = PgMigrator.run({
   loader: PgMigrator.fromFileSystem(path.join(__dirname, "./migrations")),
-}).pipe(Effect.provide(PgLive))
+}).pipe(Effect.provide(PgLive));
 ```
 
 ### Migration Loaders
 
 ```ts
-import { Migrator } from "effect/unstable/sql"
+import { Migrator } from "effect/unstable/sql";
 
-Migrator.fromGlob(import.meta.glob("./migrations/*.ts"))
-Migrator.fromBabelGlob(require.context("./migrations"))
-Migrator.fromRecord({ "0001_create_users": myEffect })
-Migrator.fromFileSystem("/absolute/path")
+Migrator.fromGlob(import.meta.glob("./migrations/*.ts"));
+Migrator.fromBabelGlob(require.context("./migrations"));
+Migrator.fromRecord({ "0001_create_users": myEffect });
+Migrator.fromFileSystem("/absolute/path");
 ```
 
 ### Migration File Format
@@ -793,11 +816,11 @@ Migrator.fromFileSystem("/absolute/path")
 `migrations/0001_init.ts`:
 
 ```ts
-import { SqlClient } from "effect/unstable/sql"
-import { Effect } from "effect"
+import { Effect } from "effect";
+import { SqlClient } from "effect/unstable/sql";
 
-export default Effect.gen(function* () {
-  const sql = yield* SqlClient
+export default Effect.gen(function*() {
+  const sql = yield* SqlClient.SqlClient;
 
   yield* sql`
     CREATE TABLE users (
@@ -807,20 +830,18 @@ export default Effect.gen(function* () {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-  `
-})
+  `;
+});
 ```
 
 ## Statement.Transformer
 
-Intercept and modify SQL statements at the fiber level:
+Statement transformation is driven through `Statement.CurrentTransformer`:
 
 ```ts
-import { Statement } from "effect/unstable/sql"
+import { Statement } from "effect/unstable/sql";
 
-Statement.withTransformer(effect, (statement, sql, fiberRefs, span) => ...)
-Statement.withTransformerDisabled(effect)
-Statement.setTransformer(fn) // Layer
+Layer.succeed(Statement.CurrentTransformer, transformer);
 ```
 
 ## Testing Database Code
@@ -828,24 +849,23 @@ Statement.setTransformer(fn) // Layer
 In v4, there is no `Default` or `DefaultWithoutDependencies`. Build test layers with `Layer.effect(Service, Service.make)` and provide test dependencies:
 
 ```ts
-import { it } from "@effect/vitest"
-import { Effect, Layer, Option } from "effect"
+import { it } from "@effect/vitest";
+import { Effect, Layer, Option } from "effect";
 
 const TestLive = Layer.effect(UserRepo, UserRepo.make).pipe(
   Layer.provide(PgContainer.ClientLive),
-)
+);
 
 it.layer(TestLive, { timeout: "30 seconds" })("UserRepo", (it) => {
   it.effect("insert creates user", () =>
-    Effect.gen(function* () {
-      const repo = yield* UserRepo
+    Effect.gen(function*() {
+      const repo = yield* UserRepo;
       const user = yield* repo.insert(
         User.insert.make({ name: "Test", email: "test@example.com" }),
-      )
-      expect(user.name).toBe("Test")
-    }),
-  )
-})
+      );
+      expect(user.name).toBe("Test");
+    }));
+});
 ```
 
 ## Common Query Patterns
@@ -860,7 +880,7 @@ sql`
   SELECT e.*, ee.data::text AS "eventData"
   FROM inserted e
   LEFT JOIN experiment_events ee ON e.event_id = ee.id
-`
+`;
 ```
 
 ### JSON aggregation for nested data
@@ -878,17 +898,17 @@ sql`
   FROM folders f
   LEFT JOIN files file ON file.folder_id = f.id
   GROUP BY f.id
-`
+`;
 ```
 
 ### Count with pagination
 
 ```ts
-const [data, countResult] = yield* Effect.zip(
+const [data, countResult] = yield * Effect.zip(
   findManyQuery({ orgId, limit, offset }),
   countQuery(orgId),
   { concurrent: true },
-)
+);
 ```
 
 ## Organization Isolation Pattern
@@ -899,5 +919,5 @@ Always include `organization_id` in WHERE clauses for multi-tenant data:
 sql`
   SELECT * FROM experiments
   WHERE id = ${id} AND organization_id = ${orgId}
-`
+`;
 ```

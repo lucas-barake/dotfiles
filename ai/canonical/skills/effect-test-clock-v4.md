@@ -10,9 +10,9 @@ TestClock replaces the real clock in tests, giving you precise control over time
 ## Imports
 
 ```ts
-import { TestClock } from "effect/testing"
-import { Effect, Fiber, Duration } from "effect"
-import { it, assert } from "@effect/vitest"
+import { assert, it } from "@effect/vitest";
+import { Duration, Effect, Fiber } from "effect";
+import { TestClock } from "effect/testing";
 ```
 
 The `effect/testing` subpath also exports `TestConsole`, `FastCheck`, and `TestSchema`. The main `effect` barrel does NOT re-export `testing/*`.
@@ -20,10 +20,10 @@ The `effect/testing` subpath also exports `TestConsole`, `FastCheck`, and `TestS
 ## TestClock API
 
 ```ts
-interface TestClock extends Clock {
-  adjust(duration: DurationInput): Effect<void>
-  setTime(timestamp: number): Effect<void>
-  withLive<A, E, R>(effect: Effect<A, E, R>): Effect<A, E, R>
+interface TestClock extends Clock.Clock {
+  adjust(duration: Duration.Input): Effect.Effect<void>;
+  setTime(timestamp: number): Effect.Effect<void>;
+  withLive<A, E, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A, E, R>;
 }
 ```
 
@@ -44,32 +44,30 @@ Runs an effect using the real system clock instead of the test clock. Useful whe
 Clock is a `ServiceMap.Reference<Clock>` (not a `Context.Tag`). It has a default value (the real clock) and can be overridden per-fiber. TestClock replaces it in test contexts.
 
 ```ts
-import { Clock } from "effect"
+import { Clock } from "effect";
 
-const Clock: ServiceMap.Reference<Clock>
+const Clock: ServiceMap.Reference<Clock>;
 ```
 
 ## `it.effect` vs `it.live`
 
-| Variant | Clock | Scope | Use When |
-|---|---|---|---|
-| `it.effect` | TestClock (time starts at epoch 0) | Yes | Default. Testing time-dependent code with controlled time |
-| `it.live` | Real system clock | Yes | Testing with real delays, wallclock-dependent code |
+| Variant     | Clock                              | Scope | Use When                                                  |
+| ----------- | ---------------------------------- | ----- | --------------------------------------------------------- |
+| `it.effect` | TestClock (time starts at epoch 0) | Yes   | Default. Testing time-dependent code with controlled time |
+| `it.live`   | Real system clock                  | Yes   | Testing with real delays, wallclock-dependent code        |
 
 ```ts
 it.effect("uses TestClock", () =>
   Effect.gen(function*() {
     // Effect.sleep blocks here until TestClock.adjust is called
     // Time starts at 0 (Unix epoch)
-  })
-)
+  }));
 
 it.live("uses real clock", () =>
   Effect.gen(function*() {
     // Effect.sleep actually waits
-    yield* Effect.sleep("100 millis")
-  })
-)
+    yield* Effect.sleep("100 millis");
+  }));
 ```
 
 ### No `it.scoped` or `it.scopedLive` in v4
@@ -84,19 +82,18 @@ it.live("uses real clock", () =>
 it.layer(MyServiceLive)("tests", (it) => {
   it.effect("has TestClock", () =>
     Effect.gen(function*() {
-      const service = yield* MyService
-      yield* TestClock.adjust("1 hour")
-    })
-  )
-})
+      const service = yield* MyService;
+      yield* TestClock.adjust("1 hour");
+    }));
+});
 ```
 
-Pass `{ excludeTestServices: true }` to disable:
+On the top level `it.layer(...)` call, pass `{ excludeTestServices: true }` to disable:
 
 ```ts
 it.layer(MyServiceLive, { excludeTestServices: true })("tests", (it) => {
   // No TestClock, uses real clock
-})
+});
 ```
 
 ## The Fundamental Pattern: Fork + Adjust
@@ -106,18 +103,20 @@ Time-dependent effects must be **forked** before advancing time. Otherwise the s
 ```ts
 it.effect("delay completes after adjust", () =>
   Effect.gen(function*() {
-    let elapsed = false
-    yield* Effect.sync(() => { elapsed = true })
-      .pipe(Effect.delay("10 hours"), Effect.forkChild)
+    let elapsed = false;
+    yield* Effect.sync(() => {
+      elapsed = true;
+    })
+      .pipe(Effect.delay("10 hours"), Effect.forkChild);
 
-    yield* TestClock.adjust("11 hours")
-    assert.isTrue(elapsed)
-  })
-)
+    yield* TestClock.adjust("11 hours");
+    assert.isTrue(elapsed);
+  }));
 ```
 
 The sequence is always:
-1. **Fork** the time-dependent effect (`Effect.forkChild` or `Effect.fork`)
+
+1. **Fork** the time-dependent effect (`Effect.forkChild`, `Effect.forkScoped`, or `Effect.forkDetach`)
 2. **Adjust** time to trigger the sleep
 3. **Assert** on the result (join the fiber or check side effects)
 
@@ -129,13 +128,12 @@ it.effect("sleep then return", () =>
     const fiber = yield* Effect.sleep("5 seconds").pipe(
       Effect.as("done"),
       Effect.forkChild,
-    )
+    );
 
-    yield* TestClock.adjust("5 seconds")
-    const result = yield* Fiber.join(fiber)
-    assert.strictEqual(result, "done")
-  })
-)
+    yield* TestClock.adjust("5 seconds");
+    const result = yield* Fiber.join(fiber);
+    assert.strictEqual(result, "done");
+  }));
 ```
 
 ### Multiple sleeps with incremental adjusts
@@ -143,22 +141,21 @@ it.effect("sleep then return", () =>
 ```ts
 it.effect("sequential sleeps", () =>
   Effect.gen(function*() {
-    const events: Array<string> = []
+    const events: Array<string> = [];
 
     yield* Effect.sleep("1 second").pipe(
       Effect.tap(() => Effect.sync(() => events.push("first"))),
       Effect.andThen(Effect.sleep("2 seconds")),
       Effect.tap(() => Effect.sync(() => events.push("second"))),
       Effect.forkChild,
-    )
+    );
 
-    yield* TestClock.adjust("1 second")
-    assert.deepStrictEqual(events, ["first"])
+    yield* TestClock.adjust("1 second");
+    assert.deepStrictEqual(events, ["first"]);
 
-    yield* TestClock.adjust("2 seconds")
-    assert.deepStrictEqual(events, ["first", "second"])
-  })
-)
+    yield* TestClock.adjust("2 seconds");
+    assert.deepStrictEqual(events, ["first", "second"]);
+  }));
 ```
 
 ## `setTime(Infinity)` to Run Everything
@@ -171,13 +168,12 @@ it.effect("run all delays immediately", () =>
     const fiber = yield* Effect.sleep("999 hours").pipe(
       Effect.as("done"),
       Effect.forkChild,
-    )
+    );
 
-    yield* TestClock.setTime(Number.POSITIVE_INFINITY)
-    const result = yield* Fiber.join(fiber)
-    assert.strictEqual(result, "done")
-  })
-)
+    yield* TestClock.setTime(Number.POSITIVE_INFINITY);
+    const result = yield* Fiber.join(fiber);
+    assert.strictEqual(result, "done");
+  }));
 ```
 
 This is the standard pattern for Schedule testing when you only care about the output, not the timing.
@@ -188,26 +184,25 @@ This is the standard pattern for Schedule testing when you only care about the o
 
 ```ts
 const run = Effect.fnUntraced(function*<A, E, R>(effect: Effect.Effect<A, E, R>) {
-  const fiber = yield* Effect.forkChild(effect)
-  yield* TestClock.setTime(Number.POSITIVE_INFINITY)
-  return yield* Fiber.join(fiber)
-})
+  const fiber = yield* Effect.forkChild(effect);
+  yield* TestClock.setTime(Number.POSITIVE_INFINITY);
+  return yield* Fiber.join(fiber);
+});
 
 it.effect("retry succeeds after 3 attempts", () =>
   Effect.gen(function*() {
-    let attempts = 0
+    let attempts = 0;
     const result = yield* run(
       Effect.gen(function*() {
-        attempts++
-        if (attempts < 3) return yield* Effect.fail("not yet")
-        return "success"
-      }).pipe(Effect.retry(Schedule.recurs(5)))
-    )
+        attempts++;
+        if (attempts < 3) return yield* Effect.fail("not yet");
+        return "success";
+      }).pipe(Effect.retry(Schedule.recurs(5))),
+    );
 
-    assert.strictEqual(result, "success")
-    assert.strictEqual(attempts, 3)
-  })
-)
+    assert.strictEqual(result, "success");
+    assert.strictEqual(attempts, 3);
+  }));
 ```
 
 ### Test with specific time points (cron, absolute)
@@ -215,12 +210,11 @@ it.effect("retry succeeds after 3 attempts", () =>
 ```ts
 it.effect("fires at specific time", () =>
   Effect.gen(function*() {
-    yield* TestClock.setTime(new Date(2024, 0, 1, 0, 0, 0).getTime())
+    yield* TestClock.setTime(new Date(2024, 0, 1, 0, 0, 0).getTime());
     // now clock is at Jan 1, 2024 midnight
-    yield* TestClock.adjust("1 hour")
+    yield* TestClock.adjust("1 hour");
     // now clock is at Jan 1, 2024 1:00 AM
-  })
-)
+  }));
 ```
 
 ### Testing exponential backoff
@@ -228,21 +222,20 @@ it.effect("fires at specific time", () =>
 ```ts
 it.effect("exponential backoff", () =>
   Effect.gen(function*() {
-    let attempts = 0
+    let attempts = 0;
     const fiber = yield* Effect.gen(function*() {
-      attempts++
-      return yield* Effect.fail("error")
+      attempts++;
+      return yield* Effect.fail("error");
     }).pipe(
       Effect.retry(Schedule.exponential("1 second")),
       Effect.ignore,
       Effect.forkChild,
-    )
+    );
 
-    yield* TestClock.adjust("1 second")   // first retry after 1s
-    yield* TestClock.adjust("2 seconds")  // second retry after 2s
-    yield* TestClock.adjust("4 seconds")  // third retry after 4s
-  })
-)
+    yield* TestClock.adjust("1 second"); // first retry after 1s
+    yield* TestClock.adjust("2 seconds"); // second retry after 2s
+    yield* TestClock.adjust("4 seconds"); // third retry after 4s
+  }));
 ```
 
 ## Stream + TestClock
@@ -256,13 +249,12 @@ it.effect("debounce emits last value", () =>
       Stream.debounce("1 second"),
       Stream.runCollect,
       Effect.forkScoped,
-    )
+    );
 
-    yield* TestClock.adjust("1 second")
-    const result = yield* Fiber.join(fiber)
-    assert.deepStrictEqual(result, [3])
-  })
-)
+    yield* TestClock.adjust("1 second");
+    const result = yield* Fiber.join(fiber);
+    assert.deepStrictEqual(result, [3]);
+  }));
 ```
 
 ### Throttle
@@ -274,13 +266,12 @@ it.effect("throttle limits throughput", () =>
       Stream.throttle({ cost: () => 1, units: 1, duration: "1 second" }),
       Stream.runCollect,
       Effect.forkScoped,
-    )
+    );
 
-    yield* TestClock.adjust("5 seconds")
-    const result = yield* Fiber.join(fiber)
-    assert.deepStrictEqual(result, [1, 2, 3, 4, 5])
-  })
-)
+    yield* TestClock.adjust("5 seconds");
+    const result = yield* Fiber.join(fiber);
+    assert.deepStrictEqual(result, [1, 2, 3, 4, 5]);
+  }));
 ```
 
 ### Stream retry with TestClock
@@ -288,25 +279,24 @@ it.effect("throttle limits throughput", () =>
 ```ts
 it.effect("stream retries with backoff", () =>
   Effect.gen(function*() {
-    let attempts = 0
+    let attempts = 0;
     const fiber = yield* Stream.fromEffect(
       Effect.gen(function*() {
-        attempts++
-        if (attempts < 3) return yield* Effect.fail("retry")
-        return 42
-      })
+        attempts++;
+        if (attempts < 3) return yield* Effect.fail("retry");
+        return 42;
+      }),
     ).pipe(
       Stream.retry(Schedule.exponential("1 second")),
       Stream.runCollect,
       Effect.forkScoped,
-    )
+    );
 
-    yield* TestClock.adjust("1 second")
-    yield* TestClock.adjust("2 seconds")
-    const result = yield* Fiber.join(fiber)
-    assert.deepStrictEqual(result, [42])
-  })
-)
+    yield* TestClock.adjust("1 second");
+    yield* TestClock.adjust("2 seconds");
+    const result = yield* Fiber.join(fiber);
+    assert.deepStrictEqual(result, [42]);
+  }));
 ```
 
 ## Cache / TTL Testing
@@ -318,16 +308,15 @@ it.effect("cache expires after TTL", () =>
       lookup: (key: string) => Effect.succeed(key.toUpperCase()),
       timeToLive: "1 hour",
       capacity: 100,
-    })
+    });
 
-    yield* Cache.get(cache, "test")
-    yield* TestClock.adjust("30 minutes")
-    assert.isTrue(yield* Cache.has(cache, "test"))
+    yield* Cache.get(cache, "test");
+    yield* TestClock.adjust("30 minutes");
+    assert.isTrue(yield* Cache.has(cache, "test"));
 
-    yield* TestClock.adjust("31 minutes")
-    assert.isFalse(yield* Cache.has(cache, "test"))
-  })
-)
+    yield* TestClock.adjust("31 minutes");
+    assert.isFalse(yield* Cache.has(cache, "test"));
+  }));
 ```
 
 ## `withLive` for Real Clock in a Test
@@ -337,55 +326,54 @@ When you need one real delay inside a TestClock-controlled test:
 ```ts
 it.effect("mixed real and test time", () =>
   Effect.gen(function*() {
-    yield* TestClock.withLive(Effect.sleep("10 millis"))
+    yield* TestClock.withLive(Effect.sleep("10 millis"));
 
     const fiber = yield* Effect.sleep("1 hour").pipe(
       Effect.as("done"),
       Effect.forkChild,
-    )
-    yield* TestClock.adjust("1 hour")
-    const result = yield* Fiber.join(fiber)
-    assert.strictEqual(result, "done")
-  })
-)
+    );
+    yield* TestClock.adjust("1 hour");
+    const result = yield* Fiber.join(fiber);
+    assert.strictEqual(result, "done");
+  }));
 ```
 
 ## Warning System
 
-TestClock logs a warning if `Effect.sleep` is called without a subsequent `adjust`/`setTime` within 1 second (real time). This catches the common mistake of forgetting to advance the clock. The warning is logged via `Console.warn` using the live clock.
+TestClock logs a warning if `Effect.sleep` is called without a subsequent `adjust` or `setTime` within 1 second of live time. This catches the common mistake of forgetting to advance the clock. The warning is emitted with `Effect.logWarning(...)` and scheduled against the live clock.
 
-Configurable via `TestClock.layer({ warningStart: "5 seconds" })` or disable with `warningStart: Duration.infinity`.
+Configurable via `TestClock.layer({ warningDelay: "5 seconds" })` or disable with `warningDelay: Duration.infinity`.
 
-## `Effect.forkChild` vs `Effect.fork`
+## `Effect.forkChild` vs `Effect.forkScoped` vs `Effect.forkDetach`
 
-In v4, prefer `Effect.forkChild` for test fibers. Child fibers are automatically interrupted when the parent scope closes, preventing fiber leaks in tests. `Effect.fork` creates a daemon fiber that survives the test scope (rarely what you want).
+In tests, prefer `Effect.forkChild` or `Effect.forkScoped`. Use `Effect.forkDetach` only when you intentionally want detached daemon style behavior.
 
 ```ts
-yield* myEffect.pipe(Effect.forkChild)    // interrupted when test ends
-yield* myEffect.pipe(Effect.fork)          // daemon, survives test scope
-yield* myEffect.pipe(Effect.forkScoped)    // tied to Scope, also fine in tests
+yield * myEffect.pipe(Effect.forkChild); // interrupted when test ends
+yield * myEffect.pipe(Effect.forkDetach); // daemon, survives test scope
+yield * myEffect.pipe(Effect.forkScoped); // tied to Scope, also fine in tests
 ```
 
 ## Key Differences from v3
 
-| v3 | v4 |
-|---|---|
-| `import { TestClock } from "effect"` | `import { TestClock } from "effect/testing"` |
-| `Clock` is `Context.Tag` | `Clock` is `ServiceMap.Reference` |
-| `TestContext.TestContext` bundles test services | No public `TestContext` module |
-| `it.scoped` / `it.scopedLive` exist | Only `it.effect` and `it.live` (`it.effect` already scopes) |
-| `Effect.fork` in tests | `Effect.forkChild` preferred (auto-interrupted on scope close) |
-| Internal uses `Deferred` for sleep sync | Internal uses `Effect.Latch` for sleep sync |
-| `adjust` accepts `Duration` | `adjust` accepts `DurationInput` (strings like `"1 hour"` work) |
+| v3                                              | v4                                                              |
+| ----------------------------------------------- | --------------------------------------------------------------- |
+| `import { TestClock } from "effect"`            | `import { TestClock } from "effect/testing"`                    |
+| `Clock` is `Context.Tag`                        | `Clock` is `ServiceMap.Reference`                               |
+| `TestContext.TestContext` bundles test services | No public `TestContext` module                                  |
+| `it.scoped` / `it.scopedLive` exist             | Only `it.effect` and `it.live` (`it.effect` already scopes)     |
+| Detached daemon style fibers                    | `Effect.forkDetach`                                             |
+| Internal uses `Deferred` for sleep sync         | Internal uses `Effect.Latch` for sleep sync                     |
+| `adjust` accepts `Duration`                     | `adjust` accepts `DurationInput` (strings like `"1 hour"` work) |
 
 ## Quick Reference
 
-| Pattern | When |
-|---|---|
+| Pattern                                 | When                                          |
+| --------------------------------------- | --------------------------------------------- |
 | `Effect.forkChild` + `TestClock.adjust` | Default. Control exactly when sleeps complete |
-| `TestClock.setTime(Infinity)` | Run all pending sleeps immediately |
-| `TestClock.setTime(timestamp)` | Set clock to absolute time (cron, dates) |
-| `TestClock.withLive(effect)` | Run one effect with the real clock |
-| `it.effect` | Test with TestClock (default) |
-| `it.live` | Test with real clock |
-| Incremental `adjust` calls | Match backoff/retry durations exactly |
+| `TestClock.setTime(Infinity)`           | Run all pending sleeps immediately            |
+| `TestClock.setTime(timestamp)`          | Set clock to absolute time (cron, dates)      |
+| `TestClock.withLive(effect)`            | Run one effect with the real clock            |
+| `it.effect`                             | Test with TestClock (default)                 |
+| `it.live`                               | Test with real clock                          |
+| Incremental `adjust` calls              | Match backoff/retry durations exactly         |

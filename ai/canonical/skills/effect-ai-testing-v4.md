@@ -5,7 +5,7 @@ description: Testing patterns for effect/unstable/ai with mock LanguageModel, to
 
 # Effect AI Testing (v4 / effect-smol)
 
-All testing mocks at the `LanguageModel` service boundary. No provider (Anthropic, OpenAI, etc.) is instantiated in tests. The mock goes through the real `LanguageModel.make` constructor, so tool call resolution, schema decoding, and response wrapping all work identically to production.
+The shared AI tests in `effect-smol` usually mock at the `LanguageModel` service boundary. This exercises the real `LanguageModel.make` flow for shared prompt normalization, tool resolution, and response wrapping, but it does not replace provider specific adapter tests.
 
 > **See also**: Load the `effect-ai-v4` skill for full AI API reference. Load the `effect-testing` skill for general Effect testing patterns.
 
@@ -14,51 +14,64 @@ All testing mocks at the `LanguageModel` service boundary. No provider (Anthropi
 The test mock utility is internal to `effect` and not publicly exported. Copy it into your test directory:
 
 ```ts
-import { LanguageModel, Prompt, Response, Tool } from "effect/unstable/ai"
-import { dual, Effect, Predicate, Stream } from "effect"
+import { dual, Effect, Predicate, Stream } from "effect";
+import { LanguageModel, Prompt, Response, Tool } from "effect/unstable/ai";
 
 interface WithLanguageModelOptions {
   readonly generateText?:
     | Array<Response.PartEncoded>
-    | ((opts: LanguageModel.ProviderOptions) => Array<Response.PartEncoded> | Effect.Effect<Array<Response.PartEncoded>>)
+    | ((
+      opts: LanguageModel.ProviderOptions,
+    ) => Array<Response.PartEncoded> | Effect.Effect<Array<Response.PartEncoded>>);
   readonly streamText?:
     | Array<Response.StreamPartEncoded>
-    | ((opts: LanguageModel.ProviderOptions) => Array<Response.StreamPartEncoded> | Stream.Stream<Response.StreamPartEncoded>)
+    | ((
+      opts: LanguageModel.ProviderOptions,
+    ) => Array<Response.StreamPartEncoded> | Stream.Stream<Response.StreamPartEncoded>);
 }
 
 export const withLanguageModel: {
-  (options: WithLanguageModelOptions): <A, E, R>(effect: Effect.Effect<A, E, R>) => Effect.Effect<A, E, Exclude<R, LanguageModel.LanguageModel>>
-  <A, E, R>(effect: Effect.Effect<A, E, R>, options: WithLanguageModelOptions): Effect.Effect<A, E, Exclude<R, LanguageModel.LanguageModel>>
-} = dual(2, <A, E, R>(effect: Effect.Effect<A, E, R>, options: WithLanguageModelOptions) =>
-  Effect.provideServiceEffect(
-    effect,
-    LanguageModel.LanguageModel,
-    LanguageModel.make({
-      generateText: (opts) => {
-        if (Predicate.isUndefined(options.generateText)) return Effect.succeed([])
-        if (Array.isArray(options.generateText)) return Effect.succeed(options.generateText)
-        const result = options.generateText(opts)
-        return Effect.isEffect(result) ? result : Effect.succeed(result)
-      },
-      streamText: (opts) => {
-        if (Predicate.isUndefined(options.streamText)) return Stream.empty
-        if (Array.isArray(options.streamText)) return Stream.fromIterable(options.streamText)
-        const result = options.streamText(opts)
-        return Array.isArray(result) ? Stream.fromIterable(result) : result
-      }
-    })
-  )
-)
+  (
+    options: WithLanguageModelOptions,
+  ): <A, E, R>(
+    effect: Effect.Effect<A, E, R>,
+  ) => Effect.Effect<A, E, Exclude<R, LanguageModel.LanguageModel>>;
+  <A, E, R>(
+    effect: Effect.Effect<A, E, R>,
+    options: WithLanguageModelOptions,
+  ): Effect.Effect<A, E, Exclude<R, LanguageModel.LanguageModel>>;
+} = dual(
+  2,
+  <A, E, R>(effect: Effect.Effect<A, E, R>, options: WithLanguageModelOptions) =>
+    Effect.provideServiceEffect(
+      effect,
+      LanguageModel.LanguageModel,
+      LanguageModel.make({
+        generateText: (opts) => {
+          if (Predicate.isUndefined(options.generateText)) return Effect.succeed([]);
+          if (Array.isArray(options.generateText)) return Effect.succeed(options.generateText);
+          const result = options.generateText(opts);
+          return Effect.isEffect(result) ? result : Effect.succeed(result);
+        },
+        streamText: (opts) => {
+          if (Predicate.isUndefined(options.streamText)) return Stream.empty;
+          if (Array.isArray(options.streamText)) return Stream.fromIterable(options.streamText);
+          const result = options.streamText(opts);
+          return Array.isArray(result) ? Stream.fromIterable(result) : result;
+        },
+      }),
+    ),
+);
 ```
 
 ## `withLanguageModel` Usage
 
 Three forms per method:
 
-| Form | generateText | streamText |
-|---|---|---|
-| Static array | `Array<Response.PartEncoded>` | `Array<Response.StreamPartEncoded>` |
-| Sync callback | `(opts) => Array<PartEncoded>` | `(opts) => Array<StreamPartEncoded>` |
+| Form           | generateText                           | streamText                            |
+| -------------- | -------------------------------------- | ------------------------------------- |
+| Static array   | `Array<Response.PartEncoded>`          | `Array<Response.StreamPartEncoded>`   |
+| Sync callback  | `(opts) => Array<PartEncoded>`         | `(opts) => Array<StreamPartEncoded>`  |
 | Async callback | `(opts) => Effect<Array<PartEncoded>>` | `(opts) => Stream<StreamPartEncoded>` |
 
 When omitted, `generateText` defaults to `Effect.succeed([])` and `streamText` defaults to `Stream.empty`.
@@ -67,23 +80,23 @@ The callback receives `ProviderOptions`:
 
 ```ts
 interface ProviderOptions {
-  readonly prompt: Prompt.Prompt
-  readonly tools: ReadonlyArray<Tool.Any>
+  readonly prompt: Prompt.Prompt;
+  readonly tools: ReadonlyArray<Tool.Any>;
   readonly responseFormat:
-    | { readonly type: "text" }
-    | { readonly type: "json"; readonly objectName: string; readonly schema: Schema.Schema.Any }
-  readonly toolChoice: ToolChoice<any>
-  readonly span: Span
+    | { readonly type: "text"; }
+    | { readonly type: "json"; readonly objectName: string; readonly schema: Schema.Top; };
+  readonly toolChoice: ToolChoice<any>;
+  readonly span: Span;
 }
 ```
 
 ## Basic generateText Mock
 
 ```ts
-import { LanguageModel } from "effect/unstable/ai"
-import { it, assert } from "@effect/vitest"
-import { Effect } from "effect"
-import { withLanguageModel } from "./utils.js"
+import { assert, it } from "@effect/vitest";
+import { Effect } from "effect";
+import { LanguageModel } from "effect/unstable/ai";
+import { withLanguageModel } from "./utils.js";
 
 it.effect("returns text response", () =>
   Effect.gen(function*() {
@@ -92,11 +105,11 @@ it.effect("returns text response", () =>
     }).pipe(
       withLanguageModel({
         generateText: [{ type: "text", text: "Hello back" }],
-      })
-    )
+      }),
+    );
 
-    assert.strictEqual(response.text, "Hello back")
-  }))
+    assert.strictEqual(response.text, "Hello back");
+  }));
 ```
 
 Mock data uses **encoded types** (`PartEncoded`, `StreamPartEncoded`). Field values like `params` are plain objects. The framework handles decoding internally.
@@ -108,7 +121,7 @@ Use the callback form to inspect `ProviderOptions`:
 ```ts
 it.effect("sends correct prompt and tools", () =>
   Effect.gen(function*() {
-    let capturedOpts: LanguageModel.ProviderOptions | undefined
+    let capturedOpts: LanguageModel.ProviderOptions | undefined;
 
     yield* LanguageModel.generateText({
       prompt: "Test",
@@ -116,16 +129,16 @@ it.effect("sends correct prompt and tools", () =>
     }).pipe(
       withLanguageModel({
         generateText: (opts) => {
-          capturedOpts = opts
-          return [{ type: "text", text: "ok" }]
+          capturedOpts = opts;
+          return [{ type: "text", text: "ok" }];
         },
       }),
       Effect.provide(HandlersLive),
-    )
+    );
 
-    assert.strictEqual(capturedOpts!.tools.length, 1)
-    assert.strictEqual(capturedOpts!.tools[0].name, "MyTool")
-  }))
+    assert.strictEqual(capturedOpts!.tools.length, 1);
+    assert.strictEqual(capturedOpts!.tools[0].name, "MyTool");
+  }));
 ```
 
 ## Tool Call Testing
@@ -150,11 +163,11 @@ it.effect("resolves tool calls via real handlers", () =>
         }],
       }),
       Effect.provide(HandlersLive),
-    )
+    );
 
-    assert.strictEqual(response.toolResults.length, 1)
-    assert.strictEqual(response.toolResults[0].isFailure, false)
-  }))
+    assert.strictEqual(response.toolResults.length, 1);
+    assert.strictEqual(response.toolResults[0].isFailure, false);
+  }));
 ```
 
 The mock returns a `tool-call` encoded part. The framework calls `toolkit.handle(name, params)` which decodes params, runs the real handler, encodes the result, and appends a `tool-result` part.
@@ -180,10 +193,10 @@ it.effect("propagates handler failure as Effect error", () =>
       }),
       Effect.provide(HandlersLive),
       Effect.flip,
-    )
+    );
 
-    assert.strictEqual(error._tag, "MyToolError")
-  }))
+    assert.strictEqual(error._tag, "MyToolError");
+  }));
 ```
 
 **`failureMode: "return"`:** Handler failures are captured as tool results with `isFailure: true` and sent back to the model.
@@ -204,10 +217,10 @@ it.effect("captures handler failure as tool result", () =>
         }],
       }),
       Effect.provide(ReturnModeHandlersLive),
-    )
+    );
 
-    assert.strictEqual(response.toolResults[0].isFailure, true)
-  }))
+    assert.strictEqual(response.toolResults[0].isFailure, true);
+  }));
 ```
 
 ### Malformed tool parameters
@@ -231,10 +244,10 @@ it.effect("raises error on invalid params", () =>
       }),
       Effect.provide(HandlersLive),
       Effect.flip,
-    )
+    );
 
-    assert.strictEqual(error.reason._tag, "ToolParameterValidationError")
-  }))
+    assert.strictEqual(error.reason._tag, "ToolParameterValidationError");
+  }));
 ```
 
 ### Preliminary results (streaming tool progress)
@@ -244,13 +257,13 @@ Handler gets `ctx` with `preliminary(result)` that emits intermediate results to
 ```ts
 it.effect("emits preliminary results during tool execution", () =>
   Effect.gen(function*() {
-    const toolkit = Toolkit.make(IncrementalTool)
+    const toolkit = Toolkit.make(IncrementalTool);
     const handlers = toolkit.toLayer({
       IncrementalTool: Effect.fnUntraced(function*(_, ctx) {
-        yield* ctx.preliminary({ status: "loading", progress: 50 })
-        return { status: "complete" }
-      })
-    })
+        yield* ctx.preliminary({ status: "loading", progress: 50 });
+        return { status: "complete" };
+      }),
+    });
 
     const response = yield* LanguageModel.streamText({
       prompt: "Test",
@@ -266,10 +279,10 @@ it.effect("emits preliminary results during tool execution", () =>
         }],
       }),
       Effect.provide(handlers),
-    )
+    );
 
     // response contains: tool-call, preliminary tool-result (preliminary: true), final tool-result (preliminary: false)
-  }))
+  }));
 ```
 
 ### Tool.dynamic testing (JSON Schema parameters)
@@ -282,20 +295,21 @@ it.effect("passes parameters as unknown with JSON Schema", () =>
     const SearchTool = Tool.dynamic("SearchTool", {
       parameters: {
         type: "object",
-        properties: { query: { type: "string" } }
+        properties: { query: { type: "string" } },
       },
-      success: Schema.Array(Schema.String)
-    })
-    const toolkit = Toolkit.make(SearchTool)
+      success: Schema.Array(Schema.String),
+    });
+    const toolkit = Toolkit.make(SearchTool);
     const handlers = toolkit.toLayer({
       SearchTool: (params: unknown) => {
-        const { query } = params as { query: string }
-        return Effect.succeed([`result for ${query}`])
-      }
-    })
+        const { query } = params as { query: string; };
+        return Effect.succeed([`result for ${query}`]);
+      },
+    });
 
     const response = yield* LanguageModel.generateText({
-      prompt: "Search", toolkit,
+      prompt: "Search",
+      toolkit,
     }).pipe(
       withLanguageModel({
         generateText: [{
@@ -306,10 +320,10 @@ it.effect("passes parameters as unknown with JSON Schema", () =>
         }],
       }),
       Effect.provide(handlers),
-    )
+    );
 
-    assert.strictEqual(response.toolResults.length, 1)
-  }))
+    assert.strictEqual(response.toolResults.length, 1);
+  }));
 ```
 
 ## Provider-Defined Tool Testing
@@ -348,12 +362,12 @@ it.effect("passes through provider-executed results", () =>
             providerExecuted: true,
           },
         ],
-      })
-    )
+      }),
+    );
 
-    assert.strictEqual(response.toolResults.length, 1)
-    assert.strictEqual(response.toolResults[0].isFailure, false)
-  }))
+    assert.strictEqual(response.toolResults.length, 1);
+    assert.strictEqual(response.toolResults[0].isFailure, false);
+  }));
 ```
 
 ### Handler required (`requiresHandler: true`)
@@ -376,10 +390,10 @@ it.effect("resolves via real handler", () =>
         }],
       }),
       Effect.provide(CustomHandlersLive),
-    )
+    );
 
-    assert.strictEqual(response.toolResults.length, 1)
-  }))
+    assert.strictEqual(response.toolResults.length, 1);
+  }));
 ```
 
 ## Streaming Tests
@@ -391,15 +405,20 @@ Stream processing must be forked. Use a latch for synchronization and TestClock 
 ```ts
 it.effect("emits tool calls before handler completes", () =>
   Effect.gen(function*() {
-    const parts: Array<Response.StreamPart<Toolkit.Tools<typeof MyToolkit>>> = []
-    const latch = yield* Effect.makeLatch()
+    const parts: Array<Response.StreamPart<Toolkit.Tools<typeof MyToolkit>>> = [];
+    const latch = yield* Effect.makeLatch();
 
     yield* LanguageModel.streamText({
       prompt: [],
       toolkit: MyToolkit,
     }).pipe(
       Stream.runForEach((part) =>
-        Effect.andThen(latch.open, Effect.sync(() => { parts.push(part) }))
+        Effect.andThen(
+          latch.open,
+          Effect.sync(() => {
+            parts.push(part);
+          }),
+        )
       ),
       withLanguageModel({
         streamText: [{
@@ -411,16 +430,16 @@ it.effect("emits tool calls before handler completes", () =>
       }),
       Effect.provide(HandlersLive),
       Effect.forkScoped,
-    )
+    );
 
-    yield* latch.await
-    assert.strictEqual(parts.length, 1)
-    assert.strictEqual(parts[0].type, "tool-call")
+    yield* latch.await;
+    assert.strictEqual(parts.length, 1);
+    assert.strictEqual(parts[0].type, "tool-call");
 
-    yield* TestClock.adjust("10 seconds")
-    assert.strictEqual(parts.length, 2)
-    assert.strictEqual(parts[1].type, "tool-result")
-  }))
+    yield* TestClock.adjust("10 seconds");
+    assert.strictEqual(parts.length, 2);
+    assert.strictEqual(parts[1].type, "tool-result");
+  }));
 ```
 
 The latch opens when the first part arrives. After `latch.await`, the tool-call has been emitted but the handler hasn't completed. `TestClock.adjust` advances virtual time, triggering handler completion.
@@ -430,10 +449,14 @@ The latch opens when the first part arrives. After `latch.await`, the tool-call 
 ```ts
 it.effect("streams text deltas", () =>
   Effect.gen(function*() {
-    const parts: Array<Response.StreamPart<{}>> = []
+    const parts: Array<Response.StreamPart<{}>> = [];
 
     yield* LanguageModel.streamText({ prompt: "Hello" }).pipe(
-      Stream.runForEach((part) => Effect.sync(() => { parts.push(part) })),
+      Stream.runForEach((part) =>
+        Effect.sync(() => {
+          parts.push(part);
+        })
+      ),
       withLanguageModel({
         streamText: [
           { type: "text-start", id: "1" },
@@ -442,32 +465,32 @@ it.effect("streams text deltas", () =>
           { type: "text-end", id: "1" },
         ],
       }),
-    )
+    );
 
-    assert.strictEqual(parts.length, 4)
-    assert.strictEqual(parts[1].type, "text-delta")
-  }))
+    assert.strictEqual(parts.length, 4);
+    assert.strictEqual(parts[1].type, "text-delta");
+  }));
 ```
 
 ## Chat Persistence Testing
 
-Chat tests use `it.scoped` because Chat.Persistence requires a Scope.
+Chat persistence tests in `effect-smol` use plain `it` with explicit `Effect.runPromise(...)` style execution. Use `it.effect` when the test body itself is Effectful.
 
 ### Setup
 
 ```ts
-import { Chat, IdGenerator, Prompt } from "effect/unstable/ai"
-import * as Persistence from "@effect/experimental/Persistence"
+import { Chat, IdGenerator, Prompt } from "effect/unstable/ai";
+import * as Persistence from "effect/unstable/persistence";
 
 const withConstantIdGenerator = (id: string) =>
   Effect.provideService(IdGenerator.IdGenerator, {
     generateId: () => Effect.succeed(id),
-  })
+  });
 
 const PersistenceLayer = Layer.provideMerge(
   Chat.layerPersisted({ storeId: "chat" }),
   Persistence.layerMemory,
-)
+);
 ```
 
 `Persistence.layerMemory` provides an in-memory backing store. `withConstantIdGenerator` makes message IDs deterministic.
@@ -475,69 +498,73 @@ const PersistenceLayer = Layer.provideMerge(
 ### Test: Chat history is persisted
 
 ```ts
-it.scoped("persists chat history", () =>
-  Effect.gen(function*() {
-    const backing = yield* Persistence.BackingPersistence
-    const persistence = yield* Chat.Persistence
-    const store = yield* backing.make("chat")
-    const chat = yield* persistence.getOrCreate("conv-1")
+it("persists chat history", async () =>
+  await Effect.gen(function*() {
+    const backing = yield* Persistence.BackingPersistence;
+    const persistence = yield* Chat.Persistence;
+    const store = yield* backing.make("chat");
+    const chat = yield* persistence.getOrCreate("conv-1");
 
     yield* chat.generateText({ prompt: "hello" }).pipe(
       withLanguageModel({
         generateText: [{ type: "text", text: "hi there" }],
-      })
-    )
+      }),
+    );
 
-    const chatHistory = yield* Ref.get(chat.history)
-    const storeHistory = yield* store.get("conv-1").pipe(
-      Effect.flatten,
-      Effect.flatMap(Schema.decodeUnknown(Prompt.FromJson)),
-    )
+    const chatHistory = yield* Ref.get(chat.history);
+    const encoded = yield* store.get("conv-1");
+    const storeHistory = encoded === undefined
+      ? undefined
+      : yield* Schema.decodeUnknownEffect(Prompt.Prompt)(encoded);
 
-    assert.deepStrictEqual(chatHistory, storeHistory)
-  }).pipe(withConstantIdGenerator("msg_001"), Effect.provide(PersistenceLayer)))
+    assert.deepStrictEqual(chatHistory, storeHistory);
+  }).pipe(withConstantIdGenerator("msg_001"), Effect.provide(PersistenceLayer)).pipe(
+    Effect.runPromise,
+  ));
 ```
 
 ### Test: TTL expiration with TestClock
 
 ```ts
-it.scoped("expires after timeToLive", () =>
-  Effect.gen(function*() {
-    const backing = yield* Persistence.BackingPersistence
-    const persistence = yield* Chat.Persistence
-    const store = yield* backing.make("chat")
+it("expires after timeToLive", async () =>
+  await Effect.gen(function*() {
+    const backing = yield* Persistence.BackingPersistence;
+    const persistence = yield* Chat.Persistence;
+    const store = yield* backing.make("chat");
     const chat = yield* persistence.getOrCreate("conv-1", {
       timeToLive: "30 days",
-    })
+    });
 
     yield* chat.generateText({ prompt: "hello" }).pipe(
       withLanguageModel({
         generateText: [{ type: "text", text: "hi" }],
-      })
-    )
+      }),
+    );
 
-    const before = yield* store.get("conv-1")
-    assert.isTrue(Option.isSome(before))
+    const before = yield* store.get("conv-1");
+    assert.isDefined(before);
 
-    yield* TestClock.adjust("30 days")
+    yield* TestClock.adjust("30 days");
 
-    const after = yield* store.get("conv-1")
-    assert.deepStrictEqual(after, Option.none())
-  }).pipe(withConstantIdGenerator("msg_001"), Effect.provide(PersistenceLayer)))
+    const after = yield* store.get("conv-1");
+    assert.isUndefined(after);
+  }).pipe(withConstantIdGenerator("msg_001"), Effect.provide(PersistenceLayer)).pipe(
+    Effect.runPromise,
+  ));
 ```
 
 ### Test: ChatNotFoundError
 
 ```ts
-it.scoped("raises ChatNotFoundError for missing chat", () =>
-  Effect.gen(function*() {
-    const persistence = yield* Chat.Persistence
+it("raises ChatNotFoundError for missing chat", async () =>
+  await Effect.gen(function*() {
+    const persistence = yield* Chat.Persistence;
 
-    const error = yield* persistence.get("nonexistent").pipe(Effect.flip)
+    const error = yield* persistence.get("nonexistent").pipe(Effect.flip);
 
-    assert.instanceOf(error, Chat.ChatNotFoundError)
-    assert.strictEqual(error.chatId, "nonexistent")
-  }).pipe(Effect.provide(PersistenceLayer)))
+    assert.instanceOf(error, Chat.ChatNotFoundError);
+    assert.strictEqual(error.chatId, "nonexistent");
+  }).pipe(Effect.provide(PersistenceLayer)).pipe(Effect.runPromise));
 ```
 
 ## Prompt Testing (Pure, No Effect)
@@ -545,7 +572,7 @@ it.scoped("raises ChatNotFoundError for missing chat", () =>
 Prompt tests are pure data tests. No `it.effect`, no mock, no layers.
 
 ```ts
-import { Prompt, Response } from "effect/unstable/ai"
+import { Prompt, Response } from "effect/unstable/ai";
 
 it("reconstructs streaming deltas into messages", () => {
   const parts = [
@@ -553,27 +580,27 @@ it("reconstructs streaming deltas into messages", () => {
     Response.makePart("text-delta", { id: "1", delta: "Hello" }),
     Response.makePart("text-delta", { id: "1", delta: ", World!" }),
     Response.makePart("text-end", { id: "1" }),
-  ]
-  const prompt = Prompt.fromResponseParts(parts)
+  ];
+  const prompt = Prompt.fromResponseParts(parts);
   const expected = Prompt.make([{
     role: "assistant",
     content: [{ type: "text", text: "Hello, World!" }],
-  }])
-  assert.deepStrictEqual(prompt, expected)
-})
+  }]);
+  assert.deepStrictEqual(prompt, expected);
+});
 ```
 
 ## Mocking Tokenizer
 
 ```ts
-import { Tokenizer, Prompt } from "effect/unstable/ai"
+import { Prompt, Tokenizer } from "effect/unstable/ai";
 
 const mockTokenizer = Effect.provideService(
   Tokenizer.Tokenizer,
   Tokenizer.make({
     tokenize: (content) => Effect.succeed([1, 2, 3]),
   }),
-)
+);
 ```
 
 `Tokenizer.make` builds `truncate` automatically from `tokenize`.
@@ -623,8 +650,7 @@ Effect.gen(function*() { ... }).pipe(
 )
 ```
 
-## `it.effect` vs `it.scoped`
+## `it.effect` vs plain `it`
 
 - `it.effect`: No Scope requirement. Use for LanguageModel and Tool tests.
-- `it.scoped`: Provides a Scope. Use for Chat.Persistence tests (resources require Scope).
-- Plain `it`: No Effect at all. Use for pure Prompt data tests.
+- Plain `it`: Use for pure Prompt data tests or for persistence tests that explicitly call `Effect.runPromise(...)`.

@@ -10,50 +10,50 @@ Property-based testing in v4 spans three layers: `FastCheck` re-export, `Schema.
 ## Imports
 
 ```ts
-import { FastCheck } from "effect/testing"
-import { Schema } from "effect"
-import { it } from "@effect/vitest"
+import { it } from "@effect/vitest";
+import { Effect, Schema } from "effect";
+import { FastCheck } from "effect/testing";
 ```
 
 Deep import also works:
 
 ```ts
-import * as FastCheck from "effect/testing/FastCheck"
+import * as FastCheck from "effect/testing/FastCheck";
 ```
 
 This re-exports the entire `fast-check` (v4.5.3+) API surface.
 
 ## Schema.toArbitrary
 
-Generate a fast-check `Arbitrary<T>` from any `Schema<T>`:
+Generate a fast-check `Arbitrary<T>` from many built in schemas and from custom declarations that provide `toArbitrary`:
 
 ```ts
 const UserArb = Schema.toArbitrary(
   Schema.Struct({
     name: Schema.String,
-    age: Schema.Int.pipe(Schema.between(0, 150)),
+    age: Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 150 })),
     email: Schema.String,
-  })
-)
-//=> FastCheck.Arbitrary<{ name: string; age: number; email: string }>
+  }),
+);
+// => FastCheck.Arbitrary<{ name: string; age: number; email: string }>
 
 FastCheck.assert(
-  FastCheck.property(UserArb, (user) => user.age >= 0 && user.age <= 150)
-)
+  FastCheck.property(UserArb, (user) => user.age >= 0 && user.age <= 150),
+);
 ```
 
-`Schema.toArbitraryLazy` defers the fast-check import for tree-shaking:
+`Schema.toArbitraryLazy` returns a lazy arbitrary factory:
 
 ```ts
-const lazyArb = Schema.toArbitraryLazy(Schema.String)
-//=> (fc: typeof FastCheck) => FastCheck.Arbitrary<string>
+const lazyArb = Schema.toArbitraryLazy(Schema.String);
+// => (fc: typeof FastCheck) => FastCheck.Arbitrary<string>
 
-const arb = lazyArb(FastCheck)
+const arb = lazyArb(FastCheck);
 ```
 
 ### Supported schema types
 
-Arbitraries are generated for all built-in schema types: primitives, structs, arrays, tuples, unions, tagged unions, enums, literals, template literals, branded types, refinements (with constraints like `between`, `minLength`, `maxLength`), optional, nullable, transforms, and more.
+Arbitraries are generated for many built in schema types. Unsupported declarations and `Schema.Never` throw unless the schema provides a `toArbitrary` annotation.
 
 ## `it.prop` (non-effectful)
 
@@ -62,25 +62,29 @@ Property tests with raw `FastCheck.Arbitrary` values. Runs `fc.assert(fc.propert
 ### Array form
 
 ```ts
-it.prop("addition is commutative", [FastCheck.integer(), FastCheck.integer()], ([a, b]) =>
-  a + b === b + a
-)
+it.prop(
+  "addition is commutative",
+  [FastCheck.integer(), FastCheck.integer()],
+  ([a, b]) => a + b === b + a,
+);
 ```
 
 ### Object form
 
 ```ts
-it.prop("addition is commutative", { a: FastCheck.integer(), b: FastCheck.integer() }, ({ a, b }) =>
-  a + b === b + a
-)
+it.prop(
+  "addition is commutative",
+  { a: FastCheck.integer(), b: FastCheck.integer() },
+  ({ a, b }) => a + b === b + a,
+);
 ```
 
 ### With fast-check parameters
 
 ```ts
 it.prop("holds for many runs", [FastCheck.integer()], ([n]) => n === n, {
-  fastCheck: { numRuns: 1000 }
-})
+  fastCheck: { numRuns: 1000 },
+});
 ```
 
 ### IMPORTANT: `it.prop` does NOT accept Schemas
@@ -89,44 +93,41 @@ The non-effectful `it.prop` only accepts `FastCheck.Arbitrary` values. Passing a
 
 ```ts
 // WRONG - throws at runtime
-it.prop("bad", [Schema.String], ([s]) => s.length >= 0)
+it.prop("bad", [Schema.String], ([s]) => s.length >= 0);
 
 // CORRECT - convert manually
-it.prop("good", [Schema.toArbitrary(Schema.String)], ([s]) => s.length >= 0)
+it.prop("good", [Schema.toArbitrary(Schema.String)], ([s]) => s.length >= 0);
 
 // CORRECT - use it.effect.prop (auto-converts)
-it.effect.prop("good", [Schema.String], ([s]) =>
-  Effect.succeed(s.length >= 0)
-)
+it.effect.prop("good", [Schema.String], ([s]) => Effect.succeed(s.length >= 0));
 ```
 
 ## `it.effect.prop` (effectful)
 
-Property tests that run inside `Effect.gen`. Accepts **both** `FastCheck.Arbitrary` and `Schema.Schema` values. Schemas are auto-converted via `Schema.toArbitrary()`.
+Property tests that run inside `Effect.gen`. Accepts `FastCheck.Arbitrary` values, and array form reliably auto converts `Schema.Schema` values via `Schema.toArbitrary()`.
 
 ### Array form with Schema
 
 ```ts
 it.effect.prop("string roundtrip", [Schema.String], ([s]) =>
   Effect.gen(function*() {
-    const encoded = yield* Schema.encode(Schema.String)(s)
-    return encoded === s
-  })
-)
+    const encoded = yield* Schema.encode(Schema.String)(s);
+    return encoded === s;
+  }));
 ```
 
-### Object form mixing Schema and Arbitrary
+### Object form mixing Arbitraries
 
 ```ts
 it.effect.prop(
   "user age is valid",
-  { name: Schema.String, age: FastCheck.integer({ min: 0, max: 150 }) },
+  { name: Schema.toArbitrary(Schema.String), age: FastCheck.integer({ min: 0, max: 150 }) },
   ({ name, age }) =>
     Effect.gen(function*() {
-      yield* Effect.void
-      return age >= 0 && age <= 150
-    })
-)
+      yield* Effect.void;
+      return age >= 0 && age <= 150;
+    }),
+);
 ```
 
 ### With service dependencies
@@ -137,11 +138,11 @@ it.effect.prop(
   [FastCheck.integer()],
   ([num]) =>
     Effect.gen(function*() {
-      const config = yield* AppConfig
-      return num * config.multiplier === num * config.multiplier
+      const config = yield* AppConfig;
+      return num * config.multiplier === num * config.multiplier;
     }),
-  { fastCheck: { numRuns: 200 } }
-)
+  { fastCheck: { numRuns: 200 } },
+);
 ```
 
 ### With layer
@@ -150,33 +151,34 @@ it.effect.prop(
 it.layer(AppConfigLive)("property tests", (it) => {
   it.effect.prop("with layer", [Schema.Int], ([n]) =>
     Effect.gen(function*() {
-      const config = yield* AppConfig
-      return n + config.offset >= n
-    })
-  )
-})
+      const config = yield* AppConfig;
+      return n + config.offset >= n;
+    }));
+});
 ```
 
 ## Custom Arbitrary Annotations
 
-Override how a schema generates values by annotating with `arbitrary`:
+Override how a schema generates values by annotating with `toArbitrary`:
 
 ```ts
 const URL = Schema.instanceOf(globalThis.URL, {
   title: "URL",
-  arbitrary: () => (fc) => fc.webUrl().map((s) => new globalThis.URL(s))
-})
+  toArbitrary: () => (fc) => fc.webUrl().map((s) => new globalThis.URL(s)),
+});
 
 const PositiveEven = Schema.Number.annotate({
-  toArbitrary: () => (fc) => fc.integer({ min: 2, max: 1000 }).filter((n) => n % 2 === 0)
-})
+  toArbitrary: () => (fc) => fc.integer({ min: 2, max: 1000 }).filter((n) => n % 2 === 0),
+});
 ```
 
 The annotation signature:
 
 ```ts
-(typeParameters: { readonly [K in keyof TypeParams]: FastCheck.Arbitrary<TypeParams[K]["Type"]> }) =>
-  (fc: typeof FastCheck, context: Context) => FastCheck.Arbitrary<T>
+((
+  typeParameters: { readonly [K in keyof TypeParams]: FastCheck.Arbitrary<TypeParams[K]["Type"]>; },
+) =>
+(fc: typeof FastCheck, context: Context) => FastCheck.Arbitrary<T>);
 ```
 
 For schemas without type parameters, `typeParameters` is empty.
@@ -186,12 +188,12 @@ For schemas without type parameters, `typeParameters` is empty.
 For schema authors verifying that a schema generates valid values and round-trips correctly:
 
 ```ts
-import { TestSchema } from "effect/testing"
+import { TestSchema } from "effect/testing";
 
-const asserts = new TestSchema.Asserts(MySchema)
+const asserts = new TestSchema.Asserts(MySchema);
 
-asserts.arbitrary().verifyGeneration()
-asserts.verifyLosslessTransformation()
+asserts.arbitrary().verifyGeneration();
+await asserts.verifyLosslessTransformation();
 ```
 
 ### `verifyGeneration(options?)`
@@ -199,14 +201,15 @@ asserts.verifyLosslessTransformation()
 Generates values from the schema's arbitrary and verifies each passes `Schema.is`:
 
 ```ts
-asserts.arbitrary().verifyGeneration({ params: { numRuns: 100 } })
+asserts.arbitrary().verifyGeneration({ params: { numRuns: 100 } });
 ```
 
 Internally runs:
+
 ```ts
-const is = Schema.is(schema)
-const arb = Schema.toArbitrary(schema)
-FastCheck.assert(FastCheck.property(arb, (a) => is(a)))
+const is = Schema.is(schema);
+const arb = Schema.toArbitrary(schema);
+FastCheck.assert(FastCheck.property(arb, (a) => is(a)));
 ```
 
 ### `verifyLosslessTransformation(options?)`
@@ -214,7 +217,7 @@ FastCheck.assert(FastCheck.property(arb, (a) => is(a)))
 Verifies encode then decode round-trips to the original value:
 
 ```ts
-asserts.verifyLosslessTransformation({ params: { numRuns: 50 } })
+asserts.verifyLosslessTransformation({ params: { numRuns: 50 } });
 ```
 
 Internally runs `encode(value) |> decode |> assert.deepStrictEqual(original)` for each generated value.
@@ -225,19 +228,18 @@ Internally runs `encode(value) |> decode |> assert.deepStrictEqual(original)` fo
 
 ```ts
 const MyCodec = Schema.Struct({
-  id: Schema.UUID,
-  createdAt: Schema.DateFromString,
+  id: Schema.String.check(Schema.isUUID()),
+  createdAt: Schema.DateTimeUtcFromString,
   tags: Schema.Array(Schema.NonEmptyString),
-})
+});
 
 it.effect.prop("encode/decode roundtrip", [MyCodec], ([value]) =>
   Effect.gen(function*() {
-    const encoded = yield* Schema.encode(MyCodec)(value)
-    const decoded = yield* Schema.decode(MyCodec)(encoded)
-    assert.deepStrictEqual(decoded, value)
-    return true
-  })
-)
+    const encoded = yield* Schema.encode(MyCodec)(value);
+    const decoded = yield* Schema.decode(MyCodec)(encoded);
+    assert.deepStrictEqual(decoded, value);
+    return true;
+  }));
 ```
 
 ### Invariant testing with services
@@ -245,31 +247,33 @@ it.effect.prop("encode/decode roundtrip", [MyCodec], ([value]) =>
 ```ts
 it.effect.prop(
   "balance never goes negative",
-  [Schema.toArbitrary(Schema.Int.pipe(Schema.positive()))],
+  [Schema.toArbitrary(Schema.Int.check(Schema.isGreaterThan(0)))],
   ([amount]) =>
     Effect.gen(function*() {
-      const account = yield* AccountService
-      const before = yield* account.getBalance()
-      yield* account.deposit(amount)
-      const after = yield* account.getBalance()
-      return after >= before
+      const account = yield* AccountService;
+      const before = yield* account.getBalance();
+      yield* account.deposit(amount);
+      const after = yield* account.getBalance();
+      return after >= before;
     }),
-)
+);
 ```
 
 ### Combining multiple arbitraries
 
 ```ts
-const UserArb = Schema.toArbitrary(User)
+const UserArb = Schema.toArbitrary(User);
 const ActionArb = FastCheck.oneof(
   FastCheck.constant("create" as const),
   FastCheck.constant("update" as const),
   FastCheck.constant("delete" as const),
-)
+);
 
-it.prop("all actions are valid", [UserArb, ActionArb], ([user, action]) =>
-  isValidAction(user, action)
-)
+it.prop(
+  "all actions are valid",
+  [UserArb, ActionArb],
+  ([user, action]) => isValidAction(user, action),
+);
 ```
 
 ## fast-check API (most used)
@@ -285,7 +289,7 @@ FastCheck.boolean()
 FastCheck.constant(value)
 FastCheck.oneof(...arbitraries)
 FastCheck.tuple(...arbitraries)
-FastCheck.record(keyArb, valueArb)
+FastCheck.record({ a: arbA, b: arbB })
 FastCheck.array(arb, { minLength, maxLength })
 FastCheck.option(arb)
 FastCheck.uniqueArray(arb)
