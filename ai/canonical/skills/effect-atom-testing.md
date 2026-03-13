@@ -7,7 +7,7 @@ description: Effect Atom testing patterns with Registry, fake timers, service mo
 
 Testing patterns for `@effect-atom/atom` and `@effect-atom/atom-react`.
 
-> **Prerequisites**: Load the `effect-testing` and `effect-codebase` skills alongside this one.
+> **Prerequisites**: Read `./.context/skills/effect-testing.md` alongside this one when it is available for the project.
 
 ## Test Setup
 

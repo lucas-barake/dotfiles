@@ -13,9 +13,9 @@ You are implementing a pre-investigated plan. The user will tell you which plan 
 
 Read the plan file thoroughly. Understand the full scope before touching any code.
 
-### Step 2: Load skills
+### Step 2: Read skills
 
-The plan's **Skills** section lists which skills to load. Load ALL of them via the Skill tool before writing any code. This is non-negotiable.
+The plan's **Skills** section lists which project skill files to read. Read ALL of them from `./.context/skills/` before writing any code. This is non-negotiable.
 
 ### Step 3: Load all context
 

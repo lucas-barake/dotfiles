@@ -139,7 +139,7 @@ The plan must be comprehensive enough for someone with NO context to implement i
 
 ### 1. Skills
 
-List the skills the implementer MUST load (via the Skill tool) before writing any code. Refer to the skill trigger table in the global instructions to determine which skills apply based on the domains this plan touches.
+List the project skill files the implementer MUST read before writing any code. Refer to the managed skills table in `./AGENTS.md` and cite the exact `./.context/skills/<name>.md` paths that apply to the plan.
 
 ### 2. Summary
 
