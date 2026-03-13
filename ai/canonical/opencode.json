@@ -9,17 +9,9 @@
   },
   "permission": {
     "external_directory": {
-      "~/src/**": "allow"
+      "~/*": "allow"
     },
     "bash": {
-      "git push *": "ask",
-      "git reset --hard *": "ask",
-      "git checkout . *": "ask",
-      "git clean *": "ask",
-      "git branch -D *": "ask",
-      "gh pr create *": "ask",
-      "gh pr edit *": "ask",
-      "gh pr close *": "ask",
       "gh pr merge *": "ask",
       "gh release create *": "ask",
       "gh repo delete *": "ask",

@@ -1,0 +1,4 @@
+bin/opencode-profile
+node_modules/
+bun.lock
+.*.bun-build

@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./src/bin.ts --compile --outfile bin/opencode-profile",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "beta",
+    "effect": "beta"
+  },
+  "devDependencies": {
+    "@effect/vitest": "beta",
+    "vitest": "latest",
+    "@types/bun": "latest"
+  }
+}
