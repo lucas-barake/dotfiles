@@ -8,7 +8,7 @@ import * as Path from "effect/Path"
 import * as Command from "effect/unstable/cli/Command"
 import * as Flag from "effect/unstable/cli/Flag"
 import * as Prompt from "effect/unstable/cli/Prompt"
-import { agentToToml, parseFrontmatter, stripFrontmatter, transformAgent, type Target } from "./transform.ts"
+import { agentToToml, parseFrontmatter, stripFrontmatter, transformAgent, transformSkill, type Target } from "./transform.ts"
 
 const targetPaths: Record<Target, string> = {
   claude: `${process.env.HOME}/.claude`,
@@ -41,17 +41,19 @@ const readModelMap = (home: string) =>
     return JSON.parse(yield* fs.readFileString(mapperPath)) as Record<string, string>
   })
 
-const readCanonicalSkills = (sourceDir: string) =>
+const readCanonicalSkills = (sourceDir: string, kind: "global-skills" | "project-skills") =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const p = yield* Path.Path
-    const entries = yield* fs.readDirectory(p.join(sourceDir, "skills"))
+    const skillsDir = p.join(sourceDir, kind)
+    if (!(yield* fs.exists(skillsDir))) return [] as Array<{ content: string; description: string; fileName: string }>
+    const entries = yield* fs.readDirectory(skillsDir)
 
     const skills = yield* Effect.forEach(
       entries.filter((entry) => entry.endsWith(".md")),
       (fileName) =>
         Effect.gen(function*() {
-          const content = yield* fs.readFileString(p.join(sourceDir, "skills", fileName))
+          const content = yield* fs.readFileString(p.join(skillsDir, fileName))
           const { fields } = parseFrontmatter(content)
           const description = fields.find(([key]) => key === "description")?.[1] ?? ""
           return { content, description, fileName }
@@ -238,7 +240,7 @@ export const syncProject = (sourceDir: string, projectDir: string, selectedSkill
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const p = yield* Path.Path
-    const skills = yield* readCanonicalSkills(sourceDir)
+    const skills = yield* readCanonicalSkills(sourceDir, "project-skills")
     const selected = new Set(selectedSkills)
     const selectedEntries = skills.filter((skill) => selected.has(skill.fileName))
     const skillsDir = p.join(projectDir, ".context", "skills")
@@ -275,6 +277,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     if (!(yield* fs.exists(targetDir))) return true
 
     const agentFiles = yield* fs.readDirectory(p.join(sourceDir, "agents"))
+    const globalSkills = yield* readCanonicalSkills(sourceDir, "global-skills")
     if (target === "codex") {
       yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
       const agentEntries: Array<{ name: string; description: string }> = []
@@ -297,6 +300,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     }
 
     yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
+    yield* fs.makeDirectory(p.join(targetDir, "skills"), { recursive: true })
     yield* Effect.forEach(
       agentFiles.filter((file) => file.endsWith(".md")),
       (file) =>
@@ -304,6 +308,11 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
           const content = yield* fs.readFileString(p.join(sourceDir, "agents", file))
           yield* fs.writeFileString(p.join(targetDir, "agents", file), transformAgent(content, target, modelMap) as string)
         }),
+      { concurrency: "unbounded" }
+    )
+    yield* Effect.forEach(
+      globalSkills,
+      (skill) => fs.writeFileString(p.join(targetDir, "skills", skill.fileName), transformSkill(skill.content, target, modelMap)),
       { concurrency: "unbounded" }
     )
 
@@ -351,7 +360,7 @@ const sync = Command.make(
   ({ home }) =>
     Effect.gen(function*() {
       const projectDir = process.cwd()
-      const skills = yield* readCanonicalSkills(`${home}/canonical`)
+      const skills = yield* readCanonicalSkills(`${home}/canonical`, "project-skills")
       const settings = yield* loadProjectSettings(projectDir, skills.map((skill) => skill.fileName))
       const selectedSkills = yield* promptForSkills(skills, settings.skills)
       const syncedSkills = yield* syncProject(`${home}/canonical`, projectDir, selectedSkills)
