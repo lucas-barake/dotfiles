@@ -34,7 +34,7 @@ All agents and skills use Claude Code frontmatter as the superset format. The sy
 - **OpenCode**: drops `name`/`model` from agents, adds `mode: subagent`, converts `tools` to a deny-object. Drops `model`/`context` from skills
 - **Codex**: generates per-agent TOML files with `developer_instructions` (body text) and merges `[agents.<name>]` entries into `~/.codex/config.toml`. Drops `model`/`context` from skills
 
-Global sync writes agents to all providers, writes `canonical/global-skills/` into provider `skills/` directories for Claude Code and OpenCode, and syncs provider config where supported. Project sync writes selected `canonical/project-skills/` files to `./.context/skills/<skill-name>.md` with frontmatter removed, stores the selection in `./.context/settings.json`, and updates `./AGENTS.md` with a managed skill reference table.
+Global sync writes agents to all providers, writes `canonical/global-skills/` into provider `skills/` directories for Claude Code, OpenCode, and Codex using each platform's expected `skills/<name>/SKILL.md` layout, and syncs provider config where supported. Project sync writes selected `canonical/project-skills/` files to `./.context/skills/<skill-name>.md` with frontmatter removed, stores the selection in `./.context/settings.json`, and updates `./AGENTS.md` with a managed skill reference table.
 
 ## Workflow
 

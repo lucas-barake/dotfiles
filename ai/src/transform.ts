@@ -78,7 +78,7 @@ export const stripFrontmatter = (content: string) => {
   return stripped.endsWith("\n") ? stripped : `${stripped}\n`
 }
 
-export const transformSkill = (content: string, target: Exclude<Target, "codex">, modelMap?: Record<string, string>) => {
+export const transformSkill = (content: string, target: Target, modelMap?: Record<string, string>) => {
   const { fields: rawFields, body } = parseFrontmatter(content)
   const fields = remapModelField(rawFields, modelMap)
 

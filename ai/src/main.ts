@@ -162,6 +162,36 @@ const renderSkillsSection = (skills: ReadonlyArray<{ fileName: string; descripti
   ].join("\n")
 }
 
+const syncProviderSkills = (
+  sourceDir: string,
+  targetDir: string,
+  target: Target,
+  modelMap?: Record<string, string>
+) =>
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const p = yield* Path.Path
+    const skillsDir = p.join(targetDir, "skills")
+    const globalSkills = yield* readCanonicalSkills(sourceDir, "global-skills")
+
+    yield* fs.makeDirectory(skillsDir, { recursive: true })
+    yield* Effect.forEach(
+      globalSkills,
+      (skill) =>
+        Effect.gen(function*() {
+          const skillName = skill.fileName.replace(/\.md$/, "")
+          yield* fs.remove(p.join(skillsDir, skill.fileName), { force: true })
+          const targetSkillDir = p.join(skillsDir, skillName)
+          yield* fs.makeDirectory(targetSkillDir, { recursive: true })
+          yield* fs.writeFileString(
+            p.join(targetSkillDir, "SKILL.md"),
+            transformSkill(skill.content, target, modelMap)
+          )
+        }),
+      { concurrency: "unbounded" }
+    )
+  })
+
 const mergeCodexConfig = (targetDir: string, agents: Array<{ name: string; description: string }>) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
@@ -277,9 +307,9 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     if (!(yield* fs.exists(targetDir))) return true
 
     const agentFiles = yield* fs.readDirectory(p.join(sourceDir, "agents"))
-    const globalSkills = yield* readCanonicalSkills(sourceDir, "global-skills")
     if (target === "codex") {
       yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
+      yield* syncProviderSkills(sourceDir, targetDir, target, modelMap)
       const agentEntries: Array<{ name: string; description: string }> = []
 
       yield* Effect.forEach(
@@ -300,7 +330,6 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     }
 
     yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
-    yield* fs.makeDirectory(p.join(targetDir, "skills"), { recursive: true })
     yield* Effect.forEach(
       agentFiles.filter((file) => file.endsWith(".md")),
       (file) =>
@@ -310,11 +339,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
         }),
       { concurrency: "unbounded" }
     )
-    yield* Effect.forEach(
-      globalSkills,
-      (skill) => fs.writeFileString(p.join(targetDir, "skills", skill.fileName), transformSkill(skill.content, target, modelMap)),
-      { concurrency: "unbounded" }
-    )
+    yield* syncProviderSkills(sourceDir, targetDir, target, modelMap)
 
     return false
   })
