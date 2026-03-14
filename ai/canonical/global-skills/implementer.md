@@ -21,6 +21,8 @@ The plan's **Skills** section lists which project skill files to read. Read ALL 
 
 Before writing a single line of code, you MUST read every file and reference mentioned in the plan. This is non-negotiable.
 
+Also read the relevant manifest files before running commands. At minimum, read the root `package.json` and any package-level manifest the plan touches. If the plan relies on library behavior and the reference may be stale or incomplete, verify the source under `~/src/oss/` before coding.
+
 Extract every file path from:
 
 - **Implementation Checklist** — every `path/to/file.ts:line` reference. Read each file to understand the current state of the code you're about to modify or extend.
@@ -28,7 +30,9 @@ Extract every file path from:
 - **Test Plan** — every test file mentioned. Read existing test files to understand patterns, helpers, and setup conventions before writing new tests.
 - **Current State** — any files or branches mentioned. Check `git status` and `git log` to understand where you're starting from.
 
-Read these files in parallel where possible. If any file referenced in the plan no longer exists or has changed significantly, stop and tell the user before proceeding.
+Read these files in parallel where possible. If any file referenced in the plan no longer exists or has changed significantly, do NOT blindly continue. Investigate the drift, update the plan if the correction is mechanical, and only stop to tell the user if the drift changes scope materially or invalidates the plan's goal.
+
+If you need more context during implementation, use agents for narrow factual follow-ups. Use `fast-lookup` for exact definitions and signatures. Use `quick-dive` for local structure. Use `deep-dive` only for targeted subsystem or library questions.
 
 ### Step 4: Implement
 
@@ -47,13 +51,26 @@ For `[Additive]` items, implement first, then write tests.
 
 **After completing each checkbox item**, immediately update the plan file to check it off: change `- [ ]` to `- [x]`. This tracks progress in the plan itself so that if the session is interrupted, anyone can see exactly what's done and what remains.
 
-Use the references section if you hit unexpected behavior.
+Use the references section if you hit unexpected behavior. If the plan's references do not resolve the uncertainty, verify the real library or framework source before guessing. If reality contradicts the plan, update the plan first, then continue. Do not silently diverge from it.
 
 ### Step 5: Test
 
-Write any remaining tests described in the test plan that weren't already covered by TDD items. Run all tests to confirm they pass.
+Write any remaining tests described in the test plan that weren't already covered by TDD items. Run the full relevant test set to confirm they pass.
 
-### Step 6: Simplification pass
+### Step 6: Deep review pass
+
+After implementation and planned tests are complete, review the actual code before you simplify it.
+
+1. Select the relevant code reviewers directly. Always include `reviewer-logic` and `test-reviewer`. Include `reviewer-behavioral` for existing contracts or shared utilities, `reviewer-data-integrity` for persistence or failure paths, `reviewer-security` for untrusted input or sensitive boundaries, `reviewer-concurrency` for async ordering or lifecycle concerns, and `reviewer-rules` for config, migrations, dependencies, or explicit repository rules
+2. Spawn the reviewers in parallel with the full list of modified files and note that the work is an uncommitted implementation from a plan
+3. Tell each reviewer to start from the current diff for those files and then investigate freely
+4. Validate each finding yourself before changing code
+5. If a finding implies a real behavior bug, add a regression test first when practical
+6. If the regression test is correct and does not fail, treat the finding as a false positive and move on
+7. Fix valid findings and rerun the relevant checks
+8. Update the plan if any validated finding changes the implementation path or test plan materially
+
+### Step 7: Simplification pass
 
 After all implementation and tests are complete, spawn two agents **in parallel** with the full list of files you created or modified during implementation:
 
@@ -75,6 +92,8 @@ After all implementation and tests are complete, spawn two agents **in parallel*
 
 Do not blindly apply all suggestions. Both agents maximize recall. Your job is precision.
 
-### Step 7: Verify
+In addition to `code-simplifier` and `reuse-reviewer`, include a domain-specific reviewer when the stack clearly warrants it.
+
+### Step 8: Verify
 
 Follow the verification section to confirm the implementation works end-to-end.
