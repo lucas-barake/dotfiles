@@ -19,14 +19,18 @@
 
 - Preserve main context. Delegate broad exploration and structural investigation to agents first.
 - Spawn agents aggressively and in parallel when the questions are independent.
+- Agent prompts must be highly specific and self contained. Do not send vague prompts like "investigate this" or "look into the bug".
+- Every agent prompt should include the exact paths, directories, symbols, or URLs to inspect, the exact question to answer, why that question matters, any constraints or exclusions, and the exact shape of the response you want back.
+- Prefer several narrow agents with precise missions over one broad agent with an open ended mission.
 - Use `fast-lookup` for unknown signatures, exports, return shapes, and exact API questions.
 - Do not use `fast-lookup` when you already know the exact file path or name and can read the file directly.
 - Use `quick-dive` for nearby structure and immediate codebase context.
 - Use `deep-dive` for subsystem traces, cross cutting patterns, and behavior that spans multiple files or repos.
 - Use `web-search` for web lookups.
-- Give agents exact paths, symbols, snippets, goals, and constraints. Ask for exact file paths, line numbers, and concise evidence.
+- Tell agents whether you need structural mapping, exact signatures, behavioral verification, test patterns, or external references. Do not make them infer the investigation mode.
+- Ask for exact file paths, line numbers, verbatim snippets, and concise evidence. For web work, ask for exact URLs and quotes.
 - Verify agent evidence yourself by reading the cited files.
-- Check `.context/deep-dives/` before starting a new `deep-dive`.
+- Investigate fresh for the current task. Do not rely on prior `.context/deep-dives/` artifacts as a substitute for a new `deep-dive`.
 - Resume prior agents when useful.
 - Do not specify the model when spawning agents.
 
