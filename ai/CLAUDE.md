@@ -1,6 +1,6 @@
 # dotai
 
-Centralized AI tool configuration. Define agents and skills once in `canonical/`, sync agents to Claude Code (`~/.claude/`), OpenCode (`~/.config/opencode/`), and Codex (`~/.codex/`), and write project local skills into `.context/skills`.
+Centralized AI tool configuration. Define agents and skills once in `canonical/`, sync agents plus global skills to Claude Code (`~/.claude/`) and OpenCode (`~/.config/opencode/`), sync agents to Codex (`~/.codex/`), and write project local skills into `.context/skills`.
 
 ## Project Structure
 
@@ -13,7 +13,9 @@ canonical/
     deep-dive.md
     deep-reviewer.md
     web-search.md
-  skills/                      # Flat skill definitions (frontmatter + markdown body)
+  global-skills/               # Skills synced to provider skill directories
+    <skill-name>.md
+  project-skills/              # Skills written into project .context/skills
     <skill-name>.md
 src/
   bin.ts                       # Entry point (provides BunServices, calls run)
@@ -32,7 +34,7 @@ All agents and skills use Claude Code frontmatter as the superset format. The sy
 - **OpenCode**: drops `name`/`model` from agents, adds `mode: subagent`, converts `tools` to a deny-object. Drops `model`/`context` from skills
 - **Codex**: generates per-agent TOML files with `developer_instructions` (body text) and merges `[agents.<name>]` entries into `~/.codex/config.toml`. Drops `model`/`context` from skills
 
-Project sync writes selected skills to `./.context/skills/<skill-name>.md` with frontmatter removed, stores the selection in `./.context/settings.json`, and updates `./AGENTS.md` with a managed skill reference table.
+Agent sync writes `canonical/global-skills/` into provider `skills/` directories for Claude Code and OpenCode. Project sync writes selected `canonical/project-skills/` files to `./.context/skills/<skill-name>.md` with frontmatter removed, stores the selection in `./.context/settings.json`, and updates `./AGENTS.md` with a managed skill reference table.
 
 ## Workflow
 
@@ -98,4 +100,4 @@ Running `dotai models` again preserves your custom values and adds entries for a
 
 ## Key Invariant
 
-`canonical/agents/` is the source of truth for synced provider agents. `canonical/skills/` is the source of truth for project local skill documents.
+`canonical/agents/` is the source of truth for synced provider agents. `canonical/global-skills/` is the source of truth for provider global skills. `canonical/project-skills/` is the source of truth for project local skill documents.

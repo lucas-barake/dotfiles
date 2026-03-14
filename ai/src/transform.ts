@@ -78,6 +78,18 @@ export const stripFrontmatter = (content: string) => {
   return stripped.endsWith("\n") ? stripped : `${stripped}\n`
 }
 
+export const transformSkill = (content: string, target: Exclude<Target, "codex">, modelMap?: Record<string, string>) => {
+  const { fields: rawFields, body } = parseFrontmatter(content)
+  const fields = remapModelField(rawFields, modelMap)
+
+  if (target === "claude") {
+    return `${serializeFrontmatter(fields)}\n${body}`
+  }
+
+  const keptFields = fields.filter(([key]) => key !== "model" && key !== "context")
+  return `${serializeFrontmatter(keptFields)}\n${body}`
+}
+
 export const escapeTomlString = (s: string) =>
   s.replace(/\\/g, "\\\\").replace(/"""/g, '"\\""')
 
