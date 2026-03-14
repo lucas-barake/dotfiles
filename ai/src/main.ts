@@ -349,8 +349,8 @@ export const syncConfig = (sourceDir: string, targetDir: string, target: Exclude
     return false
   })
 
-const sync = Command.make(
-  "sync",
+const project = Command.make(
+  "project",
   {
     home: Flag.directory("home").pipe(
       Flag.withDefault(dirname(dirname(realpathSync(process.execPath)))),
@@ -371,8 +371,8 @@ const sync = Command.make(
     })
 )
 
-const agents = Command.make(
-  "agents",
+const global = Command.make(
+  "global",
   {
     target: Flag.choice("target", ["claude", "opencode", "codex", "all"]).pipe(
       Flag.withDefault("all" as const),
@@ -391,29 +391,10 @@ const agents = Command.make(
       for (const currentTarget of targets) {
         const skipped = yield* syncTarget(`${home}/canonical`, targetPaths[currentTarget], currentTarget, modelMap)
         yield* Console.log(skipped ? `Skipped ${currentTarget} (directory not found)` : `Synced ${currentTarget} agents`)
-      }
-    })
-)
-
-const config = Command.make(
-  "config",
-  {
-    target: Flag.choice("target", ["claude", "opencode", "all"]).pipe(
-      Flag.withDefault("all" as const),
-      Flag.withDescription("Target to sync: claude, opencode, or all")
-    ),
-    home: Flag.directory("home").pipe(
-      Flag.withDefault(dirname(dirname(realpathSync(process.execPath)))),
-      Flag.withDescription("Path to the dotai repo (resolved from binary location)")
-    )
-  },
-  ({ target, home }) =>
-    Effect.gen(function*() {
-      const targets: ReadonlyArray<Exclude<Target, "codex">> = target === "all" ? ["claude", "opencode"] : [target]
-
-      for (const currentTarget of targets) {
-        const skipped = yield* syncConfig(`${home}/canonical`, targetPaths[currentTarget], currentTarget)
-        yield* Console.log(skipped ? `Skipped ${currentTarget} (directory not found)` : `Synced ${currentTarget} config`)
+        if (currentTarget !== "codex") {
+          const configSkipped = yield* syncConfig(`${home}/canonical`, targetPaths[currentTarget], currentTarget)
+          yield* Console.log(configSkipped ? `Skipped ${currentTarget} config (directory not found)` : `Synced ${currentTarget} config`)
+        }
       }
     })
 )
@@ -446,6 +427,6 @@ const models = Command.make(
     })
 )
 
-const cli = Command.make("dotai").pipe(Command.withSubcommands([sync, agents, config, models]))
+const cli = Command.make("dotai").pipe(Command.withSubcommands([project, global, models]))
 
 export const run = Command.run(cli, { version: "0.1.0" })

@@ -1,6 +1,6 @@
 # dotai
 
-Centralized AI tool configuration. Define agents and skills once in `canonical/`, sync agents plus global skills to Claude Code (`~/.claude/`) and OpenCode (`~/.config/opencode/`), sync agents to Codex (`~/.codex/`), and write project local skills into `.context/skills`.
+Centralized AI tool configuration. Define agents and skills once in `canonical/`, sync global assets to Claude Code (`~/.claude/`), OpenCode (`~/.config/opencode/`), and Codex (`~/.codex/`), and write project local skills into `.context/skills`.
 
 ## Project Structure
 
@@ -34,24 +34,24 @@ All agents and skills use Claude Code frontmatter as the superset format. The sy
 - **OpenCode**: drops `name`/`model` from agents, adds `mode: subagent`, converts `tools` to a deny-object. Drops `model`/`context` from skills
 - **Codex**: generates per-agent TOML files with `developer_instructions` (body text) and merges `[agents.<name>]` entries into `~/.codex/config.toml`. Drops `model`/`context` from skills
 
-Agent sync writes `canonical/global-skills/` into provider `skills/` directories for Claude Code and OpenCode. Project sync writes selected `canonical/project-skills/` files to `./.context/skills/<skill-name>.md` with frontmatter removed, stores the selection in `./.context/settings.json`, and updates `./AGENTS.md` with a managed skill reference table.
+Global sync writes agents to all providers, writes `canonical/global-skills/` into provider `skills/` directories for Claude Code and OpenCode, and syncs provider config where supported. Project sync writes selected `canonical/project-skills/` files to `./.context/skills/<skill-name>.md` with frontmatter removed, stores the selection in `./.context/settings.json`, and updates `./AGENTS.md` with a managed skill reference table.
 
 ## Workflow
 
 Edit files in `canonical/`, then sync:
 
 ```bash
-bun run sync                    # syncs project skills in the current directory
-bun run agents                  # syncs agents to all targets
-bun run src/bin.ts agents --target claude
-bun run src/bin.ts agents --target opencode
-bun run src/bin.ts agents --target codex
+ bun run project                 # syncs project skills in the current directory
+ bun run global                  # syncs agents, global skills, and config
+ bun run src/bin.ts global --target claude
+ bun run src/bin.ts global --target opencode
+ bun run src/bin.ts global --target codex
 ```
 
 For development (without building the binary):
 
 ```bash
-bun run src/bin.ts sync
+bun run src/bin.ts project
 ```
 
 ## Building
@@ -94,7 +94,7 @@ Edit the values to remap:
 }
 ```
 
-When `model-mapper.json` exists, `dotai sync` applies the remapping to all agent and skill frontmatter. If the file doesn't exist, models are synced as-is.
+When `model-mapper.json` exists, `dotai global` applies the remapping to synced agents and global skills. If the file doesn't exist, models are synced as-is.
 
 Running `dotai models` again preserves your custom values and adds entries for any new models found in canonical files.
 
