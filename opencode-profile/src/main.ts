@@ -78,7 +78,7 @@ export const listProfiles = (dotfilesDir: string) =>
     if (!(yield* fs.exists(root))) return [] as Array<string>
 
     const entries = yield* fs.readDirectory(root)
-    const valid = yield* Effect.filterMap(
+    const valid = yield* Effect.forEach(
       entries,
       (entry) =>
         Effect.gen(function*() {
@@ -90,7 +90,10 @@ export const listProfiles = (dotfilesDir: string) =>
       { concurrency: "unbounded" }
     )
 
-    return valid.sort((left, right) => left.localeCompare(right))
+    return valid
+      .filter(Option.isSome)
+      .map((option) => option.value)
+      .sort((left, right) => left.localeCompare(right))
   })
 
 export const ensureProfile = (dotfilesDir: string, profile: string) =>

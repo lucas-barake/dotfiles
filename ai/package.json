@@ -2,10 +2,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "agents": "bun run src/bin.ts agents",
     "build": "bun build ./src/bin.ts --compile --outfile bin/dotai",
+    "global": "bun run src/bin.ts global",
+    "project": "bun run src/bin.ts project",
     "test": "vitest run",
-    "sync": "bun run src/bin.ts sync"
+    "sync": "bun run src/bin.ts project"
   },
   "dependencies": {
     "@effect/platform-bun": "beta",
