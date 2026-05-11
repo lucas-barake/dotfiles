@@ -422,12 +422,21 @@ const global = Command.make(
   },
   ({ target, home }) =>
     Effect.gen(function*() {
+      const fs = yield* FileSystem.FileSystem
+      const p = yield* Path.Path
       const modelMap = yield* readModelMap(home)
       const targets: ReadonlyArray<Target> = target === "all" ? ["claude", "opencode", "codex"] : [target]
 
       for (const currentTarget of targets) {
         const skipped = yield* syncTarget(`${home}/canonical`, targetPaths[currentTarget], currentTarget, modelMap)
         yield* Console.log(skipped ? `Skipped ${currentTarget} (directory not found)` : `Synced ${currentTarget} agents`)
+        if (
+          currentTarget === "codex" &&
+          !skipped &&
+          (yield* fs.exists(p.join(home, "canonical", "instructions.md")))
+        ) {
+          yield* Console.log("Synced codex instructions")
+        }
         if (currentTarget !== "codex") {
           const configSkipped = yield* syncConfig(`${home}/canonical`, targetPaths[currentTarget], currentTarget)
           yield* Console.log(configSkipped ? `Skipped ${currentTarget} config (directory not found)` : `Synced ${currentTarget} config`)
