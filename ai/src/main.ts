@@ -192,6 +192,17 @@ const syncProviderSkills = (
     )
   })
 
+const syncCodexInstructions = (sourceDir: string, targetDir: string) =>
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const p = yield* Path.Path
+    const sourcePath = p.join(sourceDir, "instructions.md")
+
+    if (!(yield* fs.exists(sourcePath))) return
+
+    yield* fs.writeFileString(p.join(targetDir, "AGENTS.md"), yield* fs.readFileString(sourcePath))
+  })
+
 const mergeCodexConfig = (targetDir: string, agents: Array<{ name: string; description: string }>) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
@@ -310,6 +321,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     if (target === "codex") {
       yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
       yield* syncProviderSkills(sourceDir, targetDir, target, modelMap)
+      yield* syncCodexInstructions(sourceDir, targetDir)
       const agentEntries: Array<{ name: string; description: string }> = []
 
       yield* Effect.forEach(
