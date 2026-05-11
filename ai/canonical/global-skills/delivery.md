@@ -197,7 +197,7 @@ Requirements for `06-test-plan.md`:
 - coverage is a floor, not a goal. Do not add low value tests just to increase a number
 - do not test what the language, compiler, or framework already proves unless the repository adds meaningful logic on top
 - do not test third party behavior unless the repository adds meaningful integration logic above it
-- for bug fixes and behavior changing findings, add regression tests when practical
+- for bug fixes and behavior-changing findings, add regression tests that fail before the fix and pass after it
 
 ### Step 8: Review the plan with plan-specific reviewers
 
@@ -280,11 +280,11 @@ After the implementation and planned tests are complete, review the actual code 
 
 1. Decide whether to review the full implementation as one unit or to shard it by domain. Shard when the modified files span clearly different concerns or the diff is large enough that one reviewer would need unrelated context
 2. Always include `reviewer-logic` and `test-reviewer`. Include `reviewer-behavioral`, `reviewer-data-integrity`, `reviewer-security`, `reviewer-concurrency`, and `reviewer-rules` when the implementation warrants them
-3. Spawn the selected reviewers in parallel with the modified file list, branch context, project rules, and a note that this is freshly implemented code
+3. Spawn the selected reviewers in parallel with the modified file list, branch context, project rules, and a note that this is freshly implemented code. Tell them the modified files/current diff are the review boundary; they may inspect outside files only to validate direct callers, guards, tests, rules, or integration points causally connected to the modified code
 4. Deduplicate overlapping findings and keep the best supported version of each root issue
-5. Validate every finding yourself before acting on it
-6. If a finding implies a real behavior bug, add a regression test first when practical
-7. If the regression test is correct and does not fail, treat the finding as a false positive and move on
+5. Require each bug reviewer to write the smallest regression test for every candidate finding and run the narrowest relevant command to prove it fails for the suspected reason. If the test confirms a real issue, reviewers must leave the regression test edits in the worktree and report the changed test file path, exact test code, command, and failing output. If the candidate is not reproduced or the harness is blocked after multiple real attempts, reviewers must remove any probe test edits before returning and report the exact test code and commands tried as an unconfirmed candidate
+6. Validate every finding yourself before acting on it
+7. Treat high-confidence findings as only those reproduced by a failing regression test. If the regression test is correct and does not fail, treat the finding as a false positive and move on
 8. Fix valid findings and rerun the relevant checks
 
 Write the full result to `09-implementation-review.md`.
