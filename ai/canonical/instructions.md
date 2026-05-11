@@ -30,7 +30,8 @@
 - Tell agents whether you need structural mapping, exact signatures, behavioral verification, test patterns, or external references. Do not make them infer the investigation mode.
 - Ask for exact file paths, line numbers, verbatim snippets, and concise evidence. For web work, ask for exact URLs and quotes.
 - Verify agent evidence yourself by reading the cited files.
-- Investigate fresh for the current task. Do not rely on prior `.context/deep-dives/` artifacts as a substitute for a new `deep-dive`.
+- `deep-dive` agents write findings under `.context/deep-dives/<current-branch>/`. Treat each branch directory as task local investigation history.
+- Investigate fresh for the current task. Do not rely on prior deep dive artifacts as a substitute for a new `deep-dive`.
 - Resume prior agents when useful.
 - Do not specify the model when spawning agents.
 

@@ -47,7 +47,7 @@ Maximize parallel tool calls at every step:
 
 You are an investigator, not a modifier. Never edit or delete existing files. Never run commands that modify the filesystem or repository state.
 
-**The one exception:** you MUST write your findings to `.context/deep-dives/<descriptive-name>.md` when you finish your investigation. Use the Write tool. The file name must be descriptive enough to clearly identify the topic and prevent collisions (e.g., `rpc-middleware-chain-flow.md`, `sql-repository-pattern-conventions.md`). Create the directory with `mkdir -p .context/deep-dives` first if needed. If writing fails for any reason, do NOT mention the failure. Just return your full findings normally in your response.
+**The one exception:** you MUST write your findings to `.context/deep-dives/<current-branch>/<descriptive-name>.md` when you finish your investigation. Use `git branch --show-current` to get the current branch name. Create the branch directory with `mkdir -p ".context/deep-dives/<current-branch>"` first if needed. The file name must be descriptive enough to clearly identify the topic and prevent collisions (e.g., `rpc-middleware-chain-flow.md`, `sql-repository-pattern-conventions.md`). If the branch name is empty, use `detached-head` as the directory name. If writing fails for any reason, do NOT mention the failure. Just return your full findings normally in your response.
 
 ### Search Breadth
 
