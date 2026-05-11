@@ -25,6 +25,11 @@ context: fork
 Write output to \`./.context/plans/output.md\`.
 `
 
+const sampleInstructions = `# Base Rules
+
+Use the canonical Codex instructions.
+`
+
 const makeMemoryFs = (files: Record<string, string>, dirs: ReadonlyArray<string> = []) => {
   const dirSet = new Set(dirs)
   const written = new Map<string, string>()
@@ -316,13 +321,15 @@ describe("syncTarget", () => {
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/agents/deep-dive.md": sampleAgent,
-        "/src/global-skills/planning.md": sampleSkill
+        "/src/global-skills/planning.md": sampleSkill,
+        "/src/instructions.md": sampleInstructions
       }, ["/out"])
 
       yield* syncTarget("/src", "/out", "codex").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(written.get("/out/agents/deep-dive.toml")).toContain("developer_instructions")
       expect(written.get("/out/config.toml")).toContain("[agents.deep-dive]")
+      expect(written.get("/out/AGENTS.md")).toBe(sampleInstructions)
       expect(written.get("/out/skills/planning/SKILL.md")).not.toContain("model:")
     }))
 })
