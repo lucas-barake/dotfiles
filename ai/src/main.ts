@@ -200,7 +200,7 @@ const syncCodexInstructions = (sourceDir: string, targetDir: string) =>
 
     if (!(yield* fs.exists(sourcePath))) return
 
-    yield* fs.writeFileString(p.join(targetDir, "AGENTS.md"), yield* fs.readFileString(sourcePath))
+    yield* fs.copyFile(sourcePath, p.join(targetDir, "AGENTS.md"))
   })
 
 const mergeCodexConfig = (targetDir: string, agents: Array<{ name: string; description: string }>) =>

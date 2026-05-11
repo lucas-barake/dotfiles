@@ -54,7 +54,7 @@ Before spawning any agents:
 
 ### Step 2: E2E Structural Investigation (parallelize agents)
 
-Deep-dive agents automatically persist their findings to `.context/deep-dives/`, but planning must investigate fresh for the current task. Do not treat prior investigations as a source of truth and do not skip new investigation because a similarly named artifact already exists.
+Deep-dive agents automatically persist their findings under `.context/deep-dives/<current-branch>/`, but planning must investigate fresh for the current task. Do not treat prior investigations as a source of truth and do not skip new investigation because a similarly named artifact already exists.
 
 Spawn agents IN PARALLEL to map out the structure, not just the layer you're working on. Give each agent a specific structural question, NOT an open-ended problem to solve:
 
