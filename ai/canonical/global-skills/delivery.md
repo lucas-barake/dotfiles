@@ -319,11 +319,13 @@ When the task is complete:
 3. Create a single logical commit with a message that explains why the change exists
 4. Push the branch with upstream tracking if needed
 5. Open a draft PR with:
-   - a concise summary
-   - verification performed
-   - noteworthy design decisions
-   - important risks or follow ups
-   - links or references that materially shaped the implementation
+   - a short, direct title
+   - the related issue id as the title prefix when one clearly applies
+   - a body that explains the PR goal, important behavior changes, and non obvious design decisions for engineers without prior context in this part of the codebase
+   - a small code snippet or concrete usage example when the PR adds a new abstraction, important pattern, or non obvious integration
+   - important risks, follow ups, links, or references that materially shaped the implementation
+   - no boilerplate body headers like `Summary` or `Test Plan`
+   - no routine test, lint, build, or CI result restatement unless verification was manual, unusual, or important for understanding risk
 6. Do not merge. Human review remains the final gate
 
 Your final user response should include the branch name, commit hash, PR URL, verification results, and any important residual risks or follow ups.

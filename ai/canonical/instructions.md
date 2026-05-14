@@ -39,6 +39,12 @@
 
 - Do NOT add "Generated with Claude Code" or Co-Authored-By footers to commit messages.
 - Do NOT add "Generated with Claude Code" or similar attribution to PR descriptions.
+- When opening a PR, prefix the title with the related issue id when one clearly applies.
+- Keep PR titles short, direct, and specific to the change.
+- Write PR descriptions for engineers who do not know this part of the codebase yet. Explain the goal, the important behavior changes, and the reasoning behind non obvious choices.
+- If the change adds a new abstraction, important pattern, or non obvious integration, include a small code snippet or concrete example that shows how it is meant to be used.
+- Do not use boilerplate PR body headers like `Summary` or `Test Plan`. Bullets are fine when they improve scanning.
+- Do not restate routine tests, lint, build, or CI results in PR descriptions. CI/CD already reports standard checks. Mention verification only when it is manual, unusual, or explains an important risk.
 - Rebase by default. Use `git pull --rebase` when pulling. Use `git fetch origin && git rebase origin/main` when updating a feature branch.
 - Merge only when commits are already shared and rebasing would disrupt other people.
 - Use `git switch` and `git restore` instead of `git checkout`.
