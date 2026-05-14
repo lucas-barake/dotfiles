@@ -19,6 +19,7 @@
 
 - Preserve main context. Delegate broad exploration and structural investigation to agents first.
 - Spawn agents aggressively and in parallel when the questions are independent.
+- After spawning investigation or review agents, wait for them to finish before doing your own investigation or review in that same scope. Do not duplicate agent work in the background. Your job while they run is coordination only. Validate, deduplicate, and continue after their results return.
 - Agent prompts must be highly specific and self contained. Do not send vague prompts like "investigate this" or "look into the bug".
 - Every agent prompt should include the exact paths, directories, symbols, or URLs to inspect, the exact question to answer, why that question matters, any constraints or exclusions, and the exact shape of the response you want back.
 - Prefer several narrow agents with precise missions over one broad agent with an open ended mission.

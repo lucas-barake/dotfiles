@@ -65,10 +65,11 @@ After implementation and planned tests are complete, review the actual code befo
 2. Spawn the reviewers in parallel with the full list of modified files and note that the work is an uncommitted implementation from a plan
 3. Tell each reviewer that the modified files/current diff are the review boundary. They may inspect outside files only to validate direct callers, guards, tests, rules, or integration points causally connected to the modified code
 4. Require each bug reviewer to write the smallest regression test for every candidate finding and run the narrowest relevant command to prove it fails for the suspected reason. If the test confirms a real issue, reviewers must leave the regression test edits in the worktree and report the changed test file path, exact test code, command, and failing output. If the candidate is not reproduced or the harness is blocked after multiple real attempts, reviewers must remove any probe test edits before returning and report the exact test code and commands tried as an unconfirmed candidate
-5. Validate each finding yourself before changing code
-6. Treat high-confidence findings as only those reproduced by a failing regression test. If the regression test is correct and does not fail, treat the finding as a false positive and move on
-7. Fix valid findings and rerun the relevant checks
-8. Update the plan if any validated finding changes the implementation path or test plan materially
+5. Wait for the reviewers to finish before doing your own review in the same scope
+6. Validate each finding yourself before changing code
+7. Treat high-confidence findings as only those reproduced by a failing regression test. If the regression test is correct and does not fail, treat the finding as a false positive and move on
+8. Fix valid findings and rerun the relevant checks
+9. Update the plan if any validated finding changes the implementation path or test plan materially
 
 ### Step 7: Simplification pass
 
@@ -81,6 +82,8 @@ After all implementation and tests are complete, spawn two agents **in parallel*
 
 - The complete list of files created or modified (full paths)
 - A note that these files were just implemented from a plan
+
+Wait for both agents to finish before doing your own simplification or reuse pass in the same scope.
 
 **When results come back**, validate each suggestion yourself:
 

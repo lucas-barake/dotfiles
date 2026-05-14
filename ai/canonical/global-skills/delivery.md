@@ -115,6 +115,8 @@ Investigate fresh for the current task. Do not rely on prior deep-dive artifacts
 
 Every spawned agent prompt must be highly specific and self contained. Include the exact paths, directories, symbols, or libraries to inspect, the exact question to answer, why it matters for the current task, any exclusions, and the exact response format you want back. Prefer multiple narrow prompts over one broad prompt.
 
+After spawning investigation agents, wait for them to finish before doing your own investigation in the same scope. Do not duplicate their work while they run. Use that time only for coordination, handling failed agents, and preserving the task scope. Synthesize and validate once their results return.
+
 The goal is to understand how the system is actually built, not just where the requested change appears. Capture the result in `01-current-state.md` with exact file paths and key constraints.
 
 ### Step 3: Audit reuse, gaps, and refactor needs
@@ -226,6 +228,8 @@ Spawn them in parallel with:
 
 Do not use generic reviewer prompts. Tell each reviewer exactly what artifact to read, what sources to verify against, what class of defect to hunt for, and what evidence format to return.
 
+After spawning reviewers, wait for them to finish before doing your own review in the same scope. Do not inspect the same plan areas for findings while they run. Validate, deduplicate, and revise only after their results return.
+
 After they return:
 
 1. Deduplicate overlapping findings
@@ -281,11 +285,12 @@ After the implementation and planned tests are complete, review the actual code 
 1. Decide whether to review the full implementation as one unit or to shard it by domain. Shard when the modified files span clearly different concerns or the diff is large enough that one reviewer would need unrelated context
 2. Always include `reviewer-logic` and `test-reviewer`. Include `reviewer-behavioral`, `reviewer-data-integrity`, `reviewer-security`, `reviewer-concurrency`, and `reviewer-rules` when the implementation warrants them
 3. Spawn the selected reviewers in parallel with the modified file list, branch context, project rules, and a note that this is freshly implemented code. Tell them the modified files/current diff are the review boundary; they may inspect outside files only to validate direct callers, guards, tests, rules, or integration points causally connected to the modified code
-4. Deduplicate overlapping findings and keep the best supported version of each root issue
-5. Require each bug reviewer to write the smallest regression test for every candidate finding and run the narrowest relevant command to prove it fails for the suspected reason. If the test confirms a real issue, reviewers must leave the regression test edits in the worktree and report the changed test file path, exact test code, command, and failing output. If the candidate is not reproduced or the harness is blocked after multiple real attempts, reviewers must remove any probe test edits before returning and report the exact test code and commands tried as an unconfirmed candidate
-6. Validate every finding yourself before acting on it
-7. Treat high-confidence findings as only those reproduced by a failing regression test. If the regression test is correct and does not fail, treat the finding as a false positive and move on
-8. Fix valid findings and rerun the relevant checks
+4. Wait for the reviewers to finish before doing your own review in the same scope
+5. Deduplicate overlapping findings and keep the best supported version of each root issue
+6. Require each bug reviewer to write the smallest regression test for every candidate finding and run the narrowest relevant command to prove it fails for the suspected reason. If the test confirms a real issue, reviewers must leave the regression test edits in the worktree and report the changed test file path, exact test code, command, and failing output. If the candidate is not reproduced or the harness is blocked after multiple real attempts, reviewers must remove any probe test edits before returning and report the exact test code and commands tried as an unconfirmed candidate
+7. Validate every finding yourself before acting on it
+8. Treat high-confidence findings as only those reproduced by a failing regression test. If the regression test is correct and does not fail, treat the finding as a false positive and move on
+9. Fix valid findings and rerun the relevant checks
 
 Write the full result to `09-implementation-review.md`.
 
@@ -295,9 +300,10 @@ Once the code is functionally correct:
 
 1. Spawn `code-simplifier` and `reuse-reviewer` in parallel on the complete modified file list
 2. Add any domain specific reviewer agent that materially matches the stack under review
-3. Validate each suggestion yourself against the actual code and contracts
-4. Apply only changes that clearly preserve or improve behavior and clarity
-5. Rerun the relevant quality gates after any accepted simplification
+3. Wait for the agents to finish before doing your own simplification or reuse pass in the same scope
+4. Validate each suggestion yourself against the actual code and contracts
+5. Apply only changes that clearly preserve or improve behavior and clarity
+6. Rerun the relevant quality gates after any accepted simplification
 
 ### Step 14: Final verification
 
