@@ -71,6 +71,8 @@ Spawn agents IN PARALLEL to map out the structure, not just the layer you're wor
 
 The goal is to map how data flows end to end, what the existing code structure is, what conventions exist, and where the real integration boundaries live. The agents report structure. YOU synthesize meaning and make decisions.
 
+After spawning investigation agents, wait for them to finish before doing your own investigation in the same scope. Do not duplicate their work while they run. Use that time only for coordination, handling failed agents, and preserving the task scope. Synthesize and validate once their results return.
+
 ### Step 3: DRY & Reuse Audit
 
 ONLY after Step 2 agents return, spawn a new deep-dive agent to find what already exists that you can reuse. The goal is NOT to mimic the project's conventions blindly. Most projects accumulate bad patterns, dead abstractions, and inconsistent conventions over time. Following those is cargo-culting, not engineering.
@@ -394,6 +396,8 @@ or hypothetical concerns without evidence.
 **Do NOT paste the plan contents into agent prompts.** Agents have full tool access. They will read the plan target and investigate the codebase themselves.
 
 Spawn all selected reviewers in a **single turn** (parallel).
+
+After spawning reviewers, wait for them to finish before doing your own review in the same scope. Do not inspect the same plan areas for findings while they run. Validate, deduplicate, and revise only after their results return.
 
 ### Step 12: Validate and Revise the Plan
 
