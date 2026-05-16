@@ -38,7 +38,7 @@
 
 ## Work Trackers
 
-- When working from a PR, GitHub issue, Linear issue, Jira ticket, or similar tracker item, do not post progress comments while investigating or implementing. Avoid comments like "investigated X but it was not X." Keep intermediate reasoning in the conversation or local artifacts. Post tracker comments only when the user explicitly asks, when the final deliverable requires it, or when you are blocked and need human input there.
+- Do not modify PRs, GitHub issues, Linear issues, Jira tickets, or similar tracker items unless the user explicitly asks you to. This includes comments, labels, assignees, statuses, titles, descriptions, links, and metadata. Keep investigation and implementation notes in the conversation or local artifacts until the user asks you to update the tracker.
 
 ## Git
 
