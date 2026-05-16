@@ -36,6 +36,10 @@
 - Resume prior agents when useful.
 - Do not specify the model when spawning agents.
 
+## Work Trackers
+
+- When working from a PR, GitHub issue, Linear issue, Jira ticket, or similar tracker item, do not post progress comments while investigating or implementing. Avoid comments like "investigated X but it was not X." Keep intermediate reasoning in the conversation or local artifacts. Post tracker comments only when the user explicitly asks, when the final deliverable requires it, or when you are blocked and need human input there.
+
 ## Git
 
 - Do NOT add "Generated with Claude Code" or Co-Authored-By footers to commit messages.
