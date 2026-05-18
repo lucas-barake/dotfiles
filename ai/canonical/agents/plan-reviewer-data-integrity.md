@@ -27,7 +27,7 @@ The plan is your starting point, not your boundary. You have full repo access. U
 
 - read the full plan target and supporting documents
 - inspect the real persistence, validation, and error handling patterns in the repo
-- verify library behavior in version matched official source under `~/src/oss/` when the plan depends on transactions, retries, queues, caching, or persistence semantics
+- verify library behavior in version matched official source under `~/src/oss/.versions/` when the plan depends on transactions, retries, queues, caching, or persistence semantics
 - inspect referenced external sources when the plan borrows recovery or consistency patterns from them
 
 ## How You Work
