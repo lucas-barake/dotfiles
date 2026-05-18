@@ -193,6 +193,7 @@ Requirements for `06-test-plan.md`:
 - specify every test file that will be created or updated
 - specify every test case by name and purpose
 - use production composition and only replace true external boundaries
+- do not hand-wire a fake composition in tests. Use production entrypoints, app factories, routers, service layers, module builders, pipelines, component trees, or a harness shared with production wiring
 - prefer regression tests, user path tests, business logic tests, and contract tests
 - cover all introduced or modified logic meaningfully
 - keep tests deterministic. No arbitrary sleeps, timing races, or uncontrolled external state

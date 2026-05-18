@@ -49,6 +49,13 @@
 - If the test is valid but the fix is wrong, keep iterating on the fix until the test passes.
 - Leave the valid regression test and the fix in place. Do not delete them after proving the fix. Report the regression test, failing result, passing result, and fix for validation.
 
+## Test Harnesses
+
+- Tests must exercise the real production composition of the code, modules, services, component tree, routes, layers, pipelines, and dependency wiring. Do not recreate a parallel fake composition in the test.
+- Replace only true external boundaries that cannot run in tests, such as third party services, network APIs, hardware, or time. Everything else should use the same production modules and wiring the application uses.
+- If the production composition is hard to use in a test, extract or expose a real test harness from the production composition rather than hand wiring a mimic. A test harness that drifts from production is invalid, even if the assertions are useful.
+- Prefer existing production entrypoints, app factories, routers, service layers, module builders, or documented test harnesses that are shared with production wiring.
+
 ## Git
 
 - Do NOT add "Generated with Claude Code" or Co-Authored-By footers to commit messages.

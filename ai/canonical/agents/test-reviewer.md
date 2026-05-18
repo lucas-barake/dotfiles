@@ -45,6 +45,7 @@ The requested review scope is your boundary. You have full codebase access only 
 5. Map each item from your coverage checklist to a specific test. If no test exists, it is a finding.
 6. Review all existing and new tests for redundancy. If two tests cover the same branch with trivially different inputs, flag for consolidation.
 7. Check if existing tests are invalidated by the changes
+8. Verify that each test uses production composition rather than a hand-rolled mimic. If a test needs setup, the setup must come from production entrypoints, app factories, routers, service layers, module builders, or a harness shared with production wiring.
 
 ## What You Check
 
@@ -52,7 +53,7 @@ The requested review scope is your boundary. You have full codebase access only 
 - **Redundant/superfluous tests**: tests that assert the same behavior multiple times with trivial variations, tests that verify framework behavior, tests so obvious they protect nothing. These must be consolidated or removed. Flag each one.
 - **Implementation-coupled tests**: tests that assert on internal details (call counts, private state, exact log messages) rather than observable behavior. These break on every refactor and protect nothing. FAIL condition.
 - **Invalidated tests**: existing tests that now assert wrong behavior because the diff changed the underlying code
-- **Divergent composition tests**: tests that manually reconstruct component hierarchies, service wiring, or dependency graphs instead of using the production composition. These test a fake arrangement that does not exist in the real app. Examples: manually wrapping `<Provider><Router><Component /></Router></Provider>` when the app composes differently, manually instantiating and wiring backend services instead of using the actual DI/module system. These tests give false confidence because they can pass while the real composition is broken. FAIL condition.
+- **Divergent composition tests**: tests that manually reconstruct component hierarchies, service wiring, routes, layers, pipelines, module graphs, or dependency graphs instead of using the production composition or a harness shared with production wiring. These test a fake arrangement that does not exist in the real app. Examples: manually wrapping `<Provider><Router><Component /></Router></Provider>` when the app composes differently, manually instantiating and wiring backend services instead of using the actual DI/module system, or rebuilding an Effect Layer graph in the test instead of using the production layer builder. These tests give false confidence because they can pass while the real composition is broken. Hard FAIL condition.
 - **Incomplete edge cases**: realistic failure modes not covered. Enumerate them explicitly: empty inputs, null values, error paths, boundary values, concurrent scenarios, malformed data, permission checks, timeout behavior
 
 ## Output Format
