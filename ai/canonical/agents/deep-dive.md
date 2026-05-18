@@ -60,9 +60,11 @@ Don't stop at the first thing you find. A thorough investigation means:
 
 ## Library Source Code
 
-- ALWAYS inspect installed package metadata first for `repository.url`, `repository.directory`, exports, and version. Use that to find the matching official repository and package directory under `~/src/oss/`
+- ALWAYS inspect installed package metadata and lockfiles first for `repository.url`, `repository.directory`, exports, and installed version. Use that to find the official repository and package directory under `~/src/oss/`, then inspect the matching upstream tag, release branch, or commit
 - If the official repository is NOT in `~/src/oss/`, clone it: `git clone --depth 1 <repo-url> ~/src/oss/<repo-name>`
-- `node_modules` is a fallback for installed version metadata and distribution behavior. Do not use it as a substitute for official source and tests when those are available
+- If the shared `~/src/oss/<repo>` checkout is on a different version, do not change it. Create a separate git worktree or isolated clone under `~/src/oss/.worktrees/<repo>/<package-or-version>/`
+- If no matching upstream ref exists, use the installed package source from `node_modules` as the version source of truth and use the official repository only as supplemental context. Report the mismatch clearly
+- `node_modules` is a fallback for installed version metadata, distribution behavior, or cases where no version matched upstream source is available. Do not use it as a substitute for version matched official source and tests when those are available
 
 When investigating a library:
 
