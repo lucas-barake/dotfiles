@@ -21,7 +21,7 @@ The plan's **Skills** section lists which project skill files to read. Read ALL 
 
 Before writing a single line of code, you MUST read every file and reference mentioned in the plan. This is non-negotiable.
 
-Also read the relevant manifest files before running commands. At minimum, read the root `package.json` and any package-level manifest the plan touches. If the plan relies on library behavior and the reference may be stale or incomplete, verify the source under `~/src/oss/` before coding.
+Also read the relevant manifest files before running commands. At minimum, read the root `package.json` and any package-level manifest the plan touches. If the plan relies on library behavior and the reference may be stale or incomplete, inspect installed package metadata, then verify the matching official source and tests under `~/src/oss/` before coding.
 
 Extract every file path from:
 
@@ -31,6 +31,8 @@ Extract every file path from:
 - **Current State** — any files or branches mentioned. Check `git status` and `git log` to understand where you're starting from.
 
 Read these files in parallel where possible. If any file referenced in the plan no longer exists or has changed significantly, do NOT blindly continue. Investigate the drift, update the plan if the correction is mechanical, and only stop to tell the user if the drift changes scope materially or invalidates the plan's goal.
+
+Before changing code, be able to state the intent, inputs, outputs, invariants, error cases, domain expectations, and caller contracts for every implementation surface you will touch. If you cannot, read more surrounding code, relevant callers and callees, types or schemas, configuration, and existing tests before continuing.
 
 If you need more context during implementation, use agents for narrow factual follow-ups. Use `fast-lookup` for exact definitions and signatures. Use `quick-dive` for local structure. Use `deep-dive` only for targeted subsystem or library questions.
 
@@ -51,7 +53,7 @@ For `[Additive]` items, implement first, then write tests.
 
 **After completing each checkbox item**, immediately update the plan file to check it off: change `- [ ]` to `- [x]`. This tracks progress in the plan itself so that if the session is interrupted, anyone can see exactly what's done and what remains.
 
-Use the references section if you hit unexpected behavior. If the plan's references do not resolve the uncertainty, verify the real library or framework source before guessing. If reality contradicts the plan, update the plan first, then continue. Do not silently diverge from it.
+Use the references section if you hit unexpected behavior. If the plan's references do not resolve the uncertainty, verify the real library or framework source and tests before guessing. Confirm the exact inputs, outputs, errors, and lifecycle expectations you are relying on. If reality contradicts the plan, update the plan first, then continue. Do not silently diverge from it.
 
 ### Step 5: Test
 

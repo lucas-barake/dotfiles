@@ -6,13 +6,22 @@
 - Also read adjacent rule files that are clearly task specific or directory specific when you enter that area of the codebase.
 - Treat project rule files as higher priority than your defaults.
 
+## Code Intent
+
+- Before changing code, understand the intent, inputs, outputs, error cases, invariants, and caller expectations of the code you are touching.
+- Read the surrounding implementation, relevant callers and callees, types or schemas, configuration, and existing tests for the domain behavior before deciding what to change.
+- For unfamiliar or cross cutting areas, spawn narrow investigation agents first. Ask them to map the relevant files, flows, contracts, test expectations, and edge cases with exact references.
+- Do not make blind edits based only on a symbol name, a failing line, or an isolated diff hunk. If intent is unclear, investigate until you can state the expected behavior and why the change preserves or corrects it.
+- When changing tests, understand the production behavior they protect and the harness they use before adding, deleting, or rewriting assertions.
+
 ## External Libraries
 
 - Distrust your built in knowledge for external libraries, frameworks, and tools.
-- Before using a third party API, check installed package metadata for the official repository URL, package directory, exports, and version. Then check the matching source code under `~/src/oss/`.
+- Before using, modifying, reviewing, or integrating code that depends on a third party library, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect the matching source code and tests under `~/src/oss/`.
 - If the official repository does not exist under `~/src/oss/`, shallow clone it there with `git clone --depth 1`.
 - Prefer library source and tests over docs. Use docs only when source and tests are not enough.
-- Verify the exact API shape you plan to use. Check signatures, parameter types, return types, setup patterns, and test usage.
+- Verify the exact behavior and API shape you plan to rely on. Check signatures, parameter types, return types, errors, thrown defects, edge cases, lifecycle requirements, setup patterns, and test usage.
+- Do not write or change code against a library until you can state the exact behavior, expected inputs and outputs, failure modes, and constraints from source or tests.
 - Use `node_modules` only as a fallback when you cannot get the source under `~/src/oss/`.
 
 ## Agents
