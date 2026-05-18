@@ -60,15 +60,16 @@ Don't stop at the first thing you find. A thorough investigation means:
 
 ## Library Source Code
 
-- ALWAYS check `~/src/oss/` FIRST for library source code — this has full, readable source
-- If the library is NOT in `~/src/oss/`, clone it: `git clone --depth 1 <repo-url> ~/src/oss/<lib-name>`
-- `node_modules` is the LAST resort — compiled/minified code is harder to investigate and often missing context
+- ALWAYS inspect installed package metadata first for `repository.url`, `repository.directory`, exports, and version. Use that to find the matching official repository and package directory under `~/src/oss/`
+- If the official repository is NOT in `~/src/oss/`, clone it: `git clone --depth 1 <repo-url> ~/src/oss/<repo-name>`
+- `node_modules` is a fallback for installed version metadata and distribution behavior. Do not use it as a substitute for official source and tests when those are available
 
 When investigating a library:
 
 - Start with its entry point (`src/index.ts`, `lib/index.ts`, or whatever `main`/`exports` points to)
 - Find the specific module/function you're investigating by tracing from the entry point
 - Read the library's own tests for the module — they reveal intended usage, edge cases, and invariants
+- Identify the exact inputs, outputs, errors, edge cases, lifecycle rules, and setup requirements that the reviewed code will rely on
 - Check if the library has internal utilities or helpers that affect the behavior you're investigating
 
 ## Output Format

@@ -117,7 +117,7 @@ Every spawned agent prompt must be highly specific and self contained. Include t
 
 After spawning investigation agents, wait for them to finish before doing your own investigation in the same scope. Do not duplicate their work while they run. Use that time only for coordination, handling failed agents, and preserving the task scope. Synthesize and validate once their results return.
 
-The goal is to understand how the system is actually built, not just where the requested change appears. Capture the result in `01-current-state.md` with exact file paths and key constraints.
+The goal is to understand how the system is actually built, not just where the requested change appears. Before designing code, be able to state the intent, inputs, outputs, invariants, error cases, domain expectations, and caller contracts of the code you will touch. Read surrounding implementation, relevant callers and callees, types or schemas, configuration, and existing domain tests. Capture the result in `01-current-state.md` with exact file paths and key constraints.
 
 ### Step 3: Audit reuse, gaps, and refactor needs
 
@@ -133,16 +133,16 @@ Write the result to `02-internal-research.md`.
 
 ### Step 4: Investigate libraries and frameworks from source
 
-If the task touches any library or framework behavior, investigate it before designing code that uses it.
+If the task touches any library or framework behavior, investigate it before designing code that uses it. This is mandatory. Do not write or change code against a library until you understand the exact behavior, inputs, outputs, errors, edge cases, lifecycle rules, and setup requirements from source or tests.
 
 1. Read the relevant manifest files first so you know the actual dependencies, scripts, and versions
-2. Ensure the source of each relevant library or framework exists under `~/src/oss/`. Clone it if needed
+2. Inspect installed package metadata for each relevant library or framework. Use `repository.url`, `repository.directory`, exports, and version to find the matching official repository and package directory under `~/src/oss/`. Clone the official repository if needed
 3. Use `fast-lookup` for exact signatures, parameter types, return values, and exported helpers
 4. Use `deep-dive` on the library source and tests to find idiomatic usage, setup patterns, and test strategies
 5. Prefer source code and test files over docs. Use docs only as a secondary source
 6. If behavior remains uncertain, write temporary verification code, run it, record the answer, and delete the temporary artifact immediately
 
-Record the exact findings in `03-library-research.md`. This file must include the real APIs you will rely on, the real testing pattern, and anything that will not work.
+Record the exact findings in `03-library-research.md`. This file must include the real APIs you will rely on, expected inputs and outputs, errors and edge cases, lifecycle or setup constraints, the real testing pattern, and anything that will not work.
 
 ### Step 5: Investigate external references
 

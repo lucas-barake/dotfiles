@@ -95,14 +95,15 @@ The agent reports what exists. You decide what's worth reusing, what's worth ext
 
 ### Step 4: Library Investigation
 
-If the task involves third-party libraries, you MUST investigate them before planning any code that uses them. LLMs default to training data patterns. If those patterns are outdated or wrong for the specific library version, the implementer will write bad code. Your job is to give the implementer the real patterns from the actual source.
+If the task involves third-party libraries, you MUST investigate them before planning any code that uses them. LLMs default to training data patterns. If those patterns are outdated or wrong for the specific library version, the implementer will write bad code. Your job is to give the implementer the real behavior and patterns from the actual source. Do not plan code against a library until you understand the exact inputs, outputs, errors, edge cases, lifecycle rules, and setup requirements from source or tests.
 
 1. **Read the real manifests first.** Read `package.json`, workspace manifests, or the relevant dependency manifests before planning commands or imports. Know the real versions and scripts.
-2. **Get the source.** Ensure `~/src/oss/<lib>` exists (clone it if not). This is your source of truth, not training data.
+2. **Get the source.** Inspect installed package metadata for `repository.url`, `repository.directory`, exports, and version. Use that metadata to find the matching official repository and package directory under `~/src/oss/`. Clone the official repository if it is missing. This is your source of truth, not training data.
 3. **Understand the API surface.** Spawn fast-lookup agents for exact signatures, types, return values of every API the plan will use. Do not guess a single parameter type or return value.
 4. **Find idiomatic usage from source code.** Spawn a deep-dive agent on the library source. Prioritize source code and test files over documentation. Docs go stale. Source code is the truth. Ask:
    - How does the library's own test suite exercise this feature? (test files are the best usage examples)
    - How does the library's internal code use this feature? (internal usage patterns)
+   - What inputs, outputs, errors, edge cases, lifecycle rules, and invariants does the source show?
    - What setup, initialization, or composition patterns do the tests use?
    - Are there any anti-patterns, deprecations, or "don't do this" that the source reveals?
    - Only check docs/READMEs as a secondary source if the tests and source don't give a clear enough picture
@@ -244,7 +245,7 @@ For bug-fix tasks, the regression test written during planning becomes the first
 Before writing ANY test plan, you MUST understand how to test the code you're planning. This means investigating the source of whatever the tests depend on.
 
 1. **Check for an available testing skill first.** If a skill exists for testing library X (e.g., `effect-testing`, `effect-ai-testing`, `effect-rpc-testing`), check whether it covers the specific use case the plan requires. If it does, use it. If it doesn't cover the particular scenario, proceed to step 2.
-2. **No skill or insufficient skill coverage? Investigate the library source.** Spawn a deep-dive agent on `~/src/oss/<lib>` (clone it first if not there). Prioritize source code and test files over documentation. Docs go stale. The library's own test suite is the canonical reference for how to test code that uses it. Ask:
+2. **No skill or insufficient skill coverage? Investigate the library source.** Inspect installed package metadata, then spawn a deep-dive agent on the matching official repository and package directory under `~/src/oss/` (clone the official repo first if not there). Prioritize source code and test files over documentation. Docs go stale. The library's own test suite is the canonical reference for how to test code that uses it. Ask:
    - Find the library's test files for the specific feature/module you're using. How do THEY test it?
    - What test utilities, mocks, fakes, or helpers does the library provide for consumers? (look at their test infrastructure, not just their docs)
    - What setup/teardown patterns do their tests use? (Layer composition, test harnesses, mock providers, etc.)
