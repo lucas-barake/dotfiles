@@ -145,13 +145,13 @@ Review target:
 <base branch + diff command, staged changes, unstaged changes, explicit files/directories, or the concrete scope the user requested>
 
 PR/context:
-<PR title/body if available, or other user-provided review context>
+<Only the PR title/body details or user-provided context that are directly relevant to this reviewer and shard. Omit unrelated history, unrelated reviewer concerns, and other agents' missions.>
 
 Project rules:
 <CLAUDE.md contents if found>
 
 User feedback:
-<user feedback refined into clear, actionable guidance for this reviewer, or "None" if the user didn't provide any>
+<user feedback refined into clear, actionable guidance for this reviewer, or "None" if no feedback is relevant to this reviewer>
 
 Scoped files:
 <file list for this shard>
@@ -182,7 +182,7 @@ Regression validation:
 
 When sharding, each agent only receives the file list for its shard. The agent inspects only its requested scope and reads only the directly connected context needed to validate scope-caused behavior.
 
-**User feedback is not optional.** Refine the user's input into clear, actionable guidance tailored to each reviewer's focus area. Route the feedback to every reviewer it could be relevant to. When in doubt, include it. Agents that receive user feedback should treat it as a high-priority area to investigate, not just as a hint.
+**User feedback routing is mandatory and must be scoped.** Refine the user's input into clear, actionable guidance tailored to each reviewer's focus area. Route feedback only to reviewers whose mission can act on it. Do not include irrelevant feedback "just in case"; it poisons the reviewer's goal. Agents that receive user feedback should treat it as a high-priority area to investigate, not just as a hint.
 
 ### Step 5: Deduplicate
 

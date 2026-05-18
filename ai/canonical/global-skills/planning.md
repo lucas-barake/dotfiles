@@ -58,7 +58,7 @@ Deep-dive agents automatically persist their findings under `.context/deep-dives
 
 Spawn agents IN PARALLEL to map out the structure, not just the layer you're working on. Give each agent a specific structural question, NOT an open-ended problem to solve:
 
-- Every prompt must be highly specific and self contained. Include the exact paths, directories, symbols, or libraries to inspect, the exact structural question to answer, why it matters for the plan, any exclusions, and the exact response format you want back
+- Every prompt must be highly specific and self contained. Include the exact paths, directories, symbols, or libraries to inspect, the exact structural question to answer, why it matters for the plan, any exclusions, and the exact response format you want back. Keep the prompt scoped to that agent's mission. Do not include unrelated task history, other agents' missions, or concerns that belong to another agent type
 - Prefer multiple narrow prompts over one broad prompt. Each agent should answer one tightly scoped question well
 
 - Use `quick-dive` for affected modules and adjacent consumers or providers

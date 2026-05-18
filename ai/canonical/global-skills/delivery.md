@@ -113,7 +113,7 @@ Do not perform broad structural exploration in the main context. Delegate it.
 
 Investigate fresh for the current task. Do not rely on prior deep-dive artifacts or older plans as a substitute for new investigation.
 
-Every spawned agent prompt must be highly specific and self contained. Include the exact paths, directories, symbols, or libraries to inspect, the exact question to answer, why it matters for the current task, any exclusions, and the exact response format you want back. Prefer multiple narrow prompts over one broad prompt.
+Every spawned agent prompt must be highly specific and self contained. Include the exact paths, directories, symbols, or libraries to inspect, the exact question to answer, why it matters for the current task, any exclusions, and the exact response format you want back. Keep the prompt scoped to that agent's mission. Do not include unrelated task history, other agents' missions, or concerns that belong to another agent type. Prefer multiple narrow prompts over one broad prompt.
 
 After spawning investigation agents, wait for them to finish before doing your own investigation in the same scope. Do not duplicate their work while they run. Use that time only for coordination, handling failed agents, and preserving the task scope. Synthesize and validate once their results return.
 
