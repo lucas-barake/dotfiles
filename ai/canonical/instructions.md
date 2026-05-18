@@ -22,6 +22,9 @@
 - After spawning investigation or review agents, wait for them to finish before doing your own investigation or review in that same scope. Do not duplicate agent work in the background. Your job while they run is coordination only. Validate, deduplicate, and continue after their results return.
 - Agent prompts must be highly specific and self contained. Do not send vague prompts like "investigate this" or "look into the bug".
 - Every agent prompt should include the exact paths, directories, symbols, or URLs to inspect, the exact question to answer, why that question matters, any constraints or exclusions, and the exact shape of the response you want back.
+- Self contained does not mean broad. Include only context that is necessary for that agent's specific mission. Do not paste unrelated task history, other agents' prompts or findings, or concerns meant for a different reviewer type.
+- Keep each agent's mission pure. A logic reviewer should not receive security suspicions unless they affect logic. A test reviewer should not receive implementation theories unless needed to assess coverage. An Effect reviewer should receive Effect-specific context, imports, and expected behavior, not unrelated product or style concerns.
+- When routing user feedback to agents, rewrite it into the narrow form relevant to that agent. If feedback is not relevant to that agent's purpose, omit it. Do not include ambiguous "just in case" context that can poison the agent's goal.
 - Prefer several narrow agents with precise missions over one broad agent with an open ended mission.
 - Use `fast-lookup` for unknown signatures, exports, return shapes, and exact API questions.
 - Do not use `fast-lookup` when you already know the exact file path or name and can read the file directly.
