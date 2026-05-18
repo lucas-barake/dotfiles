@@ -27,6 +27,7 @@
 - Do not use `fast-lookup` when you already know the exact file path or name and can read the file directly.
 - Use `quick-dive` for nearby structure and immediate codebase context.
 - Use `deep-dive` for subsystem traces, cross cutting patterns, and behavior that spans multiple files or repos.
+- Use `effect-reviewer` for every review of code that imports or uses Effect or Effect ecosystem packages. It must validate behavior against the local `node_modules` source and tests for the relevant Effect packages.
 - Use `web-search` for web lookups.
 - Tell agents whether you need structural mapping, exact signatures, behavioral verification, test patterns, or external references. Do not make them infer the investigation mode.
 - Ask for exact file paths, line numbers, verbatim snippets, and concise evidence. For web work, ask for exact URLs and quotes.
@@ -39,6 +40,14 @@
 ## Work Trackers
 
 - Do not modify PRs, GitHub issues, Linear issues, Jira tickets, or similar tracker items unless the user explicitly asks you to. This includes comments, labels, assignees, statuses, titles, descriptions, links, and metadata. Keep investigation and implementation notes in the conversation or local artifacts until the user asks you to update the tracker.
+
+## TDD Fix Workflow
+
+- When fixing a bug or validated reviewer finding with a regression test, write the regression test first and run the narrowest relevant command to prove it fails for the expected reason before changing production code.
+- Apply the smallest fix, then rerun the same command and prove the test passes.
+- If the test fails after the fix because the test or harness is wrong, revert the production fix, correct the test or harness, rerun it against the unfixed production code, prove it fails for the expected reason again, reapply the fix, and rerun until it passes.
+- If the test is valid but the fix is wrong, keep iterating on the fix until the test passes.
+- Leave the valid regression test and the fix in place. Do not delete them after proving the fix. Report the regression test, failing result, passing result, and fix for validation.
 
 ## Git
 

@@ -107,10 +107,13 @@ The available reviewers and when to include them:
 6. **Project Rules & Integration** — rule violations (must quote the exact rule from project rules — do not invent rules), missing migration steps, version mismatches, changes that break files not in the diff, missing config updates, dependency conflicts, import errors.
    **Include when:** project rules (CLAUDE.md) exist, or the reviewed scope touches dependencies, config files, migrations, or public interfaces consumed elsewhere.
 
-7. **Testing & Coverage** — missing tests for new/changed code, superfluous tests that don't catch real regressions, tests that assert implementation details instead of behavior, tests that duplicate each other, existing tests invalidated by the changes. Must examine the project's existing test patterns (frameworks, conventions, file locations) before making recommendations. Returns concrete test descriptions: what to test, which file to put it in, what assertions to make.
+7. **Effect Correctness** — validates Effect and Effect ecosystem code against local `node_modules` source and tests. Finds API misuse, wrong assumptions about runtime behavior, resource lifecycle mistakes, concurrency/fiber/finalizer issues, Schema misunderstandings, and other Effect-specific correctness bugs.
+   **Include when:** the reviewed scope imports, configures, tests, or meaningfully interacts with `effect`, `@effect/*`, or other Effect ecosystem packages. This applies to all Effect code.
+
+8. **Testing & Coverage** — missing tests for new/changed code, superfluous tests that don't catch real regressions, tests that assert implementation details instead of behavior, tests that duplicate each other, existing tests invalidated by the changes. Must examine the project's existing test patterns (frameworks, conventions, file locations) before making recommendations. Returns concrete test descriptions: what to test, which file to put it in, what assertions to make.
    **Always included.** Every review target needs test coverage review.
 
-**Always include Logic & Control Flow and Testing & Coverage** — they apply to every unit.
+**Always include Logic & Control Flow and Testing & Coverage** — they apply to every unit. Always include Effect Correctness when the unit touches Effect or an Effect ecosystem package.
 
 When sharding, different shards will typically need different reviewer sets. A frontend shard rarely needs the concurrency reviewer. A database shard rarely needs security review for XSS. Select per shard.
 
@@ -126,9 +129,10 @@ Spawn all reviewers across all shards in a **single turn**. Each reviewer has it
 | Behavioral & Contract | `reviewer-behavioral` |
 | Concurrency & Resources | `reviewer-concurrency` |
 | Project Rules & Integration | `reviewer-rules` |
+| Effect Correctness | `effect-reviewer` |
 | Testing & Coverage | `test-reviewer` |
 
-**Do NOT paste the diff into agent prompts.** Agents have full tool access (Read, Glob, Grep, Bash). They will read the files and run git commands themselves. Pasting large diffs wastes context and slows down agent spawning.
+**Do NOT paste the diff into agent prompts.** Agents have full tool access. They will read the files and run git commands themselves. Pasting large diffs wastes context and slows down agent spawning.
 
 After spawning reviewers, do not perform your own local review while they run. Do not inspect scoped code for findings, trace callers, run speculative tests, or investigate potential bugs independently before reviewer results are back. Your only work before reviewers finish is coordination: wait for agents, collect their outputs, handle failed/stalled agents, and preserve the review scope. The specialist reviewers do the first-pass investigation; you validate, deduplicate, and investigate only after all selected reviewers have returned.
 
@@ -166,10 +170,12 @@ Strict review scope:
 Regression validation:
 - First identify candidate findings in your specialty.
 - For each candidate, write the smallest regression test that should fail because of the suspected bug. Prefer an existing nearby test file and existing test conventions.
-- Run the narrowest relevant test command and ensure the test fails for the suspected reason.
+- Run the narrowest relevant test command and ensure the test fails for the suspected reason before changing production code.
+- If the regression test is valid, apply the smallest production fix in place, then rerun the same command and ensure the test passes.
+- If the fixed code still fails because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure it fails for the suspected reason again, reapply the fix, and rerun until the test passes. If the test is valid and the fix is wrong, keep iterating on the fix until the test passes.
 - Try multiple reasonable test placements or harness approaches before giving up.
-- If the test confirms a real issue, leave the regression test edits in the worktree and report the changed test file path, exact test code, command, and failing output. If the candidate is not reproduced or the harness is blocked, remove any probe test edits before returning and report the exact code/commands tried.
-- Report confirmed issues separately from unconfirmed candidates.
+- If the test confirms a real issue and the fix passes, leave the regression test and fix edits in the worktree. Report the changed test file path, exact test code, failing command output before the fix, passing command output after the fix, and the fix you applied. If the candidate is not reproduced or the harness is blocked, remove any probe test and fix edits before returning and report the exact code/commands tried.
+- Report confirmed fixed issues separately from unconfirmed candidates.
 - If you cannot get the test harness to run after multiple tries and you still believe the candidate may be real, include the exact verbatim test code you wrote, the commands you tried, and mark the candidate `UNCONFIRMED - HARNESS BLOCKED`.
 - If the test runs but does not reproduce the bug, mark the candidate `NOT REPRODUCED` and explain what disproved it.
 ```
@@ -184,7 +190,7 @@ After all agents return, check if any two findings point to the same underlying 
 
 ### Step 6: Validate each finding
 
-For each reviewer result, first classify it as a confirmed issue, unconfirmed candidate, not reproduced candidate, or test coverage finding. Then validate it yourself. A bug finding is only valid when you can tie it concretely to the requested review scope and confirm it is reachable, relevant, and not already guarded or intentionally unchanged.
+For each reviewer result, first classify it as a confirmed fixed issue, unconfirmed candidate, not reproduced candidate, or test coverage finding. Then validate it yourself. A bug finding is only valid when you can tie it concretely to the requested review scope, confirm it is reachable and relevant, and verify the reviewer left a valid regression test plus fix in the worktree.
 
 For each result, read the relevant scoped files and any diff when available, then check:
 
@@ -194,8 +200,9 @@ For each result, read the relevant scoped files and any diff when available, the
 4. Is it intentional behavior (comments, PR description, project conventions)?
 5. For rule violations: does the quoted rule actually exist and apply here?
 6. Would this cause an observable failure in practice?
-7. Did the reviewer provide a regression test that fails for the suspected reason, or can you reproduce it yourself with a regression test?
-8. If the claim is about consumers or public API behavior, are there actual in-repo consumers or concrete contract evidence?
+7. Did the reviewer provide a regression test that failed for the suspected reason before the fix and passes after the fix?
+8. Did the reviewer leave both the valid regression test and the fix in the worktree?
+9. If the claim is about consumers or public API behavior, are there actual in-repo consumers or concrete contract evidence?
 
 Discard the result if it is:
 
@@ -206,10 +213,11 @@ Discard the result if it is:
 - speculative
 - based on insufficient evidence
 - based only on hypothetical external consumers
+- missing a valid regression test or missing the applied fix
 
 Assign confidence 0-100:
 
-- 90-100: Definitely real, clear evidence and a regression test that fails for the suspected reason
+- 90-100: Definitely real, clear evidence, a regression test that fails before the fix and passes after the fix, and the fix remains in the worktree
 - 75-89: Strong code evidence but regression harness blocked after multiple real attempts
 - 60-74: Possible, some uncertainty or no successful regression test
 - Below 60: Probably false positive
@@ -263,13 +271,13 @@ Spawn all verification deep-dives in a **single turn** (parallel). Different fin
 
 Separate validated findings from discarded reviewer findings. Only validated findings are final PR findings.
 
-**Validated bug findings** — sort by severity (critical first), then confidence. Only regression-tested findings are high confidence:
+**Validated fixed bug findings** — sort by severity (critical first), then confidence. Only findings with a failing-before and passing-after regression test are high confidence:
 
 ```
 ### [SEVERITY] Title
 **File:** `path/to/file` lines X-Y
 **Confidence:** XX/100
-**Regression test:** reproduced | harness blocked after multiple attempts
+**Regression test:** failed before fix and passed after fix | harness blocked after multiple attempts
 
 Why this is a bug.
 
@@ -277,10 +285,10 @@ Why this is a bug.
 <the relevant code>
 
 **Regression test evidence:**
-<test command and result, or exact test snippet if the harness was blocked>
+<test code, failing command/result before fix, and passing command/result after fix, or exact test snippet if the harness was blocked>
 
-**Suggested fix:**
-<corrected code>
+**Fix applied:**
+<corrected code and file paths>
 ```
 
 For findings that were verified against library source in Step 7, include the verification evidence:

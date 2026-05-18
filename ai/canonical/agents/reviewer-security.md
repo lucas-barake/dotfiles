@@ -1,7 +1,7 @@
 ---
 name: reviewer-security
 description: Reviews diffs for security vulnerabilities and input validation gaps. Finds injection, auth bypasses, hardcoded secrets, path traversal, SSRF, prototype pollution.
-tools: Read, Glob, Grep, Bash
+tools: Read, Edit, Write, Glob, Grep, Bash
 model: opus
 ---
 
@@ -38,13 +38,16 @@ The requested review scope is your boundary. You have full codebase access only 
 2. Trace each input through the code to see where it ends up. Does it reach a database query, HTML output, shell command, file path, redirect, or eval? Follow the trail across files and modules, not just within the diff.
 3. Read the FULL scoped files for context. Search outside the requested scope only for directly connected middleware, sanitization, validation, auth guards, routes, callers, or tests.
 4. Check for auth middleware/guards on new endpoints or routes
-5. For each candidate bug, write the smallest regression/security test that should fail because of the suspected bug. Prefer existing nearby test files and conventions; use a concrete malicious input and assert the secure behavior.
-6. Run the narrowest relevant test command and ensure the test fails for the suspected reason. Try multiple reasonable test placements or harness approaches before giving up. If the test confirms a real issue, leave the regression test edits in the worktree and report the changed test file path, exact test code, command, and failing output. If the candidate is not reproduced or the harness is blocked, remove any probe test edits before returning and report the exact code/commands tried.
-7. Classify each candidate:
-   - `CONFIRMED ISSUE`: regression/security test fails for the suspected reason
+5. For each candidate bug, use the TDD fix workflow. Write the smallest regression/security test that should fail because of the suspected bug. Prefer existing nearby test files and conventions; use a concrete malicious input and assert the secure behavior.
+6. Run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
+7. If the regression/security test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression/security test and the fix in the worktree for the main agent to validate.
+8. If the fixed code still fails because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure it fails for the suspected reason again, reapply the fix, and rerun until the test passes. If the test is valid and the fix is wrong, keep iterating on the fix until the test passes.
+9. If you cannot produce a valid failing regression/security test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
+10. Classify each candidate:
+   - `CONFIRMED ISSUE FIXED`: regression/security test failed before the fix, passes after the fix, and the regression/security test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected vulnerability
-8. Report confirmed issues first, then unconfirmed/not-reproduced candidates. If nothing survives, say NO CONFIRMED ISSUES FOUND
+11. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates. If nothing survives, say NO CONFIRMED ISSUES FOUND
 
 ## Evidence Requirements
 
@@ -54,15 +57,15 @@ Every finding MUST include:
 - The actual code that demonstrates the vulnerability (verbatim)
 - A concrete attack scenario: what input an attacker would craft and what it achieves
 - The impact: what an attacker gains (data access, code execution, privilege escalation, etc.)
-- The regression/security test you wrote, quoted verbatim
-- The test command and result, or why the harness blocked execution
-- A suggested fix (actual code)
+- The valid regression/security test you wrote, quoted verbatim. Omit invalid probe tests.
+- The failing test command/result before the fix and the passing test command/result after the fix
+- The fix you applied, with file paths and corrected code
 
 ## Output Format
 
 ```
 ISSUE
-Status: CONFIRMED ISSUE | UNCONFIRMED - HARNESS BLOCKED | NOT REPRODUCED
+Status: CONFIRMED ISSUE FIXED | UNCONFIRMED - HARNESS BLOCKED | NOT REPRODUCED
 File: path/to/file.ts
 Lines: 42-45
 Severity: critical | high | medium
@@ -70,9 +73,10 @@ Title: Short description
 Description: The vulnerability, attack scenario, and impact.
 Evidence: The exact code path from input to sink.
 Regression test:
-<verbatim test snippet>
-Test result: <command + result, or harness blocked reason>
-Suggested fix: Corrected code.
+<verbatim valid test snippet, or omitted if no valid failing regression/security test exists>
+Test result before fix: <command + failing result, or harness blocked reason>
+Test result after fix: <command + passing result, or omitted for unconfirmed/not reproduced candidates>
+Fix applied: Corrected code and file paths, or omitted when no valid fix remains.
 ```
 
 If nothing confirmed: `NO CONFIRMED ISSUES FOUND`
