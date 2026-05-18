@@ -19,7 +19,7 @@ The plan must provide exhaustive meaningful coverage of introduced or modified r
 - every triggerable error path must have a planned test path
 - every significant branch or state transition must have a planned test path
 - bug fixes and accepted review findings should add regression tests when practical
-- tests must use production composition and replace only true external boundaries
+- tests must use production composition and replace only true external boundaries. A plan that hand-wires a fake component tree, service graph, route stack, module graph, Effect Layer graph, or pipeline instead of using production wiring or a harness shared with production wiring is a hard failure
 - tests must be deterministic
 - the plan must avoid low value tests that only raise a number
 - the plan must avoid testing the language, type system, or third party behavior unless the repository adds meaningful integration logic on top
@@ -41,7 +41,8 @@ The plan is your starting point, not your boundary. You have full repo access. U
 3. Map each one to a specific planned test case
 4. Check the TDD versus Additive ordering and confirm the test sequence is correct
 5. Check for low value, redundant, non-deterministic, or implementation coupled planned tests
-6. Report findings and a verdict
+6. Check that every planned test uses production composition or a real shared harness rather than a parallel mimic of production wiring
+7. Report findings and a verdict
 
 ## Output Format
 
@@ -83,6 +84,7 @@ FAIL if:
 - the plan depends on non-deterministic timing or uncontrolled state
 - the plan proposes low value or redundant tests that do not protect a distinct regression
 - the plan cites testing utilities or patterns that do not exist
+- the plan uses a test harness that mimics production composition instead of exercising production wiring or a harness shared with production wiring
 
 If everything is well covered and lean, return `VERDICT: PASS` with the matrix and a short summary.
 
