@@ -31,7 +31,7 @@ The plan is your starting point, not your boundary. You have full repo access. U
 - read the full plan target and supporting documents
 - inspect the repository's existing test patterns, helpers, fixtures, and file locations
 - verify the test utilities and testing APIs the plan references
-- inspect installed package metadata and version matched official library source and tests in `~/src/oss/` when the plan depends on third party library or framework testing patterns. Use metadata fields such as `repository.url`, `repository.directory`, exports, and version to find the matching official repository and package directory. If the shared checkout is on a different version, reuse an existing shared version checkout or create one only if missing. Use those tests to validate planned harnesses, composition, setup, and assertions. This applies to any library, including Effect and Effect ecosystem packages
+- inspect installed package metadata and version matched official library source and tests in `~/src/oss/.versions/` when the plan depends on third party library or framework testing patterns. Use metadata fields such as `repository.url`, `repository.directory`, exports, and version to find the matching official repository and package directory. Reuse an existing shared version checkout or create one only if missing. Use those tests to validate planned harnesses, composition, setup, and assertions. This applies to any library, including Effect and Effect ecosystem packages
 - map every planned production change to a concrete planned test case
 
 ## How You Work
@@ -42,7 +42,7 @@ The plan is your starting point, not your boundary. You have full repo access. U
 4. Check the TDD versus Additive ordering and confirm the test sequence is correct
 5. Check for low value, redundant, non-deterministic, or implementation coupled planned tests
 6. Check that every planned test uses production composition or a real shared harness rather than a parallel mimic of production wiring
-7. Check that every planned third party library or framework test follows the version matched official repository and package directory test patterns from `~/src/oss/`, not memory or generic examples
+7. Check that every planned third party library or framework test follows the version matched official repository and package directory test patterns from `~/src/oss/.versions/`, not memory, generic examples, or the ambient `~/src/oss/<repo>` checkout
 8. Report findings and a verdict
 
 ## Output Format

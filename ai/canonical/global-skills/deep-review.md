@@ -107,7 +107,7 @@ The available reviewers and when to include them:
 6. **Project Rules & Integration** — rule violations (must quote the exact rule from project rules — do not invent rules), missing migration steps, version mismatches, changes that break files not in the diff, missing config updates, dependency conflicts, import errors.
    **Include when:** project rules (CLAUDE.md) exist, or the reviewed scope touches dependencies, config files, migrations, or public interfaces consumed elsewhere.
 
-7. **Effect Correctness** — validates Effect and Effect ecosystem code against installed package metadata and version matched official source/tests under `~/src/oss/`. Finds API misuse, wrong assumptions about runtime behavior, resource lifecycle mistakes, concurrency/fiber/finalizer issues, Schema misunderstandings, and other Effect-specific correctness bugs.
+7. **Effect Correctness** — validates Effect and Effect ecosystem code against installed package metadata and version matched official source/tests under `~/src/oss/.versions/`. Finds API misuse, wrong assumptions about runtime behavior, resource lifecycle mistakes, concurrency/fiber/finalizer issues, Schema misunderstandings, and other Effect-specific correctness bugs.
    **Include when:** the reviewed scope imports, configures, tests, or meaningfully interacts with `effect`, `@effect/*`, or other Effect ecosystem packages. This applies to all Effect code.
 
 8. **Testing & Coverage** — missing tests for new/changed code, superfluous tests that don't catch real regressions, tests that assert implementation details instead of behavior, tests that duplicate each other, existing tests invalidated by the changes. Must examine the project's existing test patterns (frameworks, conventions, file locations) before making recommendations. Returns concrete test descriptions: what to test, which file to put it in, what assertions to make.
@@ -170,7 +170,7 @@ Strict review scope:
 Regression validation:
 - First identify candidate findings in your specialty.
 - For each candidate, write the smallest regression test that should fail because of the suspected bug. Prefer an existing nearby test file and existing test conventions.
-- Before writing a regression test that depends on a third party library or framework, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests under `~/src/oss/`, reusing an existing shared version checkout if the main checkout is on a different version, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory first.
+- Before writing a regression test that depends on a third party library or framework, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory first.
 - Run the narrowest relevant test command and ensure the test fails for the suspected reason before changing production code.
 - If the regression test is valid, apply the smallest production fix in place, then rerun the same command and ensure the test passes.
 - If the fixed code still fails because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure it fails for the suspected reason again, reapply the fix, and rerun until the test passes. If the test is valid and the fix is wrong, keep iterating on the fix until the test passes.
@@ -243,8 +243,8 @@ Findings that are purely about the project's own logic (wrong condition, missing
 1. Identify the library/framework in question
 2. Ensure source code is available:
    - Check installed package metadata and lockfiles to resolve the installed version and official repository
-   - Check for an existing reusable version checkout under `~/src/oss/.versions/<repo>/<version>/` or another clearly named shared version directory
-   - If not present, create one shared isolated git worktree or clone for the matching upstream tag, release branch, or commit. Do not create duplicate per-agent checkouts
+   - Check for an existing reusable version checkout under `~/src/oss/.versions/<repo>/<version>/`
+   - If not present, create one shared git worktree for the matching upstream tag, release branch, or commit. Use a separate clone only when a worktree cannot be created from the shared repository. Do not create duplicate per-agent checkouts
    - Fall back to `node_modules` only if no version matched upstream source is available or you must confirm installed distribution behavior
 3. Spawn a `deep-dive` agent targeting the library source with a specific question:
 

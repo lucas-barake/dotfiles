@@ -26,7 +26,7 @@ Be rigorous. The plan must be grounded in real source code, real tests, and high
 The plan is your starting point, not your boundary. You have full repo access. Use it.
 
 - read the full plan target and all supporting research files
-- verify cited library claims against version matched official source under `~/src/oss/`, using installed package source only when no matching upstream ref exists
+- verify cited library claims against version matched official source under `~/src/oss/.versions/`, using installed package source only when no matching upstream ref exists
 - verify cited open source application patterns against the cloned repositories the plan references
 - verify web references when local source or notes are insufficient
 - check whether the plan's chosen references are reputable and still relevant to the implementation problem
