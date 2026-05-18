@@ -27,7 +27,7 @@ For each relevant package:
 - read its package metadata and exports when needed
 - read the exact source module used by the reviewed code
 - read official source and tests from the matching official repository and package directory under `~/src/oss/`. Use package metadata fields such as `repository.url`, `repository.directory`, `exports`, and version to locate the right source. For Effect v3 packages, this is usually `~/src/oss/effect/packages/<package-dir>`, not `~/src/oss/<package>`
-- ensure the official source tree matches the installed package version. Use an upstream tag, release branch, or commit in a separate git worktree or isolated clone if the shared `~/src/oss/effect` checkout is on a different version
+- ensure the official source tree matches the installed package version. Derive the shared checkout and cache path from the package's official repository, such as `effect` for Effect v3 or `effect-smol` for Effect v4. If the shared checkout is on a different version, first reuse an existing checkout under `~/src/oss/.versions/<repo>/<version>/`. Create a new isolated worktree or clone there only if that exact version is missing
 - read ecosystem package tests when the code uses integrations such as platform, atom, sql, rpc, ai, or schema-related packages
 - use the official tests to guide regression test harnesses, Effect runtime setup, layer composition, scopes, services, clocks, schemas, fibers, resources, and assertions
 

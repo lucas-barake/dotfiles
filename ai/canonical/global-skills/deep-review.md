@@ -170,7 +170,7 @@ Strict review scope:
 Regression validation:
 - First identify candidate findings in your specialty.
 - For each candidate, write the smallest regression test that should fail because of the suspected bug. Prefer an existing nearby test file and existing test conventions.
-- Before writing a regression test that depends on a third party library or framework, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests under `~/src/oss/`, using a separate git worktree or isolated clone if the shared checkout is on a different version, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory first.
+- Before writing a regression test that depends on a third party library or framework, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests under `~/src/oss/`, reusing an existing shared version checkout if the main checkout is on a different version, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory first.
 - Run the narrowest relevant test command and ensure the test fails for the suspected reason before changing production code.
 - If the regression test is valid, apply the smallest production fix in place, then rerun the same command and ensure the test passes.
 - If the fixed code still fails because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure it fails for the suspected reason again, reapply the fix, and rerun until the test passes. If the test is valid and the fix is wrong, keep iterating on the fix until the test passes.
@@ -243,8 +243,8 @@ Findings that are purely about the project's own logic (wrong condition, missing
 1. Identify the library/framework in question
 2. Ensure source code is available:
    - Check installed package metadata and lockfiles to resolve the installed version and official repository
-   - Check for a version matched worktree or clone under `~/src/oss/`
-   - If not present, create an isolated git worktree or clone for the matching upstream tag, release branch, or commit
+   - Check for an existing reusable version checkout under `~/src/oss/.versions/<repo>/<version>/` or another clearly named shared version directory
+   - If not present, create one shared isolated git worktree or clone for the matching upstream tag, release branch, or commit. Do not create duplicate per-agent checkouts
    - Fall back to `node_modules` only if no version matched upstream source is available or you must confirm installed distribution behavior
 3. Spawn a `deep-dive` agent targeting the library source with a specific question:
 
