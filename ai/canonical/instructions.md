@@ -19,7 +19,7 @@
 - Distrust your built in knowledge for external libraries, frameworks, and tools.
 - Before using, modifying, reviewing, or integrating code that depends on a third party library, inspect installed package metadata and lockfiles for the official repository URL, package directory, exports, and installed version. Then inspect source code and tests under `~/src/oss/` from the matching upstream tag, release branch, or commit.
 - If the official repository does not exist under `~/src/oss/`, shallow clone it there with `git clone --depth 1`.
-- If the shared repo checkout under `~/src/oss/` is on a different version, do not change it. Create a separate git worktree or isolated clone for the exact version, for example under `~/src/oss/.worktrees/<repo>/<package-or-version>/`.
+- If the shared repo checkout under `~/src/oss/` is on a different version, do not change it and do not create duplicate per-agent checkouts. First look for an existing reusable version checkout under a shared cache such as `~/src/oss/.versions/<repo>/<version>/`. Create a new isolated worktree or clone there only if that exact version is missing.
 - If no matching upstream ref exists, use the installed package source from `node_modules` as the version source of truth, then use the official repository only as supplemental context. Report that the upstream source could not be version matched.
 - Prefer library source and tests over docs. Use docs only when source and tests are not enough.
 - Verify the exact behavior and API shape you plan to rely on. Check signatures, parameter types, return types, errors, thrown defects, edge cases, lifecycle requirements, setup patterns, and test usage.
@@ -58,7 +58,7 @@
 ## TDD Fix Workflow
 
 - When fixing a bug or validated reviewer finding with a regression test, write the regression test first and run the narrowest relevant command to prove it fails for the expected reason before changing production code.
-- Before writing a regression test that depends on a third party library, framework, runtime, or integration, inspect the installed package metadata for its official repository URL, package directory, exports, and version. Then inspect version matched official source and tests under `~/src/oss/`, using an isolated worktree or clone when the shared checkout is on a different version. Use the library's own tests to learn the correct harness, composition, setup, and assertions. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory in the official Effect repo first.
+- Before writing a regression test that depends on a third party library, framework, runtime, or integration, inspect the installed package metadata for its official repository URL, package directory, exports, and version. Then inspect version matched official source and tests under `~/src/oss/`, reusing an existing shared version checkout when the main checkout is on a different version. Use the library's own tests to learn the correct harness, composition, setup, and assertions. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory in the official Effect repo first.
 - Apply the smallest fix, then rerun the same command and prove the test passes.
 - If the test fails after the fix because the test or harness is wrong, revert the production fix, correct the test or harness, rerun it against the unfixed production code, prove it fails for the expected reason again, reapply the fix, and rerun until it passes.
 - If the test is valid but the fix is wrong, keep iterating on the fix until the test passes.
@@ -67,7 +67,7 @@
 ## Test Harnesses
 
 - Tests must exercise the real production composition of the code, modules, services, component tree, routes, layers, pipelines, and dependency wiring. Do not recreate a parallel fake composition in the test.
-- When tests involve a third party library or framework, guide the harness from the version matched official repository and package directory in `~/src/oss/`, not memory, tutorials, or generated examples. Use installed package metadata to find monorepo package directories. Use an isolated worktree or clone if the shared checkout is on a different version.
+- When tests involve a third party library or framework, guide the harness from the version matched official repository and package directory in `~/src/oss/`, not memory, tutorials, or generated examples. Use installed package metadata to find monorepo package directories. Reuse an existing shared version checkout if the main checkout is on a different version, and create one only if missing.
 - Replace only true external boundaries that cannot run in tests, such as third party services, network APIs, hardware, or time. Everything else should use the same production modules and wiring the application uses.
 - If the production composition is hard to use in a test, extract or expose a real test harness from the production composition rather than hand wiring a mimic. A test harness that drifts from production is invalid, even if the assertions are useful.
 - Prefer existing production entrypoints, app factories, routers, service layers, module builders, or documented test harnesses that are shared with production wiring.
