@@ -42,10 +42,11 @@ The requested review scope is your boundary. You have full codebase access only 
 2. Enumerate every logical branch, error path, and edge case in the scoped code. Write this list down explicitly. This is your coverage checklist.
 3. Search broadly for existing test files (`*.test.*`, `*.spec.*`, `__tests__/`). Check nearby files and integration test directories.
 4. Read the project's existing tests to understand conventions
-5. Map each item from your coverage checklist to a specific test. If no test exists, it is a finding.
-6. Review all existing and new tests for redundancy. If two tests cover the same branch with trivially different inputs, flag for consolidation.
-7. Check if existing tests are invalidated by the changes
-8. Verify that each test uses production composition rather than a hand-rolled mimic. If a test needs setup, the setup must come from production entrypoints, app factories, routers, service layers, module builders, or a harness shared with production wiring.
+5. When scoped behavior or tests rely on a third party library or framework, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect the matching official source and tests under `~/src/oss/`, shallow clone the official repo there if missing, and use those tests to validate the correct harness, composition, setup, and assertions. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory first.
+6. Map each item from your coverage checklist to a specific test. If no test exists, it is a finding.
+7. Review all existing and new tests for redundancy. If two tests cover the same branch with trivially different inputs, flag for consolidation.
+8. Check if existing tests are invalidated by the changes
+9. Verify that each test uses production composition rather than a hand-rolled mimic. If a test needs setup, the setup must come from production entrypoints, app factories, routers, service layers, module builders, or a harness shared with production wiring.
 
 ## What You Check
 
@@ -54,6 +55,7 @@ The requested review scope is your boundary. You have full codebase access only 
 - **Implementation-coupled tests**: tests that assert on internal details (call counts, private state, exact log messages) rather than observable behavior. These break on every refactor and protect nothing. FAIL condition.
 - **Invalidated tests**: existing tests that now assert wrong behavior because the diff changed the underlying code
 - **Divergent composition tests**: tests that manually reconstruct component hierarchies, service wiring, routes, layers, pipelines, module graphs, or dependency graphs instead of using the production composition or a harness shared with production wiring. These test a fake arrangement that does not exist in the real app. Examples: manually wrapping `<Provider><Router><Component /></Router></Provider>` when the app composes differently, manually instantiating and wiring backend services instead of using the actual DI/module system, or rebuilding an Effect Layer graph in the test instead of using the production layer builder. These tests give false confidence because they can pass while the real composition is broken. Hard FAIL condition.
+- **Library-naive tests**: tests involving a third party library or framework whose harness, setup, composition, or assertions contradict the matching official repository and package directory tests under `~/src/oss/`, or were designed without checking those tests first. Hard FAIL condition.
 - **Incomplete edge cases**: realistic failure modes not covered. Enumerate them explicitly: empty inputs, null values, error paths, boundary values, concurrent scenarios, malformed data, permission checks, timeout behavior
 
 ## Output Format
@@ -79,7 +81,7 @@ Then for each finding:
 
 ```
 ISSUE
-Type: missing-test | superfluous-test | invalidated-test | implementation-coupled | redundant-tests | divergent-composition
+Type: missing-test | superfluous-test | invalidated-test | implementation-coupled | redundant-tests | divergent-composition | library-naive-test
 File: path/to/file.ts (or path where test should be created)
 Lines: 42-45 (the production code that needs coverage, or the problematic test)
 Severity: critical | high | medium

@@ -9,8 +9,8 @@
 ## External Libraries
 
 - Distrust your built in knowledge for external libraries, frameworks, and tools.
-- Before using a third party API, check the source code in `~/src/oss/<library>` first.
-- If `~/src/oss/<library>` does not exist, shallow clone the library there with `git clone --depth 1`.
+- Before using a third party API, check installed package metadata for the official repository URL, package directory, exports, and version. Then check the matching source code under `~/src/oss/`.
+- If the official repository does not exist under `~/src/oss/`, shallow clone it there with `git clone --depth 1`.
 - Prefer library source and tests over docs. Use docs only when source and tests are not enough.
 - Verify the exact API shape you plan to use. Check signatures, parameter types, return types, setup patterns, and test usage.
 - Use `node_modules` only as a fallback when you cannot get the source under `~/src/oss/`.
@@ -30,7 +30,7 @@
 - Do not use `fast-lookup` when you already know the exact file path or name and can read the file directly.
 - Use `quick-dive` for nearby structure and immediate codebase context.
 - Use `deep-dive` for subsystem traces, cross cutting patterns, and behavior that spans multiple files or repos.
-- Use `effect-reviewer` for every review of code that imports or uses Effect or Effect ecosystem packages. It must validate behavior against the local `node_modules` source and tests for the relevant Effect packages.
+- Use `effect-reviewer` for every review of code that imports or uses Effect or Effect ecosystem packages. It must validate behavior against installed package metadata and official Effect or ecosystem source and tests under `~/src/oss/`.
 - Use `web-search` for web lookups.
 - Tell agents whether you need structural mapping, exact signatures, behavioral verification, test patterns, or external references. Do not make them infer the investigation mode.
 - Ask for exact file paths, line numbers, verbatim snippets, and concise evidence. For web work, ask for exact URLs and quotes.
@@ -47,6 +47,7 @@
 ## TDD Fix Workflow
 
 - When fixing a bug or validated reviewer finding with a regression test, write the regression test first and run the narrowest relevant command to prove it fails for the expected reason before changing production code.
+- Before writing a regression test that depends on a third party library, framework, runtime, or integration, inspect the installed package metadata for its official repository URL, package directory, exports, and version. Then inspect the matching official source and tests under `~/src/oss/`, cloning the official repo first if needed. Use the library's own tests to learn the correct harness, composition, setup, and assertions. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory in the official Effect repo first.
 - Apply the smallest fix, then rerun the same command and prove the test passes.
 - If the test fails after the fix because the test or harness is wrong, revert the production fix, correct the test or harness, rerun it against the unfixed production code, prove it fails for the expected reason again, reapply the fix, and rerun until it passes.
 - If the test is valid but the fix is wrong, keep iterating on the fix until the test passes.
@@ -55,6 +56,7 @@
 ## Test Harnesses
 
 - Tests must exercise the real production composition of the code, modules, services, component tree, routes, layers, pipelines, and dependency wiring. Do not recreate a parallel fake composition in the test.
+- When tests involve a third party library or framework, guide the harness from the matching official repository and package directory in `~/src/oss/`, not memory, tutorials, or generated examples. Use installed package metadata to find monorepo package directories. Clone the official repo first if it is missing.
 - Replace only true external boundaries that cannot run in tests, such as third party services, network APIs, hardware, or time. Everything else should use the same production modules and wiring the application uses.
 - If the production composition is hard to use in a test, extract or expose a real test harness from the production composition rather than hand wiring a mimic. A test harness that drifts from production is invalid, even if the assertions are useful.
 - Prefer existing production entrypoints, app factories, routers, service layers, module builders, or documented test harnesses that are shared with production wiring.
