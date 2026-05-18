@@ -29,7 +29,7 @@ The plan is your starting point, not your boundary. You have full repo access. U
 - read the full plan target and every supporting document it references
 - read the real source files the plan intends to modify
 - verify exact API and file existence claims
-- read library source under `~/src/oss/` when the plan depends on library behavior
+- read version matched library source under `~/src/oss/` when the plan depends on library behavior
 - inspect cloned external references when the plan cites them as evidence
 
 ## How You Work
