@@ -172,10 +172,10 @@ Regression validation:
 - For each candidate, write the smallest regression test that should fail because of the suspected bug. Prefer an existing nearby test file and existing test conventions.
 - Before writing a regression test that depends on a third party library or framework, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory first.
 - Run the narrowest relevant test command and ensure the test fails for the suspected reason before changing production code.
-- If the regression test is valid, apply the smallest production fix in place, then rerun the same command and ensure the test passes.
+- If the regression test is valid, apply the smallest production fix in place in your reviewer workspace, then rerun the same command and ensure the test passes.
 - If the fixed code still fails because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure it fails for the suspected reason again, reapply the fix, and rerun until the test passes. If the test is valid and the fix is wrong, keep iterating on the fix until the test passes.
 - Try multiple reasonable test placements or harness approaches before giving up.
-- If the test confirms a real issue and the fix passes, leave the regression test and fix edits in the worktree. Report the changed test file path, exact test code, failing command output before the fix, passing command output after the fix, and the fix you applied. If the candidate is not reproduced or the harness is blocked, remove any probe test and fix edits before returning and report the exact code/commands tried.
+- If the test confirms a real issue and the fix passes, leave the regression test and fix edits in your reviewer workspace and return a patch handoff for the main agent. Report the changed test file path, exact test code, failing command output before the fix, passing command output after the fix, the fix you applied, and a unified diff or exact patch that includes both the regression test and production fix. Your workspace may be private, so do not assume your edits are visible in the main PR worktree. If the candidate is not reproduced or the harness is blocked, remove any probe test and fix edits before returning and report the exact code/commands tried.
 - Report confirmed fixed issues separately from unconfirmed candidates.
 - If you cannot get the test harness to run after multiple tries and you still believe the candidate may be real, include the exact verbatim test code you wrote, the commands you tried, and mark the candidate `UNCONFIRMED - HARNESS BLOCKED`.
 - If the test runs but does not reproduce the bug, mark the candidate `NOT REPRODUCED` and explain what disproved it.
@@ -191,7 +191,7 @@ After all agents return, check if any two findings point to the same underlying 
 
 ### Step 6: Validate each finding
 
-For each reviewer result, first classify it as a confirmed fixed issue, unconfirmed candidate, not reproduced candidate, or test coverage finding. Then validate it yourself. A bug finding is only valid when you can tie it concretely to the requested review scope, confirm it is reachable and relevant, and verify the reviewer left a valid regression test plus fix in the worktree.
+For each reviewer result, first classify it as a confirmed fixed issue, unconfirmed candidate, not reproduced candidate, or test coverage finding. Then validate it yourself. A bug finding is only valid when you can tie it concretely to the requested review scope, confirm it is reachable and relevant, and verify the reviewer provided a valid regression test, fix, and patch handoff.
 
 For each result, read the relevant scoped files and any diff when available, then check:
 
@@ -202,7 +202,7 @@ For each result, read the relevant scoped files and any diff when available, the
 5. For rule violations: does the quoted rule actually exist and apply here?
 6. Would this cause an observable failure in practice?
 7. Did the reviewer provide a regression test that failed for the suspected reason before the fix and passes after the fix?
-8. Did the reviewer leave both the valid regression test and the fix in the worktree?
+8. Did the reviewer provide a unified diff or exact patch containing both the valid regression test and the fix?
 9. If the claim is about consumers or public API behavior, are there actual in-repo consumers or concrete contract evidence?
 
 Discard the result if it is:
@@ -214,11 +214,13 @@ Discard the result if it is:
 - speculative
 - based on insufficient evidence
 - based only on hypothetical external consumers
-- missing a valid regression test or missing the applied fix
+- missing a valid regression test, missing the applied fix, or missing a patch handoff
+
+For every confirmed fixed issue that survives validation, apply the reviewer patch to the main PR worktree yourself. Review the patch before applying it. If multiple reviewers returned patches, apply only the deduplicated valid set and resolve overlaps deliberately. After applying each valid patch or patch group, rerun the exact regression command in the main PR worktree and confirm it still fails before the fix when practical and passes after the applied fix. If you cannot reproduce the reviewer evidence in the main PR worktree, do not count the issue as fixed.
 
 Assign confidence 0-100:
 
-- 90-100: Definitely real, clear evidence, a regression test that fails before the fix and passes after the fix, and the fix remains in the worktree
+- 90-100: Definitely real, clear evidence, a regression test that fails before the fix and passes after the fix, the reviewer provided a complete patch handoff, and the main agent applied and validated the patch in the main PR worktree
 - 75-89: Strong code evidence but regression harness blocked after multiple real attempts
 - 60-74: Possible, some uncertainty or no successful regression test
 - Below 60: Probably false positive
