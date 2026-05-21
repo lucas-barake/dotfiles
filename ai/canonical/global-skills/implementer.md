@@ -63,7 +63,7 @@ Write any remaining tests described in the test plan that weren't already covere
 
 After implementation and planned tests are complete, review the actual code before you simplify it.
 
-1. Select the relevant code reviewers directly. Always include `reviewer-logic` and `test-reviewer`. Include `effect-reviewer` for any implementation that imports, configures, tests, or meaningfully interacts with Effect or Effect ecosystem packages. Include `reviewer-behavioral` for existing contracts or shared utilities, `reviewer-data-integrity` for persistence or failure paths, `reviewer-security` for untrusted input or sensitive boundaries, `reviewer-concurrency` for async ordering or lifecycle concerns, and `reviewer-rules` for config, migrations, dependencies, or explicit repository rules
+1. Select the relevant code reviewers directly. Always include `reviewer-logic` and `test-reviewer`. Include `effect-reviewer` for any implementation that imports, configures, tests, or meaningfully interacts with Effect or Effect ecosystem packages. Include `reviewer-behavioral` for existing contracts or shared utilities, `reviewer-data-integrity` for persistence or failure paths, `reviewer-security` for untrusted input or sensitive boundaries, `reviewer-concurrency` for async ordering or lifecycle concerns, `reviewer-performance` for hot paths, large data, UI rendering, responsiveness, I/O, database or network access, queues, workers, caching, retries, batching, backpressure, allocation heavy paths, or time complexity, and `reviewer-rules` for config, migrations, dependencies, or explicit repository rules
 2. Spawn the reviewers in parallel with the full list of modified files and note that the work is an uncommitted implementation from a plan
 3. Tell each reviewer that the modified files/current diff are the review boundary. They may inspect outside files only to validate direct callers, guards, tests, rules, or integration points causally connected to the modified code
 4. Require each bug reviewer to use the TDD fix workflow for every candidate finding. They must inspect installed package metadata and version matched official library source and tests through `~/src/oss/.versions/` before writing any regression test that depends on third party library or framework behavior and using those tests for harness, composition, setup, and assertion patterns. This applies to any library, including Effect and Effect ecosystem packages. They must use metadata fields such as `repository.url`, `repository.directory`, exports, and version to find monorepo package directories. They must write the smallest regression test, prove it fails for the suspected reason before changing production code, apply the smallest fix in place, and prove the same test passes after the fix. If the fixed code still fails because the test or harness is wrong, they must revert the production fix, fix the test or harness, rerun it against the unfixed production code, prove it fails again, reapply the fix, and rerun until it passes. Confirmed reviewers must leave the valid regression test and fix in the worktree and report the test path, exact test code, failing output before the fix, passing output after the fix, and the fix they applied. If the candidate is not reproduced or the harness is blocked after multiple real attempts, reviewers must remove any probe test and fix edits before returning and report the exact code and commands tried as an unconfirmed candidate
@@ -75,17 +75,18 @@ After implementation and planned tests are complete, review the actual code befo
 
 ### Step 7: Simplification pass
 
-After all implementation and tests are complete, spawn two agents **in parallel** with the full list of files you created or modified during implementation:
+After all implementation and tests are complete, spawn these agents **in parallel** with the full list of files you created or modified during implementation:
 
 1. **`code-simplifier`** — finds within-file simplifications: redundant variables, verbose control flow, unnecessary async/types, dead indirection, nested Pipeable calls, overengineered patterns, overly defensive code
 2. **`reuse-reviewer`** — finds cross-file issues: reimplemented utilities, duplicate helpers across files, pass-through wrappers, dead private helpers, redundant normalization layers
+3. A domain-specific reviewer when the stack clearly warrants it
 
 **Each agent prompt must include:**
 
 - The complete list of files created or modified (full paths)
 - A note that these files were just implemented from a plan
 
-Wait for both agents to finish before doing your own simplification or reuse pass in the same scope.
+Wait for the agents to finish before doing your own simplification or reuse pass in the same scope.
 
 **When results come back**, validate each suggestion yourself:
 
@@ -96,8 +97,6 @@ Wait for both agents to finish before doing your own simplification or reuse pas
 5. If you apply any changes, re-run linter, typechecker, and tests to confirm nothing broke
 
 Do not blindly apply all suggestions. Both agents maximize recall. Your job is precision.
-
-In addition to `code-simplifier` and `reuse-reviewer`, include a domain-specific reviewer when the stack clearly warrants it.
 
 ### Step 8: Verify
 

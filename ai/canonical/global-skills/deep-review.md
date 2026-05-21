@@ -104,16 +104,19 @@ The available reviewers and when to include them:
 5. **Concurrency & Resources** — race conditions, deadlocks, lock ordering issues, missing atomicity on read-modify-write, goroutine/thread leaks, missing cancellation propagation, TOCTOU bugs, infinite loops, accidentally quadratic at production scale, memory leaks, event listener leaks, missing cleanup on unmount/dispose. Only actual bugs, NOT optimization suggestions.
    **Include when:** the reviewed scope involves shared mutable state, async operations with ordering concerns, workers/threads, subscriptions, event listeners, or resource lifecycle management. Skip for synchronous, single-threaded code paths and pure UI rendering.
 
-6. **Project Rules & Integration** — rule violations (must quote the exact rule from project rules — do not invent rules), missing migration steps, version mismatches, changes that break files not in the diff, missing config updates, dependency conflicts, import errors.
+6. **Performance & Scalability** — algorithmic complexity regressions, excessive allocation or GC pressure, memory leaks that affect capacity, UI responsiveness and rendering problems, layout thrashing, oversized DOM work, ignored I/O backpressure, N+1 calls, expensive database or network access, unbounded concurrency, retry overload, and cache mistakes. Only concrete reachable performance defects, not generic optimization advice.
+   **Include when:** the reviewed scope touches hot paths, large data, loops, sorting, parsing, serialization, UI rendering, images/assets, input handlers, I/O, database queries, network calls, queues, workers, retries, batching, caching, streaming, allocation heavy paths, or user flows where latency and memory matter.
+
+7. **Project Rules & Integration** — rule violations (must quote the exact rule from project rules — do not invent rules), missing migration steps, version mismatches, changes that break files not in the diff, missing config updates, dependency conflicts, import errors.
    **Include when:** project rules (CLAUDE.md) exist, or the reviewed scope touches dependencies, config files, migrations, or public interfaces consumed elsewhere.
 
-7. **Effect Correctness** — validates Effect and Effect ecosystem code against installed package metadata and version matched official source/tests under `~/src/oss/.versions/`. Finds API misuse, wrong assumptions about runtime behavior, resource lifecycle mistakes, concurrency/fiber/finalizer issues, Schema misunderstandings, and other Effect-specific correctness bugs.
+8. **Effect Correctness** — validates Effect and Effect ecosystem code against installed package metadata and version matched official source/tests under `~/src/oss/.versions/`. Finds API misuse, wrong assumptions about runtime behavior, resource lifecycle mistakes, concurrency/fiber/finalizer issues, Schema misunderstandings, and other Effect-specific correctness bugs.
    **Include when:** the reviewed scope imports, configures, tests, or meaningfully interacts with `effect`, `@effect/*`, or other Effect ecosystem packages. This applies to all Effect code.
 
-8. **Testing & Coverage** — missing tests for new/changed code, superfluous tests that don't catch real regressions, tests that assert implementation details instead of behavior, tests that duplicate each other, existing tests invalidated by the changes. Must examine the project's existing test patterns (frameworks, conventions, file locations) before making recommendations. Returns concrete test descriptions: what to test, which file to put it in, what assertions to make.
+9. **Testing & Coverage** — missing tests for new/changed code, superfluous tests that don't catch real regressions, tests that assert implementation details instead of behavior, tests that duplicate each other, existing tests invalidated by the changes. Must examine the project's existing test patterns (frameworks, conventions, file locations) before making recommendations. Returns concrete test descriptions: what to test, which file to put it in, what assertions to make.
    **Always included.** Every review target needs test coverage review.
 
-**Always include Logic & Control Flow and Testing & Coverage** — they apply to every unit. Always include Effect Correctness when the unit touches Effect or an Effect ecosystem package.
+**Always include Logic & Control Flow**. Always include Effect Correctness when the unit touches Effect or an Effect ecosystem package.
 
 When sharding, different shards will typically need different reviewer sets. A frontend shard rarely needs the concurrency reviewer. A database shard rarely needs security review for XSS. Select per shard.
 
@@ -128,6 +131,7 @@ Spawn all reviewers across all shards in a **single turn**. Each reviewer has it
 | Data Integrity & Error Handling | `reviewer-data-integrity` |
 | Behavioral & Contract | `reviewer-behavioral` |
 | Concurrency & Resources | `reviewer-concurrency` |
+| Performance & Scalability | `reviewer-performance` |
 | Project Rules & Integration | `reviewer-rules` |
 | Effect Correctness | `effect-reviewer` |
 | Testing & Coverage | `test-reviewer` |

@@ -42,6 +42,7 @@
 - Use `quick-dive` for nearby structure and immediate codebase context.
 - Use `deep-dive` for subsystem traces, cross cutting patterns, and behavior that spans multiple files or repos.
 - Use `effect-reviewer` for every review of code that imports or uses Effect or Effect ecosystem packages. It must validate behavior against installed package metadata and version matched official Effect or ecosystem source and tests under the shared version cache in `~/src/oss/.versions/`.
+- Use `reviewer-performance` for hot paths, large data, UI rendering, responsiveness, I/O, database or network access, queues, workers, caching, retries, batching, backpressure, allocation heavy code, or changes that may affect time complexity, memory pressure, garbage collection, or resource consumption.
 - Use `web-search` for web lookups.
 - Tell agents whether you need structural mapping, exact signatures, behavioral verification, test patterns, or external references. Do not make them infer the investigation mode.
 - Ask for exact file paths, line numbers, verbatim snippets, and concise evidence. For web work, ask for exact URLs and quotes.
