@@ -63,10 +63,10 @@ Do not report generic bugs unless the root cause is specifically an Effect or Ef
 3. Read nearby production tests to understand what behavior the application expects.
 4. For every relevant imported module or ecosystem package, read the matching installed package metadata, then read version matched official source and tests from the package's official repository and package directory under `~/src/oss/.versions/`.
 5. Compare the implementation's apparent intent to the actual behavior shown by official source and tests, with installed package evidence when version matching matters.
-6. For each candidate bug, use the TDD fix workflow. Use the official Effect or ecosystem tests to design the test harness and composition before writing the regression test. Write the smallest regression test that should fail because of the suspected Effect semantic bug.
-7. Run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code.
-8. If the regression test is valid, apply the smallest production fix in place, then run the same command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
-9. If the fixed code still fails because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure it fails for the suspected reason again, reapply the fix, and rerun until the test passes. If the test is valid and the fix is wrong, keep iterating on the fix until the test passes.
+6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Use the official Effect or ecosystem tests to design the test harness and composition before writing the regression test. Write the smallest regression test that should fail because of the suspected Effect semantic bug.
+7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code.
+8. Green: if the regression test is valid, apply the smallest production fix in place, then run the same command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
+9. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
 10. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
 11. Classify each candidate:
    - `CONFIRMED EFFECT ISSUE FIXED`: regression test failed before the fix, passes after the fix, and the regression test plus fix remain in the worktree
@@ -82,7 +82,7 @@ Every confirmed finding MUST include:
 - The official Effect or ecosystem source/test file path and line numbers that prove the actual behavior, plus installed package evidence when version matching matters
 - The nearby production test or caller evidence that establishes intended behavior, when available
 - The valid regression test you wrote, quoted verbatim. Omit invalid probe tests.
-- The failing test command/result before the fix and the passing test command/result after the fix
+- The Red test command/result before the fix and the Green test command/result after the fix
 - The fix you applied, with file paths and corrected code
 
 ## Output Format
@@ -101,8 +101,8 @@ Effect evidence:
 <official source/test file paths and line ranges, plus installed package evidence when needed>
 Regression test:
 <verbatim valid test snippet, or omitted if no valid failing regression test exists>
-Test result before fix: <command + failing result, or harness blocked reason>
-Test result after fix: <command + passing result, or omitted for unconfirmed/not reproduced candidates>
+Test result before fix: <command + Red result, or harness blocked reason>
+Test result after fix: <command + Green result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.
 ```
 

@@ -58,12 +58,13 @@
 
 ## TDD Fix Workflow
 
-- When fixing a bug or validated reviewer finding with a regression test, write the regression test first and run the narrowest relevant command to prove it fails for the expected reason before changing production code.
+- Use Red Green Refactor for bug fixes and validated reviewer findings.
+- Red: write the regression test first and run the narrowest relevant command to prove it fails for the expected reason before changing production code.
 - Before writing a regression test that depends on a third party library, framework, runtime, or integration, inspect the installed package metadata for its official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`. Use the library's own tests to learn the correct harness, composition, setup, and assertions. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory in the version matched official Effect repo first.
-- Apply the smallest fix, then rerun the same command and prove the test passes.
-- If the test fails after the fix because the test or harness is wrong, revert the production fix, correct the test or harness, rerun it against the unfixed production code, prove it fails for the expected reason again, reapply the fix, and rerun until it passes.
-- If the test is valid but the fix is wrong, keep iterating on the fix until the test passes.
-- Leave the valid regression test and the fix in place. Do not delete them after proving the fix. Report the regression test, failing result, passing result, and fix for validation.
+- Green: apply the smallest fix, rerun the same command, and prove the test now passes.
+- If Green is still Red because the test or harness is wrong, revert the production fix, correct the test or harness, rerun it against the unfixed production code, prove Red again for the expected reason, reapply the fix, and rerun until Green.
+- If Green is still Red because the fix is wrong, keep the test and continue adjusting the fix until the same test is Green.
+- Refactor: once Green, simplify only when it clearly preserves behavior, then rerun the relevant checks. Leave the valid regression test and the fix in place. Do not delete them after proving Green. Report the regression test, Red result, Green result, and fix for validation.
 
 ## Test Harnesses
 
