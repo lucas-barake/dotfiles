@@ -262,12 +262,13 @@ Before writing a single line of production or test code:
 
 Work through the master checklist in order.
 
-For `[TDD]` items:
+For `[TDD]` items, follow Red Green Refactor:
 
-1. Write the test first
-2. Run it and confirm it fails for the expected reason
-3. Only then implement the production change
-4. Run the test again and confirm it passes
+1. Red: write the test first, run it, and confirm it fails for the expected reason
+2. Green: only after Red, implement the production change, rerun the same test, and confirm it passes
+3. If the test stays Red because the test or harness is wrong, revert the implementation, fix the test or harness, prove Red again, reapply the implementation, and rerun until Green
+4. If the test stays Red because the implementation is wrong, keep the test and adjust the implementation until Green
+5. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks
 
 For `[Additive]` items:
 
@@ -289,7 +290,7 @@ After the implementation and planned tests are complete, review the actual code 
 3. Spawn the selected reviewers in parallel with the modified file list, branch context, project rules, and a note that this is freshly implemented code. Tell them the modified files/current diff are the review boundary; they may inspect outside files only to validate direct callers, guards, tests, rules, or integration points causally connected to the modified code
 4. Wait for the reviewers to finish before doing your own review in the same scope
 5. Deduplicate overlapping findings and keep the best supported version of each root issue
-6. Require each bug reviewer to use the TDD fix workflow for every candidate finding. They must inspect installed package metadata and version matched official library source and tests through `~/src/oss/.versions/` before writing any regression test that depends on third party library or framework behavior, reusing an existing shared version checkout and using those tests for harness, composition, setup, and assertion patterns. This applies to any library, including Effect and Effect ecosystem packages. They must use metadata fields such as `repository.url`, `repository.directory`, exports, and version to find monorepo package directories. They must write the smallest regression test, prove it fails for the suspected reason before changing production code, apply the smallest fix in place, and prove the same test passes after the fix. If the fixed code still fails because the test or harness is wrong, they must revert the production fix, fix the test or harness, rerun it against the unfixed production code, prove it fails again, reapply the fix, and rerun until it passes. Confirmed reviewers must leave the valid regression test and fix in the worktree and report the test path, exact test code, failing output before the fix, passing output after the fix, and the fix they applied. If the candidate is not reproduced or the harness is blocked after multiple real attempts, reviewers must remove any probe test and fix edits before returning and report the exact code and commands tried as an unconfirmed candidate
+6. Require each bug reviewer to use Red Green Refactor for every candidate finding. They must inspect installed package metadata and version matched official library source and tests through `~/src/oss/.versions/` before writing any regression test that depends on third party library or framework behavior, reusing an existing shared version checkout and using those tests for harness, composition, setup, and assertion patterns. This applies to any library, including Effect and Effect ecosystem packages. They must use metadata fields such as `repository.url`, `repository.directory`, exports, and version to find monorepo package directories. Red: write the smallest regression test and prove it fails for the suspected reason before changing production code. Green: apply the smallest fix in place and prove the same test passes. If Green is still Red because the test or harness is wrong, they must revert the production fix, fix the test or harness, rerun it against the unfixed production code, prove Red again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, they must keep the test and adjust the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks. Confirmed reviewers must leave the valid regression test and fix in the worktree and report the test path, exact test code, Red output before the fix, Green output after the fix, and the fix they applied. If the candidate is not reproduced or the harness is blocked after multiple real attempts, reviewers must remove any probe test and fix edits before returning and report the exact code and commands tried as an unconfirmed candidate
 7. Validate every finding yourself before acting on it
 8. Treat high-confidence findings as only those reproduced by a failing regression test. If the regression test is correct and does not fail, treat the finding as a false positive and move on
 9. Fix valid findings and rerun the relevant checks

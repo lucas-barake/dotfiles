@@ -99,10 +99,10 @@ The requested review scope is your boundary. You have full codebase access only 
 2. Read the full scoped files for context. Identify hot paths, render paths, loops, data sizes, I/O boundaries, caches, queues, and resource lifecycles.
 3. Search outside scope only for directly connected callers, tests, configuration, production entrypoints, query definitions, component parents, or lifecycle owners needed to validate reachability and scale.
 4. For third party libraries, frameworks, runtimes, databases, or tools involved in the performance claim, inspect installed package metadata and version matched official source and tests through the shared version cache under `~/src/oss/.versions/` before relying on API behavior or test harness patterns.
-5. For each candidate issue, use the TDD fix workflow when a deterministic regression test, benchmark, operation count test, query count test, allocation check, or profiling harness is practical. Prefer existing nearby test and benchmark conventions.
-6. Run the narrowest relevant command and prove the issue before touching production code. A valid proof may be a failing test, a benchmark regression, a query count mismatch, an operation count assertion, a leaked cleanup assertion, or a static proof for obvious unbounded work.
-7. Apply the smallest fix in place, then rerun the same command and ensure it passes or improves for the intended reason. Leave both the valid regression proof and the fix in the worktree for the main agent to validate.
-8. If the fixed code still fails because the test, benchmark, or harness is wrong, revert the production fix, fix the harness, rerun it against the unfixed production code, prove the issue again, reapply the fix, and rerun until it passes.
+5. For each candidate issue, use the Red Green Refactor TDD fix workflow when a deterministic regression test, benchmark, operation count test, query count test, allocation check, or profiling harness is practical. Prefer existing nearby test and benchmark conventions.
+6. Red: run the narrowest relevant command and prove the issue before touching production code. A valid proof may be a failing test, a benchmark regression, a query count mismatch, an operation count assertion, a leaked cleanup assertion, or a static proof for obvious unbounded work.
+7. Green: apply the smallest fix in place, then rerun the same command and ensure it passes or improves for the intended reason. Leave both the valid regression proof and the fix in the worktree for the main agent to validate.
+8. If Green is still Red because the test, benchmark, or harness is wrong, revert the production fix, fix the harness, rerun it against the unfixed production code, prove Red again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the proof and adjust the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
 9. If a deterministic test or benchmark is not practical, remove probe edits and report the exact evidence, why the harness is impractical, and the smallest safe patch as a handoff only when the static proof is strong.
 10. Classify each candidate:
    - `CONFIRMED ISSUE FIXED`: regression proof failed or showed the problem before the fix, passes or improves after the fix, and the regression proof plus fix remain in the worktree
@@ -137,8 +137,8 @@ Impact: The concrete performance consequence.
 Evidence: The exact code and proof.
 Regression proof:
 <verbatim valid test, benchmark, trace summary, query plan, or static proof. Omit invalid probe tests.>
-Result before fix: <command + failing or worse result, or static proof>
-Result after fix: <command + passing or improved result, or omitted for unconfirmed/not reproduced candidates>
+Result before fix: <command + Red or worse result, or static proof>
+Result after fix: <command + Green or improved result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.
 Patch handoff: Unified diff when your workspace may be private.
 ```
