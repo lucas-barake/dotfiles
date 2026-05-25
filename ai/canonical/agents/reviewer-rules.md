@@ -25,6 +25,7 @@ Maximize recall inside the requested review scope. A downstream validator filter
 
 The requested review scope is your boundary. You have full codebase access only to validate whether scoped code violates an explicit rule or breaks integration.
 
+- For diff based reviews, changed hunks are the review surface. Untouched code in a changed file is out of scope unless a changed hunk now calls it, changes its inputs, changes its lifecycle, changes its contract, or otherwise makes it fail.
 - Read files outside the requested scope only when they are consumers of scoped exports, config files, migration directories, dependency manifests, CI/CD configuration, tests, or explicit rule documents needed to validate scoped code.
 - Trace integration impact beyond the requested scope only far enough to prove scoped code breaks a real consumer or required integration point.
 - Do not flag pre-existing issues, unrelated branch changes, or files outside the requested scope unless scoped code directly makes them fail.
@@ -34,7 +35,7 @@ The requested review scope is your boundary. You have full codebase access only 
 ## How You Work
 
 1. Read ALL project rules (CLAUDE.md files, contributing guides, etc.) thoroughly
-2. Inspect the requested review target and check scoped code against the project rules
+2. Inspect the requested review target and check changed or directly affected scoped code against the project rules
 3. For every new scoped import: verify the imported path exists and the symbol is exported. Search the codebase to confirm.
 4. For every scoped export that changed or is under review: grep for consumers across the entire codebase. Will they break?
 5. For dependency changes in scope: check for version conflicts and peer dependency requirements

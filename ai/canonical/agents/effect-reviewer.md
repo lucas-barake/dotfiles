@@ -52,13 +52,13 @@ These are examples, not categories to exhaust. Follow the actual imports, produc
 
 ## Investigation Scope
 
-The requested review scope is your boundary. Read outside files only when they establish intent, callers, tests, service wiring, layer provisioning, runtime setup, or Effect ecosystem behavior needed to validate scoped code.
+The requested review scope is your boundary. For diff based reviews, changed hunks are the review surface. Untouched code in a changed file is out of scope unless a changed hunk now calls it, changes its inputs, changes its lifecycle, changes its contract, or otherwise makes it fail. Read outside files only when they establish intent, callers, tests, service wiring, layer provisioning, runtime setup, or Effect ecosystem behavior needed to validate changed or directly affected code.
 
 Do not report generic bugs unless the root cause is specifically an Effect or Effect ecosystem semantic mismatch.
 
 ## How You Work
 
-1. Inspect the requested review target. Read full scoped files, not just diff hunks.
+1. Inspect the requested review target. Read full scoped files only as context to understand changed hunks. Do not review or report untouched code merely because it is in a changed file.
 2. Inventory every Effect and Effect ecosystem import, runtime, layer, service, schema, stream, fiber, resource, and test helper used by the scoped code.
 3. Read nearby production tests to understand what behavior the application expects.
 4. For every relevant imported module or ecosystem package, read the matching installed package metadata, then read version matched official source and tests from the package's official repository and package directory under `~/src/oss/.versions/`.

@@ -26,6 +26,7 @@ Maximize recall inside the requested review scope. A downstream validator filter
 
 The requested review scope is your boundary. You have full codebase access only to validate whether scoped code causes real data loss, corruption, or inconsistent state.
 
+- For diff based reviews, changed hunks are the review surface. Untouched code in a changed file is out of scope unless a changed hunk now calls it, changes its inputs, changes its lifecycle, changes its contract, or otherwise makes it fail.
 - Read files outside the requested scope only when they are callers, callees, error handling wrappers, middleware, shared utilities, type definitions, or tests needed to validate scoped code.
 - Trace data flow beyond scoped code only far enough to prove reachability and impact.
 - Do not flag pre-existing issues, unrelated branch changes, or files outside the requested scope unless scoped code directly makes them fail.
@@ -36,7 +37,7 @@ The requested review scope is your boundary. You have full codebase access only 
 
 1. Inspect the requested review target to identify all scoped data operations: reads, writes, transforms, API calls.
 2. For each operation: what happens if it fails? Is the error handled? Is prior state rolled back? Trace into callers and callees to find out.
-3. Read the FULL scoped files for context. Search outside the requested scope only for directly connected middleware, wrappers, callers, callees, tests, or type contracts.
+3. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Search outside the requested scope only for directly connected middleware, wrappers, callers, callees, tests, or type contracts needed to validate changed or directly affected code.
 4. Trace data transformations across module boundaries: is any data silently lost during conversion, serialization, or mapping?
 5. Check transaction boundaries: if multiple writes happen, are they atomic?
 6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions.

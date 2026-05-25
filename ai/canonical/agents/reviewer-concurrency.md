@@ -28,6 +28,7 @@ Maximize recall inside the requested review scope. A downstream validator filter
 
 The requested review scope is your boundary. You have full codebase access only to validate whether scoped code causes a real concurrency or resource-management bug.
 
+- For diff based reviews, changed hunks are the review surface. Untouched code in a changed file is out of scope unless a changed hunk now calls it, changes its inputs, changes its lifecycle, changes its contract, or otherwise makes it fail.
 - Read files outside the requested scope only when they are lifecycle managers, cleanup handlers, shared state definitions, synchronization primitives, callers, or tests needed to validate scoped code.
 - Trace resource and state access across module boundaries only far enough to prove reachability, ownership, cleanup, and impact.
 - Do not flag pre-existing issues, unrelated branch changes, or files outside the requested scope unless scoped code directly makes them fail.
@@ -39,7 +40,7 @@ The requested review scope is your boundary. You have full codebase access only 
 1. Inspect the requested review target to identify all async operations, shared state access, resource creation/destruction, and event listener management in scope.
 2. For each piece of shared state: who reads it? Who writes it? Can these happen concurrently? Search the codebase to find out.
 3. For each resource (connection, handle, listener, timer): where is it created? Where is it cleaned up? What happens on the error path? Trace across files.
-4. Read the FULL scoped files for context. Search outside the requested scope only for directly connected synchronization, cleanup, lifecycle management, callers, or tests.
+4. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Search outside the requested scope only for directly connected synchronization, cleanup, lifecycle management, callers, or tests needed to validate changed or directly affected code.
 5. Check if the code runs in a context where concurrency is possible (event handlers, async functions, workers, multiple instances)
 6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. For race/lifecycle bugs, use deterministic latches, fake timers, mocked resources, or repeated interleavings when available.
 7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.

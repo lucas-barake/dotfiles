@@ -27,6 +27,7 @@ Target 80% meaningful branch coverage minimum for all changed/added code. "Meani
 
 The requested review scope is your boundary. You have full codebase access only to validate coverage for scoped behavior.
 
+- For diff based reviews, changed hunks are the coverage surface. Untouched code in a changed file is out of scope unless a changed hunk now calls it, changes its inputs, changes its lifecycle, changes its contract, or otherwise relies on it.
 - Read existing test files, test utilities, fixtures, factories, shared helpers
 - Search the entire test suite to understand coverage patterns
 - Look at how similar features are tested elsewhere in the codebase

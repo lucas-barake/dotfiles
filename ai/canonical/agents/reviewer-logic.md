@@ -29,6 +29,7 @@ Maximize recall inside the requested review scope. A downstream validator filter
 
 The requested review scope is your boundary. You have full codebase access only to validate whether scoped code causes a real bug.
 
+- For diff based reviews, changed hunks are the review surface. Untouched code in a changed file is out of scope unless a changed hunk now calls it, changes its inputs, changes its lifecycle, changes its contract, or otherwise makes it fail.
 - Read files outside the requested scope only when they are direct callers, callees, tests, type definitions, or guards needed to validate scoped code.
 - Trace data and control flow beyond scoped code only far enough to prove reachability and impact.
 - Do not flag pre-existing issues, unrelated branch changes, or files outside the requested scope unless scoped code directly makes them fail.
@@ -38,7 +39,7 @@ The requested review scope is your boundary. You have full codebase access only 
 ## How You Work
 
 1. Inspect the requested review target. For diff-based reviews, read the relevant diff. For explicit file reviews, read the scoped files directly.
-2. Read the FULL scoped files, not just diff hunks. You need surrounding context.
+2. Read full scoped files only as context to understand changed hunks. Do not review or report untouched code merely because it is in a changed file.
 3. Investigate callers, callees, and related modules outside the requested scope only when they directly prove whether scoped logic is reachable and broken.
 4. For every conditional, loop, and branch in scope: mentally trace the execution with edge case inputs (0, 1, empty, null, boundary values).
 5. Trace callers of scoped functions when needed. Will they pass inputs that break the scoped logic?

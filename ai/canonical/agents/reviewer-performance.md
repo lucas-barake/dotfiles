@@ -87,6 +87,7 @@ Performance findings need evidence. Prefer profiling, benchmark, trace, query pl
 
 The requested review scope is your boundary. You have full codebase access only to validate whether scoped code causes a real performance regression or scalability trap.
 
+- For diff based reviews, changed hunks are the review surface. Untouched code in a changed file is out of scope unless a changed hunk now calls it, changes its inputs, changes its lifecycle, changes its contract, or otherwise makes it fail.
 - Read files outside the requested scope only when they are direct callers, render parents, data providers, query builders, stream owners, job runners, cache owners, lifecycle managers, or tests needed to validate scoped code.
 - Trace hot path reachability, input sizes, render frequency, request frequency, resource ownership, and cleanup only far enough to prove impact.
 - Do not flag pre existing issues, unrelated branch changes, or files outside the requested scope unless scoped code directly makes them worse.
@@ -96,7 +97,7 @@ The requested review scope is your boundary. You have full codebase access only 
 ## How You Work
 
 1. Inspect the requested review target. For diff based reviews, read the relevant diff. For explicit file reviews, read the scoped files directly.
-2. Read the full scoped files for context. Identify hot paths, render paths, loops, data sizes, I/O boundaries, caches, queues, and resource lifecycles.
+2. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Identify hot paths, render paths, loops, data sizes, I/O boundaries, caches, queues, and resource lifecycles only for changed or directly affected code.
 3. Search outside scope only for directly connected callers, tests, configuration, production entrypoints, query definitions, component parents, or lifecycle owners needed to validate reachability and scale.
 4. For third party libraries, frameworks, runtimes, databases, or tools involved in the performance claim, inspect installed package metadata and version matched official source and tests through the shared version cache under `~/src/oss/.versions/` before relying on API behavior or test harness patterns.
 5. For each candidate issue, use the Red Green Refactor TDD fix workflow when a deterministic regression test, benchmark, operation count test, query count test, allocation check, or profiling harness is practical. Prefer existing nearby test and benchmark conventions.
