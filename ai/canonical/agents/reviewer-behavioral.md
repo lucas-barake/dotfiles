@@ -25,6 +25,7 @@ Maximize recall inside the requested review scope. A downstream validator filter
 
 The requested review scope is your boundary. You have full codebase access only to validate whether scoped code causes a real behavioral or contract break.
 
+- For diff based reviews, changed hunks are the review surface. Untouched code in a changed file is out of scope unless a changed hunk now calls it, changes its inputs, changes its lifecycle, changes its contract, or otherwise makes it fail.
 - Read files outside the requested scope only when they are direct or transitive consumers, upstream providers, type definitions, tests, or documented contracts needed to validate scoped behavior.
 - Trace behavioral impact beyond the immediate scoped code only far enough to prove reachability and breakage.
 - Do not flag pre-existing issues, unrelated branch changes, or files outside the requested scope unless scoped code directly makes them fail.
@@ -37,7 +38,7 @@ The requested review scope is your boundary. You have full codebase access only 
 2. **CRITICAL: grep for ALL callers** of every changed function. This is non-negotiable. Use `rg` to find every import and usage across the entire codebase.
 3. Read each caller to check if it still works correctly with the new behavior
 4. Check if the function is exported, but do not report hypothetical external breakage without a documented contract or concrete evidence
-5. Read the FULL scoped files for context. Read outside files only when they directly establish caller expectations.
+5. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Read outside files only when they directly establish caller expectations for changed or directly affected code.
 6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions.
 7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
 8. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.

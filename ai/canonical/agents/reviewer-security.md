@@ -26,6 +26,7 @@ Maximize recall inside the requested review scope. A downstream validator filter
 
 The requested review scope is your boundary. You have full codebase access only to validate whether scoped code creates or exposes a real vulnerability.
 
+- For diff based reviews, changed hunks are the review surface. Untouched code in a changed file is out of scope unless a changed hunk now calls it, changes its inputs, changes its lifecycle, changes its contract, or otherwise makes it fail.
 - Read files outside the requested scope only when they are callers, callees, shared utilities, middleware, auth guards, type definitions, configuration, or tests needed to validate scoped code.
 - Trace input paths from entry point to sink only far enough to prove reachability, missing guard, exploitability, and impact.
 - Do not flag pre-existing issues, unrelated branch changes, or files outside the requested scope unless scoped code directly makes them exploitable.
@@ -36,7 +37,7 @@ The requested review scope is your boundary. You have full codebase access only 
 
 1. Inspect the requested review target to identify all scoped points where external input enters the system (request params, headers, body, query strings, file uploads, environment variables)
 2. Trace each input through the code to see where it ends up. Does it reach a database query, HTML output, shell command, file path, redirect, or eval? Follow the trail across files and modules, not just within the diff.
-3. Read the FULL scoped files for context. Search outside the requested scope only for directly connected middleware, sanitization, validation, auth guards, routes, callers, or tests.
+3. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Search outside the requested scope only for directly connected middleware, sanitization, validation, auth guards, routes, callers, or tests needed to validate changed or directly affected code.
 4. Check for auth middleware/guards on new endpoints or routes
 5. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression/security test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression/security test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. Use a concrete malicious input and assert the secure behavior.
 6. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.

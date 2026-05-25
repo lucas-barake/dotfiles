@@ -46,15 +46,17 @@ If the requested scope is empty, tell the user and stop.
 
 Note any feedback, suggestions, or concerns the user provided alongside their review request. The user often has context that the diff alone does not reveal. Capture and refine this for later steps.
 
-Treat the user's requested review target as the boundary. In PR-style reviews, changed files and changed hunks are the source of truth. In file-list reviews, the requested files/directories are the source of truth. Do not silently expand the review into unrelated areas.
+Treat the user's requested review target as the boundary. In PR-style reviews, changed hunks are the review surface. Changed files are context, not automatic scope. In file-list reviews, the requested files/directories are the source of truth. Do not silently expand the review into unrelated areas.
 
 Strict scope rules:
 
 1. Review only the requested target.
-2. Do not investigate or report unrelated code, background branch changes, pre-existing issues, or files outside the requested scope unless scoped code directly causes a break there.
-3. If the requested target does not touch an area, do not review that area.
-4. Public API or "could affect consumers" claims require actual in-repo consumers or concrete evidence that the requested target changes a real contract.
-5. Findings outside the requested target's causal scope are discarded even if they are true.
+2. For diff based reviews, review changed hunks and code directly affected by those hunks. Do not review untouched functions, branches, helpers, routes, components, or tests merely because they live in a changed file.
+3. Read surrounding code only to understand the changed hunks, their inputs, outputs, invariants, callers, callees, and lifecycle. Full file reading is context gathering, not permission to report unrelated defects.
+4. Do not investigate or report unrelated code, background branch changes, pre-existing issues, or files outside the requested scope unless scoped code directly causes a break there.
+5. If the requested target does not touch an area, do not review that area.
+6. Public API or "could affect consumers" claims require actual in-repo consumers or concrete evidence that the requested target changes a real contract.
+7. Findings outside the requested target's causal scope are discarded even if they are true.
 
 ### Step 2: Assess scope and decide whether to shard
 
@@ -163,10 +165,11 @@ Scoped files:
 Scope summary:
 <diff stat for diff-based reviews, or concise summary of the explicit file/directory scope>
 
-Start by inspecting the requested review target. For PR-style reviews, run the provided diff command for these files. For staged/unstaged reviews, run the matching `git diff` command. For explicit file reviews, read the scoped files directly. Read full scoped files for context. Read files outside the requested scope only when needed to verify a direct consumer, caller, guard, lifecycle owner, test, or project rule causally connected to the scoped code.
+Start by inspecting the requested review target. For PR-style reviews, run the provided diff command for these files. For staged/unstaged reviews, run the matching `git diff` command. For explicit file reviews, read the scoped files directly. In diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand changed hunks. Read files outside the requested scope only when needed to verify a direct consumer, caller, guard, lifecycle owner, test, or project rule causally connected to the scoped code.
 
 Strict review scope:
-- Your findings must be directly caused by code in this shard's requested scope.
+- Your findings must be directly caused by changed hunks in this shard, or by code whose behavior is directly affected by those hunks.
+- Untouched code in a changed file is out of scope unless the changed hunk now calls it, changes its inputs, changes its lifecycle, changes its contract, or otherwise makes it fail.
 - Do not report pre-existing issues, unrelated branch issues, or problems in areas the requested scope does not touch.
 - If the bug is in an unscoped file, report it only if scoped code now makes that unscoped code fail.
 - If a claim depends on public API breakage, verify actual in-repo consumers or concrete contract evidence.
@@ -185,7 +188,7 @@ Regression validation uses Red Green Refactor:
 - If the test runs but does not reproduce the bug, mark the candidate `NOT REPRODUCED` and explain what disproved it.
 ```
 
-When sharding, each agent only receives the file list for its shard. The agent inspects only its requested scope and reads only the directly connected context needed to validate scope-caused behavior.
+When sharding, each agent only receives the file list for its shard. The agent inspects only its requested scope and reads only the directly connected context needed to validate scope-caused behavior. For diff based shards, changed hunks within those files are the review boundary.
 
 **User feedback routing is mandatory and must be scoped.** Refine the user's input into clear, actionable guidance tailored to each reviewer's focus area. Route feedback only to reviewers whose mission can act on it. Do not include irrelevant feedback "just in case"; it poisons the reviewer's goal. Agents that receive user feedback should treat it as a high-priority area to investigate, not just as a hint.
 
@@ -199,7 +202,7 @@ For each reviewer result, first classify it as a confirmed fixed issue, unconfir
 
 For each result, read the relevant scoped files and any diff when available, then check:
 
-1. Is this directly caused by code in the requested review scope?
+1. Is this directly caused by changed hunks in the requested review scope, or by code directly affected by those hunks?
 2. Is the flagged code actually reachable?
 3. Are there guards, error handling, or tests elsewhere that already cover this?
 4. Is it intentional behavior (comments, PR description, project conventions)?
@@ -212,6 +215,7 @@ For each result, read the relevant scoped files and any diff when available, the
 Discard the result if it is:
 
 - out of scope
+- in an untouched part of a changed file and not directly affected by a changed hunk
 - a false positive
 - not reproducible
 - not tied to the requested review scope
