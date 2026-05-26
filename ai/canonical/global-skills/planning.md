@@ -54,11 +54,11 @@ Before spawning any agents:
 
 ### Step 2: E2E Structural Investigation (parallelize agents)
 
-Deep-dive agents automatically persist their findings to `.context/deep-dives/`, but planning must investigate fresh for the current task. Do not treat prior investigations as a source of truth and do not skip new investigation because a similarly named artifact already exists.
+Deep-dive agents automatically persist their findings under `.context/deep-dives/<current-branch>/`, but planning must investigate fresh for the current task. Do not treat prior investigations as a source of truth and do not skip new investigation because a similarly named artifact already exists.
 
 Spawn agents IN PARALLEL to map out the structure, not just the layer you're working on. Give each agent a specific structural question, NOT an open-ended problem to solve:
 
-- Every prompt must be highly specific and self contained. Include the exact paths, directories, symbols, or libraries to inspect, the exact structural question to answer, why it matters for the plan, any exclusions, and the exact response format you want back
+- Every prompt must be highly specific and self contained. Include the exact paths, directories, symbols, or libraries to inspect, the exact structural question to answer, why it matters for the plan, any exclusions, and the exact response format you want back. Keep the prompt scoped to that agent's mission. Do not include unrelated task history, other agents' missions, or concerns that belong to another agent type
 - Prefer multiple narrow prompts over one broad prompt. Each agent should answer one tightly scoped question well
 
 - Use `quick-dive` for affected modules and adjacent consumers or providers
@@ -67,9 +67,11 @@ Spawn agents IN PARALLEL to map out the structure, not just the layer you're wor
 - If it's a frontend task: spawn one investigation on the frontend code AND one on the backend or API code simultaneously
 - If it's a backend task: spawn one investigation on the backend AND one on the frontend or CLI consumers simultaneously
 - If it's a CLI, worker, job, or game loop task: spawn one investigation on the entry surface AND one on the downstream systems it coordinates with
-- If it touches a library: spawn an investigation on `~/src/oss/<lib>` or clone it first if not there
+- If it touches a library: inspect installed package metadata and spawn an investigation on the version matched official repository and package directory under `~/src/oss/.versions/`, reusing an existing shared version checkout
 
 The goal is to map how data flows end to end, what the existing code structure is, what conventions exist, and where the real integration boundaries live. The agents report structure. YOU synthesize meaning and make decisions.
+
+After spawning investigation agents, wait for them to finish before doing your own investigation in the same scope. Do not duplicate their work while they run. Use that time only for coordination, handling failed agents, and preserving the task scope. Synthesize and validate once their results return.
 
 ### Step 3: DRY & Reuse Audit
 
@@ -93,14 +95,15 @@ The agent reports what exists. You decide what's worth reusing, what's worth ext
 
 ### Step 4: Library Investigation
 
-If the task involves third-party libraries, you MUST investigate them before planning any code that uses them. LLMs default to training data patterns. If those patterns are outdated or wrong for the specific library version, the implementer will write bad code. Your job is to give the implementer the real patterns from the actual source.
+If the task involves third-party libraries, you MUST investigate them before planning any code that uses them. LLMs default to training data patterns. If those patterns are outdated or wrong for the specific library version, the implementer will write bad code. Your job is to give the implementer the real behavior and patterns from the actual source. Do not plan code against a library until you understand the exact inputs, outputs, errors, edge cases, lifecycle rules, and setup requirements from source or tests.
 
 1. **Read the real manifests first.** Read `package.json`, workspace manifests, or the relevant dependency manifests before planning commands or imports. Know the real versions and scripts.
-2. **Get the source.** Ensure `~/src/oss/<lib>` exists (clone it if not). This is your source of truth, not training data.
+2. **Get the source.** Inspect installed package metadata and lockfiles for `repository.url`, `repository.directory`, exports, and version. Use that metadata to find the matching official repository and package directory. Always inspect it through a version checkout under `~/src/oss/.versions/<repo>/<version>/`. First look for an existing reusable version checkout under `~/src/oss/.versions/<repo>/<version>/`. Create one shared git worktree only if that exact version is missing. Use a separate clone only when a worktree cannot be created from the shared repository. If no matching upstream ref exists, use the installed package source as the version source of truth and record the mismatch. This is your source of truth, not training data.
 3. **Understand the API surface.** Spawn fast-lookup agents for exact signatures, types, return values of every API the plan will use. Do not guess a single parameter type or return value.
 4. **Find idiomatic usage from source code.** Spawn a deep-dive agent on the library source. Prioritize source code and test files over documentation. Docs go stale. Source code is the truth. Ask:
    - How does the library's own test suite exercise this feature? (test files are the best usage examples)
    - How does the library's internal code use this feature? (internal usage patterns)
+   - What inputs, outputs, errors, edge cases, lifecycle rules, and invariants does the source show?
    - What setup, initialization, or composition patterns do the tests use?
    - Are there any anti-patterns, deprecations, or "don't do this" that the source reveals?
    - Only check docs/READMEs as a secondary source if the tests and source don't give a clear enough picture
@@ -242,7 +245,7 @@ For bug-fix tasks, the regression test written during planning becomes the first
 Before writing ANY test plan, you MUST understand how to test the code you're planning. This means investigating the source of whatever the tests depend on.
 
 1. **Check for an available testing skill first.** If a skill exists for testing library X (e.g., `effect-testing`, `effect-ai-testing`, `effect-rpc-testing`), check whether it covers the specific use case the plan requires. If it does, use it. If it doesn't cover the particular scenario, proceed to step 2.
-2. **No skill or insufficient skill coverage? Investigate the library source.** Spawn a deep-dive agent on `~/src/oss/<lib>` (clone it first if not there). Prioritize source code and test files over documentation. Docs go stale. The library's own test suite is the canonical reference for how to test code that uses it. Ask:
+2. **No skill or insufficient skill coverage? Investigate the library source.** Inspect installed package metadata and lockfiles, then spawn a deep-dive agent on the version matched official repository and package directory under `~/src/oss/.versions/`. Reuse an existing shared version checkout, and create one only if missing. Prioritize source code and test files over documentation. Docs go stale. The library's own test suite is the canonical reference for how to test code that uses it. Ask:
    - Find the library's test files for the specific feature/module you're using. How do THEY test it?
    - What test utilities, mocks, fakes, or helpers does the library provide for consumers? (look at their test infrastructure, not just their docs)
    - What setup/teardown patterns do their tests use? (Layer composition, test harnesses, mock providers, etc.)
@@ -265,6 +268,7 @@ The implementer agent has no context beyond the plan document. If you don't incl
 **Non-negotiable test principles:**
 
 - **Test against real code.** Tests run the actual production modules. No reconstructing component trees, service graphs, or pipelines in the test file. Import the real thing, provide its real dependencies, and assert on its real behavior
+- **Test against production composition.** Tests must exercise the real production wiring: app factories, routers, service layers, module builders, pipelines, component trees, and dependency graphs. Do not hand-wire a mimic in the test. If production composition is hard to use, plan to extract or expose a harness shared with production wiring.
 - **Mock only at boundaries.** The only things that get mocked are services that interact with something you cannot run in a test: external HTTP APIs, third-party SaaS, hardware. Everything else uses the real implementation. If a library provides a test harness or in-memory implementation (e.g., test databases, fake clocks), use that instead of mocking
 - **Do not test the framework.** If a library or framework guarantees behavior X, do not write a test asserting X. Test YOUR code's behavior that depends on X. Example: don't test that Effect.catchTag catches a tagged error. Test that your service returns the right fallback when the error occurs
 - **No superfluous or redundant tests.** Each test must protect against a distinct regression. If two tests would fail for the same bug, keep only the more meaningful one. Trivial variations of the same scenario are noise
@@ -280,7 +284,7 @@ The plan must specify every test case. The implementer should not have to invent
 - What the test does: setup, action, assertion (conceptual, not copy-paste code)
 - Which production module/function it exercises
 - What regression it protects against (why this test exists)
-- **Source references**: which library test patterns to follow, with paths to the relevant examples in `~/src/oss/`
+- **Source references**: which library test patterns to follow, with paths to the relevant version matched examples in `~/src/oss/.versions/`
 
 The implementer writes the test code. Your job is to decide exactly WHICH tests exist and WHAT each one asserts. Every decision about test coverage is made in the plan, not left to the implementer.
 
@@ -377,7 +381,7 @@ Instructions:
 2. For claims about existing code (file paths, line numbers, function signatures, existing behavior),
    read the actual source files to verify
 3. For API usage patterns, testing patterns, and external references, verify against the actual
-   library source in ~/src/oss/, the cloned reference repositories, or the cited source of truth
+   version matched library source in `~/src/oss/.versions/<repo>/<version>/`, the cloned reference repositories, or the cited source of truth
 4. Check <domain-specific focus from the reviewer descriptions above>
 
 For each finding:
@@ -394,6 +398,8 @@ or hypothetical concerns without evidence.
 **Do NOT paste the plan contents into agent prompts.** Agents have full tool access. They will read the plan target and investigate the codebase themselves.
 
 Spawn all selected reviewers in a **single turn** (parallel).
+
+After spawning reviewers, wait for them to finish before doing your own review in the same scope. Do not inspect the same plan areas for findings while they run. Validate, deduplicate, and revise only after their results return.
 
 ### Step 12: Validate and Revise the Plan
 

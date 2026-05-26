@@ -113,9 +113,11 @@ Do not perform broad structural exploration in the main context. Delegate it.
 
 Investigate fresh for the current task. Do not rely on prior deep-dive artifacts or older plans as a substitute for new investigation.
 
-Every spawned agent prompt must be highly specific and self contained. Include the exact paths, directories, symbols, or libraries to inspect, the exact question to answer, why it matters for the current task, any exclusions, and the exact response format you want back. Prefer multiple narrow prompts over one broad prompt.
+Every spawned agent prompt must be highly specific and self contained. Include the exact paths, directories, symbols, or libraries to inspect, the exact question to answer, why it matters for the current task, any exclusions, and the exact response format you want back. Keep the prompt scoped to that agent's mission. Do not include unrelated task history, other agents' missions, or concerns that belong to another agent type. Prefer multiple narrow prompts over one broad prompt.
 
-The goal is to understand how the system is actually built, not just where the requested change appears. Capture the result in `01-current-state.md` with exact file paths and key constraints.
+After spawning investigation agents, wait for them to finish before doing your own investigation in the same scope. Do not duplicate their work while they run. Use that time only for coordination, handling failed agents, and preserving the task scope. Synthesize and validate once their results return.
+
+The goal is to understand how the system is actually built, not just where the requested change appears. Before designing code, be able to state the intent, inputs, outputs, invariants, error cases, domain expectations, and caller contracts of the code you will touch. Read surrounding implementation, relevant callers and callees, types or schemas, configuration, and existing domain tests. Capture the result in `01-current-state.md` with exact file paths and key constraints.
 
 ### Step 3: Audit reuse, gaps, and refactor needs
 
@@ -131,16 +133,17 @@ Write the result to `02-internal-research.md`.
 
 ### Step 4: Investigate libraries and frameworks from source
 
-If the task touches any library or framework behavior, investigate it before designing code that uses it.
+If the task touches any library or framework behavior, investigate it before designing code that uses it. This is mandatory. Do not write or change code against a library until you understand the exact behavior, inputs, outputs, errors, edge cases, lifecycle rules, and setup requirements from source or tests.
 
 1. Read the relevant manifest files first so you know the actual dependencies, scripts, and versions
-2. Ensure the source of each relevant library or framework exists under `~/src/oss/`. Clone it if needed
-3. Use `fast-lookup` for exact signatures, parameter types, return values, and exported helpers
-4. Use `deep-dive` on the library source and tests to find idiomatic usage, setup patterns, and test strategies
-5. Prefer source code and test files over docs. Use docs only as a secondary source
-6. If behavior remains uncertain, write temporary verification code, run it, record the answer, and delete the temporary artifact immediately
+2. Inspect installed package metadata and lockfiles for each relevant library or framework. Use `repository.url`, `repository.directory`, exports, and installed version to find the official repository and package directory, then inspect the matching upstream tag, release branch, or commit through `~/src/oss/.versions/<repo>/<version>/`
+3. Do not inspect `~/src/oss/<repo>` directly for project-specific library behavior. Treat it only as the shared repository used to create versioned checkouts. First look for an existing reusable version checkout under `~/src/oss/.versions/<repo>/<version>/`. Create one shared git worktree only if that exact version is missing. Use a separate clone only when a worktree cannot be created from the shared repository. If no matching upstream ref exists, use the installed package source as the version source of truth and record the mismatch
+4. Use `fast-lookup` for exact signatures, parameter types, return values, and exported helpers
+5. Use `deep-dive` on the version matched library source and tests to find idiomatic usage, setup patterns, and test strategies
+6. Prefer source code and test files over docs. Use docs only as a secondary source
+7. If behavior remains uncertain, write temporary verification code, run it, record the answer, and delete the temporary artifact immediately
 
-Record the exact findings in `03-library-research.md`. This file must include the real APIs you will rely on, the real testing pattern, and anything that will not work.
+Record the exact findings in `03-library-research.md`. This file must include the real APIs you will rely on, expected inputs and outputs, errors and edge cases, lifecycle or setup constraints, the real testing pattern, and anything that will not work.
 
 ### Step 5: Investigate external references
 
@@ -191,6 +194,7 @@ Requirements for `06-test-plan.md`:
 - specify every test file that will be created or updated
 - specify every test case by name and purpose
 - use production composition and only replace true external boundaries
+- do not hand-wire a fake composition in tests. Use production entrypoints, app factories, routers, service layers, module builders, pipelines, component trees, or a harness shared with production wiring
 - prefer regression tests, user path tests, business logic tests, and contract tests
 - cover all introduced or modified logic meaningfully
 - keep tests deterministic. No arbitrary sleeps, timing races, or uncontrolled external state
@@ -226,6 +230,8 @@ Spawn them in parallel with:
 
 Do not use generic reviewer prompts. Tell each reviewer exactly what artifact to read, what sources to verify against, what class of defect to hunt for, and what evidence format to return.
 
+After spawning reviewers, wait for them to finish before doing your own review in the same scope. Do not inspect the same plan areas for findings while they run. Validate, deduplicate, and revise only after their results return.
+
 After they return:
 
 1. Deduplicate overlapping findings
@@ -256,12 +262,13 @@ Before writing a single line of production or test code:
 
 Work through the master checklist in order.
 
-For `[TDD]` items:
+For `[TDD]` items, follow Red Green Refactor:
 
-1. Write the test first
-2. Run it and confirm it fails for the expected reason
-3. Only then implement the production change
-4. Run the test again and confirm it passes
+1. Red: write the test first, run it, and confirm it fails for the expected reason
+2. Green: only after Red, implement the production change, rerun the same test, and confirm it passes
+3. If the test stays Red because the test or harness is wrong, revert the implementation, fix the test or harness, prove Red again, reapply the implementation, and rerun until Green
+4. If the test stays Red because the implementation is wrong, keep the test and adjust the implementation until Green
+5. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks
 
 For `[Additive]` items:
 
@@ -279,13 +286,14 @@ For all items:
 After the implementation and planned tests are complete, review the actual code with the existing code reviewers.
 
 1. Decide whether to review the full implementation as one unit or to shard it by domain. Shard when the modified files span clearly different concerns or the diff is large enough that one reviewer would need unrelated context
-2. Always include `reviewer-logic` and `test-reviewer`. Include `reviewer-behavioral`, `reviewer-data-integrity`, `reviewer-security`, `reviewer-concurrency`, and `reviewer-rules` when the implementation warrants them
+2. Always include `reviewer-logic` and `test-reviewer`. Include `effect-reviewer` for any implementation that imports, configures, tests, or meaningfully interacts with Effect or Effect ecosystem packages. Include `reviewer-behavioral`, `reviewer-data-integrity`, `reviewer-security`, `reviewer-concurrency`, and `reviewer-rules` when the implementation warrants them. Include `reviewer-performance` when the implementation touches hot paths, large data, UI rendering, responsiveness, I/O, database or network access, queues, workers, caching, retries, batching, backpressure, allocation heavy paths, or time complexity
 3. Spawn the selected reviewers in parallel with the modified file list, branch context, project rules, and a note that this is freshly implemented code. Tell them the modified files/current diff are the review boundary; they may inspect outside files only to validate direct callers, guards, tests, rules, or integration points causally connected to the modified code
-4. Deduplicate overlapping findings and keep the best supported version of each root issue
-5. Require each bug reviewer to write the smallest regression test for every candidate finding and run the narrowest relevant command to prove it fails for the suspected reason. If the test confirms a real issue, reviewers must leave the regression test edits in the worktree and report the changed test file path, exact test code, command, and failing output. If the candidate is not reproduced or the harness is blocked after multiple real attempts, reviewers must remove any probe test edits before returning and report the exact test code and commands tried as an unconfirmed candidate
-6. Validate every finding yourself before acting on it
-7. Treat high-confidence findings as only those reproduced by a failing regression test. If the regression test is correct and does not fail, treat the finding as a false positive and move on
-8. Fix valid findings and rerun the relevant checks
+4. Wait for the reviewers to finish before doing your own review in the same scope
+5. Deduplicate overlapping findings and keep the best supported version of each root issue
+6. Require each bug reviewer to use Red Green Refactor for every candidate finding. They must inspect installed package metadata and version matched official library source and tests through `~/src/oss/.versions/` before writing any regression test that depends on third party library or framework behavior, reusing an existing shared version checkout and using those tests for harness, composition, setup, and assertion patterns. This applies to any library, including Effect and Effect ecosystem packages. They must use metadata fields such as `repository.url`, `repository.directory`, exports, and version to find monorepo package directories. Red: write the smallest regression test and prove it fails for the suspected reason before changing production code. Green: apply the smallest fix in place and prove the same test passes. If Green is still Red because the test or harness is wrong, they must revert the production fix, fix the test or harness, rerun it against the unfixed production code, prove Red again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, they must keep the test and adjust the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks. Confirmed reviewers must leave the valid regression test and fix in the worktree and report the test path, exact test code, Red output before the fix, Green output after the fix, and the fix they applied. If the candidate is not reproduced or the harness is blocked after multiple real attempts, reviewers must remove any probe test and fix edits before returning and report the exact code and commands tried as an unconfirmed candidate
+7. Validate every finding yourself before acting on it
+8. Treat high-confidence findings as only those reproduced by a failing regression test. If the regression test is correct and does not fail, treat the finding as a false positive and move on
+9. Fix valid findings and rerun the relevant checks
 
 Write the full result to `09-implementation-review.md`.
 
@@ -295,9 +303,10 @@ Once the code is functionally correct:
 
 1. Spawn `code-simplifier` and `reuse-reviewer` in parallel on the complete modified file list
 2. Add any domain specific reviewer agent that materially matches the stack under review
-3. Validate each suggestion yourself against the actual code and contracts
-4. Apply only changes that clearly preserve or improve behavior and clarity
-5. Rerun the relevant quality gates after any accepted simplification
+3. Wait for the agents to finish before doing your own simplification or reuse pass in the same scope
+4. Validate each suggestion yourself against the actual code and contracts
+5. Apply only changes that clearly preserve or improve behavior and clarity
+6. Rerun the relevant quality gates after any accepted simplification
 
 ### Step 14: Final verification
 
@@ -319,11 +328,13 @@ When the task is complete:
 3. Create a single logical commit with a message that explains why the change exists
 4. Push the branch with upstream tracking if needed
 5. Open a draft PR with:
-   - a concise summary
-   - verification performed
-   - noteworthy design decisions
-   - important risks or follow ups
-   - links or references that materially shaped the implementation
+   - a short, direct title
+   - the related issue id as the title prefix when one clearly applies
+   - a body that explains the PR goal, important behavior changes, and non obvious design decisions for engineers without prior context in this part of the codebase
+   - a small code snippet or concrete usage example when the PR adds a new abstraction, important pattern, or non obvious integration
+   - important risks, follow ups, links, or references that materially shaped the implementation
+   - no boilerplate body headers like `Summary` or `Test Plan`
+   - no routine test, lint, build, or CI result restatement unless verification was manual, unusual, or important for understanding risk
 6. Do not merge. Human review remains the final gate
 
 Your final user response should include the branch name, commit hash, PR URL, verification results, and any important residual risks or follow ups.

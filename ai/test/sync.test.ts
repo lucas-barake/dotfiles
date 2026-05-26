@@ -47,6 +47,13 @@ const makeMemoryFs = (files: Record<string, string>, dirs: ReadonlyArray<string>
       removed.delete(path)
       return Effect.void
     },
+    copyFile: (fromPath: string, toPath: string) => {
+      const content = written.get(fromPath) ?? files[fromPath]
+      if (content === undefined) return Effect.die(`Unexpected copy: ${fromPath}`)
+      written.set(toPath, content)
+      removed.delete(toPath)
+      return Effect.void
+    },
     exists: (path: string) => {
       const exists = ((path in files) || written.has(path) || dirSet.has(path) || hasImplicitEntry(path)) && !removed.has(path)
       return Effect.succeed(exists)
@@ -314,15 +321,21 @@ describe("syncTarget", () => {
 
   it.effect("syncs codex agent files and config entries", () =>
     Effect.gen(function*() {
+      const instructions = `# Base Rules
+
+Use the canonical Codex instructions.
+`
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/agents/deep-dive.md": sampleAgent,
-        "/src/global-skills/planning.md": sampleSkill
+        "/src/global-skills/planning.md": sampleSkill,
+        "/src/instructions.md": instructions
       }, ["/out"])
 
       yield* syncTarget("/src", "/out", "codex").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(written.get("/out/agents/deep-dive.toml")).toContain("developer_instructions")
       expect(written.get("/out/config.toml")).toContain("[agents.deep-dive]")
+      expect(written.get("/out/AGENTS.md")).toBe(instructions)
       expect(written.get("/out/skills/planning/SKILL.md")).not.toContain("model:")
     }))
 })

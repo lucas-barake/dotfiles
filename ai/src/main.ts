@@ -192,6 +192,17 @@ const syncProviderSkills = (
     )
   })
 
+const syncCodexInstructions = (sourceDir: string, targetDir: string) =>
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const p = yield* Path.Path
+    const sourcePath = p.join(sourceDir, "instructions.md")
+
+    if (!(yield* fs.exists(sourcePath))) return
+
+    yield* fs.copyFile(sourcePath, p.join(targetDir, "AGENTS.md"))
+  })
+
 const mergeCodexConfig = (targetDir: string, agents: Array<{ name: string; description: string }>) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
@@ -310,6 +321,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     if (target === "codex") {
       yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
       yield* syncProviderSkills(sourceDir, targetDir, target, modelMap)
+      yield* syncCodexInstructions(sourceDir, targetDir)
       const agentEntries: Array<{ name: string; description: string }> = []
 
       yield* Effect.forEach(
@@ -410,12 +422,21 @@ const global = Command.make(
   },
   ({ target, home }) =>
     Effect.gen(function*() {
+      const fs = yield* FileSystem.FileSystem
+      const p = yield* Path.Path
       const modelMap = yield* readModelMap(home)
       const targets: ReadonlyArray<Target> = target === "all" ? ["claude", "opencode", "codex"] : [target]
 
       for (const currentTarget of targets) {
         const skipped = yield* syncTarget(`${home}/canonical`, targetPaths[currentTarget], currentTarget, modelMap)
         yield* Console.log(skipped ? `Skipped ${currentTarget} (directory not found)` : `Synced ${currentTarget} agents`)
+        if (
+          currentTarget === "codex" &&
+          !skipped &&
+          (yield* fs.exists(p.join(home, "canonical", "instructions.md")))
+        ) {
+          yield* Console.log("Synced codex instructions")
+        }
         if (currentTarget !== "codex") {
           const configSkipped = yield* syncConfig(`${home}/canonical`, targetPaths[currentTarget], currentTarget)
           yield* Console.log(configSkipped ? `Skipped ${currentTarget} config (directory not found)` : `Synced ${currentTarget} config`)
