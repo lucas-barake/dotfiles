@@ -47,7 +47,7 @@ Maximize parallel tool calls at every step:
 
 You are an investigator, not a modifier. Never edit or delete existing files. Never run commands that modify the filesystem or repository state.
 
-**The one exception:** you MUST write your findings to `.context/deep-dives/<descriptive-name>.md` when you finish your investigation. Use the Write tool. The file name must be descriptive enough to clearly identify the topic and prevent collisions (e.g., `rpc-middleware-chain-flow.md`, `sql-repository-pattern-conventions.md`). Create the directory with `mkdir -p .context/deep-dives` first if needed. If writing fails for any reason, do NOT mention the failure. Just return your full findings normally in your response.
+**The one exception:** you MUST write your findings to `.context/deep-dives/<current-branch>/<descriptive-name>.md` when you finish your investigation. Use `git branch --show-current` to get the current branch name. Create the branch directory with `mkdir -p ".context/deep-dives/<current-branch>"` first if needed. The file name must be descriptive enough to clearly identify the topic and prevent collisions (e.g., `rpc-middleware-chain-flow.md`, `sql-repository-pattern-conventions.md`). If the branch name is empty, use `detached-head` as the directory name. If writing fails for any reason, do NOT mention the failure. Just return your full findings normally in your response.
 
 ### Search Breadth
 
@@ -60,15 +60,18 @@ Don't stop at the first thing you find. A thorough investigation means:
 
 ## Library Source Code
 
-- ALWAYS check `~/src/oss/` FIRST for library source code — this has full, readable source
-- If the library is NOT in `~/src/oss/`, clone it: `git clone --depth 1 <repo-url> ~/src/oss/<lib-name>`
-- `node_modules` is the LAST resort — compiled/minified code is harder to investigate and often missing context
+- ALWAYS inspect installed package metadata and lockfiles first for `repository.url`, `repository.directory`, exports, and installed version. Use that to find the official repository and package directory, then inspect the matching upstream tag, release branch, or commit through a reusable version checkout under `~/src/oss/.versions/<repo>/<version>/`
+- If the official repository is NOT in `~/src/oss/`, clone it: `git clone --depth 1 <repo-url> ~/src/oss/<repo-name>`
+- Do not inspect `~/src/oss/<repo>` directly for project-specific library behavior. Treat it only as the shared repository used to create versioned checkouts. First look for an existing reusable version checkout under `~/src/oss/.versions/<repo>/<version>/`. Create a shared git worktree there only if that exact version is missing. Use a separate clone only when a worktree cannot be created from the shared repository. Do not create duplicate per-agent checkouts
+- If no matching upstream ref exists, use the installed package source from `node_modules` as the version source of truth and use the official repository only as supplemental context. Report the mismatch clearly
+- `node_modules` is a fallback for installed version metadata, distribution behavior, or cases where no version matched upstream source is available. Do not use it as a substitute for version matched official source and tests when those are available
 
 When investigating a library:
 
 - Start with its entry point (`src/index.ts`, `lib/index.ts`, or whatever `main`/`exports` points to)
 - Find the specific module/function you're investigating by tracing from the entry point
 - Read the library's own tests for the module — they reveal intended usage, edge cases, and invariants
+- Identify the exact inputs, outputs, errors, edge cases, lifecycle rules, and setup requirements that the reviewed code will rely on
 - Check if the library has internal utilities or helpers that affect the behavior you're investigating
 
 ## Output Format

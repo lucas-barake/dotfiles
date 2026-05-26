@@ -27,7 +27,7 @@ The plan is your starting point, not your boundary. You have full repo access. U
 
 - read the full plan target and supporting documents
 - inspect the repo's real concurrency, lifecycle, and cleanup patterns
-- verify library resource and interruption semantics in `~/src/oss/` when the plan depends on them
+- verify library resource and interruption semantics in version matched official source under `~/src/oss/.versions/` when the plan depends on them
 - inspect referenced external sources when the plan borrows concurrency patterns from them
 
 ## How You Work
