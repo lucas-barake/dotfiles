@@ -68,6 +68,7 @@
 
 ## Test Harnesses
 
+- Tests must prove observable behavior, contracts, outputs, state changes, integration effects, or user-visible outcomes. Do not add tests that merely restate the implementation, mirror private control flow, assert private helper calls, or duplicate the code's logic in the assertion. Those tests provide zero confidence.
 - Tests must exercise the real production composition of the code, modules, services, component tree, routes, layers, pipelines, and dependency wiring. Do not recreate a parallel fake composition in the test.
 - When tests involve a third party library or framework, guide the harness from the version matched official repository and package directory in `~/src/oss/.versions/`, not memory, tutorials, generated examples, or the ambient `~/src/oss/<repo>` checkout. Use installed package metadata to find monorepo package directories. Reuse an existing shared version checkout, and create one only if missing.
 - Replace only true external boundaries that cannot run in tests, such as third party services, network APIs, hardware, or time. Everything else should use the same production modules and wiring the application uses.

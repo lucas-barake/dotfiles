@@ -42,13 +42,13 @@ Work through the implementation checklist in order. Each checkbox is a discrete 
 
 **TDD vs Additive items:** Checklist items are marked `[TDD]` or `[Additive]`. For `[TDD]` items, the test checkbox appears before the implementation checkbox. Follow Red Green Refactor strictly:
 
-1. Red: write the test, run it, and confirm it fails for the expected reason. This is non-negotiable. If it passes before implementation, the test is wrong or the behavior already exists. Investigate before proceeding.
+1. Red: write the test, run it, and confirm it fails for the expected behavioral reason. This is non-negotiable. The test must fail because observable behavior is absent or wrong, not because it expects a private implementation detail. If it passes before implementation, the test is wrong or the behavior already exists. Investigate before proceeding.
 2. Green: only after Red, write the implementation code, rerun the same test, and confirm it passes.
 3. If the test stays Red because the test or harness is wrong, revert the implementation, fix the test or harness, prove Red again, reapply the implementation, and rerun until Green.
 4. If the test stays Red because the implementation is wrong, keep the test and adjust the implementation until Green.
 5. Refactor: once Green, simplify only when behavior is preserved, then rerun the relevant checks.
 
-For `[Additive]` items, implement first, then write tests.
+For `[Additive]` items, implement first, then write tests. The tests must assert observable behavior or public contracts. Do not add tests that merely restate the implementation, mirror private control flow, or duplicate the code's logic in the assertion.
 
 **Lint and typecheck continuously.** After writing or modifying any file (implementation or test), run the project's linter and typechecker before doing anything else. Check `package.json` for available `lint`, `typecheck`, `check`, or `tsc` scripts. Fix all errors before moving on. Do NOT defer lint/typecheck fixes to the end.
 

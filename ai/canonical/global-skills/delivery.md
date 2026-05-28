@@ -193,12 +193,13 @@ Requirements for `06-test-plan.md`:
 
 - specify every test file that will be created or updated
 - specify every test case by name and purpose
+- every planned test must assert externally observable behavior or a public contract, not restate implementation, private control flow, helper calls, or code logic
 - use production composition and only replace true external boundaries
 - do not hand-wire a fake composition in tests. Use production entrypoints, app factories, routers, service layers, module builders, pipelines, component trees, or a harness shared with production wiring
 - prefer regression tests, user path tests, business logic tests, and contract tests
 - cover all introduced or modified logic meaningfully
 - keep tests deterministic. No arbitrary sleeps, timing races, or uncontrolled external state
-- coverage is a floor, not a goal. Do not add low value tests just to increase a number
+- coverage is a floor, not a goal. Do not add low value tests just to increase a number. A test that only mirrors the implementation provides zero confidence
 - do not test what the language, compiler, or framework already proves unless the repository adds meaningful logic on top
 - do not test third party behavior unless the repository adds meaningful integration logic above it
 - for bug fixes and behavior-changing findings, add regression tests that fail before the fix and pass after it
@@ -264,7 +265,7 @@ Work through the master checklist in order.
 
 For `[TDD]` items, follow Red Green Refactor:
 
-1. Red: write the test first, run it, and confirm it fails for the expected reason
+1. Red: write the test first, run it, and confirm it fails for the expected behavioral reason. The test must fail because the observable behavior is absent or wrong, not because it expects a private implementation detail
 2. Green: only after Red, implement the production change, rerun the same test, and confirm it passes
 3. If the test stays Red because the test or harness is wrong, revert the implementation, fix the test or harness, prove Red again, reapply the implementation, and rerun until Green
 4. If the test stays Red because the implementation is wrong, keep the test and adjust the implementation until Green
