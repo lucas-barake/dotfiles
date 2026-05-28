@@ -184,6 +184,7 @@ Regression validation uses Red Green Refactor:
 - Try multiple reasonable test placements or harness approaches before giving up.
 - If the test confirms a real issue and the fix passes, leave the regression test and fix edits in your reviewer workspace and return a patch handoff for the main agent. Report the changed test file path, exact test code, Red command output before the fix, Green command output after the fix, the fix you applied, and a unified diff or exact patch that includes both the regression test and production fix. Your workspace may be private, so do not assume your edits are visible in the main PR worktree. If the candidate is not reproduced or the harness is blocked, remove any probe test and fix edits before returning and report the exact code/commands tried.
 - Report confirmed fixed issues separately from unconfirmed candidates.
+- Every reported candidate finding must include the verbatim test written for that finding. Performance and rules reviewers may include the exact benchmark or executable check instead when that is their valid proof type. Do not report a candidate without its accompanying test/check snippet. Invalid probe tests must still be removed from the worktree, but the final report must show the exact attempted test/check for unconfirmed or not-reproduced candidates.
 - If you cannot get the test harness to run after multiple tries and you still believe the candidate may be real, include the exact verbatim test code you wrote, the commands you tried, and mark the candidate `UNCONFIRMED - HARNESS BLOCKED`.
 - If the test runs but does not reproduce the bug, mark the candidate `NOT REPRODUCED` and explain what disproved it.
 ```
@@ -209,8 +210,9 @@ For each result, read the relevant scoped files and any diff when available, the
 5. For rule violations: does the quoted rule actually exist and apply here?
 6. Would this cause an observable failure in practice?
 7. Did the reviewer provide a regression test that failed for the suspected reason before the fix and passes after the fix?
-8. Did the reviewer provide a unified diff or exact patch containing both the valid regression test and the fix?
-9. If the claim is about consumers or public API behavior, are there actual in-repo consumers or concrete contract evidence?
+8. Did every reported candidate include the verbatim test, benchmark, or executable check written for that specific finding?
+9. Did the reviewer provide a unified diff or exact patch containing both the valid regression test and the fix?
+10. If the claim is about consumers or public API behavior, are there actual in-repo consumers or concrete contract evidence?
 
 Discard the result if it is:
 
@@ -222,6 +224,7 @@ Discard the result if it is:
 - speculative
 - based on insufficient evidence
 - based only on hypothetical external consumers
+- missing the verbatim test, benchmark, or executable check written for that finding
 - missing a valid regression test, missing the applied fix, or missing a patch handoff
 
 For every confirmed fixed issue that survives validation, apply the reviewer patch to the main PR worktree yourself. Review the patch before applying it. If multiple reviewers returned patches, apply only the deduplicated valid set and resolve overlaps deliberately. After applying each valid patch or patch group, rerun the exact regression command in the main PR worktree and confirm it still fails before the fix when practical and passes after the applied fix. If you cannot reproduce the reviewer evidence in the main PR worktree, do not count the issue as fixed.

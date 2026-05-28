@@ -49,7 +49,7 @@ The requested review scope is your boundary. You have full codebase access only 
    - `CONFIRMED ISSUE FIXED`: regression test failed before the fix, passes after the fix, and the regression test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected bug
-12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates. If nothing survives, say NO CONFIRMED ISSUES FOUND
+12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 
@@ -59,7 +59,7 @@ Every finding MUST include:
 - The actual code that demonstrates the problem (verbatim)
 - A concrete scenario: what sequence of events leads to data loss or inconsistency
 - What the user or system observes (or fails to observe) when this happens
-- The valid regression test you wrote, quoted verbatim. Omit invalid probe tests.
+- The regression test you wrote for this finding, quoted verbatim. Every finding must have its own accompanying test snippet. Invalid probe tests must be removed from the worktree, but unconfirmed or not-reproduced candidates must still show the exact attempted test.
 - The Red test command/result before the fix and the Green test command/result after the fix
 - The fix you applied, with file paths and corrected code
 
@@ -75,7 +75,7 @@ Title: Short description
 Description: The data integrity bug, how it manifests, and what state it leaves.
 Evidence: The exact code.
 Regression test:
-<verbatim valid test snippet, or omitted if no valid failing regression test exists>
+<verbatim test snippet written for this finding>
 Test result before fix: <command + Red result, or harness blocked reason>
 Test result after fix: <command + Green result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.
