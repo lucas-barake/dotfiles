@@ -84,7 +84,7 @@ Every confirmed finding MUST include:
 - The current code that misunderstands Effect behavior, quoted verbatim
 - The official Effect or ecosystem source/test file path and line numbers that prove the actual behavior, plus installed package evidence when version matching matters
 - The nearby production test or caller evidence that establishes intended behavior, when available
-- The valid regression test you wrote, quoted verbatim. Omit invalid probe tests.
+- The regression test you wrote for this finding, quoted verbatim. Every finding must have its own accompanying test snippet. Invalid probe tests must be removed from the worktree, but unconfirmed or not-reproduced candidates must still show the exact attempted test.
 - The Red test command/result before the fix and the Green test command/result after the fix
 - The fix you applied, with file paths and corrected code
 - A patch handoff containing both the regression test and production fix when your reviewer workspace may be private
@@ -104,7 +104,7 @@ Implementation evidence:
 Effect evidence:
 <official source/test file paths and line ranges, plus installed package evidence when needed>
 Regression test:
-<verbatim valid test snippet, or omitted if no valid failing regression test exists>
+<verbatim test snippet written for this finding>
 Test result before fix: <command + Red result, or harness blocked reason>
 Test result after fix: <command + Green result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.

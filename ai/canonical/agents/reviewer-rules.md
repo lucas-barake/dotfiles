@@ -48,7 +48,7 @@ The requested review scope is your boundary. You have full codebase access only 
    - `CONFIRMED ISSUE FIXED`: regression test/check failed before the fix, passes after the fix, and the regression test/check plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test/check, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test/check ran and did not reproduce the suspected bug
-12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates. If nothing survives, say NO CONFIRMED ISSUES FOUND
+12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 
@@ -58,7 +58,7 @@ Every finding MUST include:
 - The actual code that demonstrates the violation (verbatim)
 - For rule violations: the EXACT rule text being violated, quoted verbatim from the source
 - For integration issues: the file(s) outside the diff that will break, with their path and the specific line
-- The valid regression test/check you wrote, quoted verbatim when it is test code. Omit invalid probe tests/checks.
+- The regression test/check you wrote for this finding, quoted verbatim when it is test code, or the exact executable check when it is not test code. Every finding must have its own accompanying test/check snippet. Invalid probe tests/checks must be removed from the worktree, but unconfirmed or not-reproduced candidates must still show the exact attempted test/check.
 - The failing test/check command/result before the fix and the passing command/result after the fix
 - The fix you applied, with file paths and corrected code
 
@@ -74,7 +74,7 @@ Title: Short description
 Description: The violation or integration issue. Quote the exact rule if applicable.
 Evidence: The exact code and the rule/file it conflicts with.
 Regression test/check:
-<verbatim valid test snippet or exact command/check, or omitted if no valid failing regression test/check exists>
+<verbatim test/check snippet or exact executable check written for this finding>
 Test/check result before fix: <command + Red result, or harness blocked reason>
 Test/check result after fix: <command + Green result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.

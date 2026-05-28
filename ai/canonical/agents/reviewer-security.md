@@ -48,7 +48,7 @@ The requested review scope is your boundary. You have full codebase access only 
    - `CONFIRMED ISSUE FIXED`: regression/security test failed before the fix, passes after the fix, and the regression/security test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected vulnerability
-11. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates. If nothing survives, say NO CONFIRMED ISSUES FOUND
+11. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 
@@ -58,7 +58,7 @@ Every finding MUST include:
 - The actual code that demonstrates the vulnerability (verbatim)
 - A concrete attack scenario: what input an attacker would craft and what it achieves
 - The impact: what an attacker gains (data access, code execution, privilege escalation, etc.)
-- The valid regression/security test you wrote, quoted verbatim. Omit invalid probe tests.
+- The regression/security test you wrote for this finding, quoted verbatim. Every finding must have its own accompanying test snippet. Invalid probe tests must be removed from the worktree, but unconfirmed or not-reproduced candidates must still show the exact attempted test.
 - The Red test command/result before the fix and the Green test command/result after the fix
 - The fix you applied, with file paths and corrected code
 
@@ -74,7 +74,7 @@ Title: Short description
 Description: The vulnerability, attack scenario, and impact.
 Evidence: The exact code path from input to sink.
 Regression test:
-<verbatim valid test snippet, or omitted if no valid failing regression/security test exists>
+<verbatim test snippet written for this finding>
 Test result before fix: <command + Red result, or harness blocked reason>
 Test result after fix: <command + Green result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.

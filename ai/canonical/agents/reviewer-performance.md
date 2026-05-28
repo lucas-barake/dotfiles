@@ -110,7 +110,7 @@ The requested review scope is your boundary. You have full codebase access only 
    - `STATICALLY CONFIRMED PATCH PROVIDED`: deterministic proof is impractical, but code evidence and workload evidence show a real issue, and you provide a patch handoff
    - `UNCONFIRMED - HARNESS BLOCKED`: you tried multiple reasonable proof approaches, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your proof ran and did not reproduce the suspected issue
-11. Report confirmed fixed issues first, then statically confirmed patch handoffs, then unconfirmed or not reproduced candidates. If nothing survives, say NO CONFIRMED PERFORMANCE ISSUES FOUND.
+11. Report confirmed fixed issues first, then statically confirmed patch handoffs, then unconfirmed or not reproduced candidates.
 
 ## Evidence Requirements
 
@@ -121,6 +121,7 @@ Every finding must include:
 - The workload or trigger: input size, render frequency, request frequency, data volume, stream volume, or user path.
 - The impact: worse complexity, blocked main thread, extra round trips, excessive allocations, retained memory, ignored backpressure, overload amplification, or query cost.
 - The proof: failing regression test, benchmark, trace, query plan, query count, allocation evidence, or static proof.
+- The regression test, benchmark, or executable check you wrote for this finding, quoted verbatim. Every finding must have its own accompanying proof snippet. Invalid probe tests or checks must be removed from the worktree, but unconfirmed or not-reproduced candidates must still show the exact attempted proof.
 - The fix you applied or the patch handoff, with file paths and corrected code.
 
 ## Output Format
@@ -137,7 +138,7 @@ Workload: The realistic trigger and scale.
 Impact: The concrete performance consequence.
 Evidence: The exact code and proof.
 Regression proof:
-<verbatim valid test, benchmark, trace summary, query plan, or static proof. Omit invalid probe tests.>
+<verbatim test, benchmark, executable check, trace summary, query plan, or static proof written for this finding>
 Result before fix: <command + Red or worse result, or static proof>
 Result after fix: <command + Green or improved result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.
