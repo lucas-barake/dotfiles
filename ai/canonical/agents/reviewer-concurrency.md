@@ -42,7 +42,7 @@ The requested review scope is your boundary. You have full codebase access only 
 3. For each resource (connection, handle, listener, timer): where is it created? Where is it cleaned up? What happens on the error path? Trace across files.
 4. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Search outside the requested scope only for directly connected synchronization, cleanup, lifecycle management, callers, or tests needed to validate changed or directly affected code.
 5. Check if the code runs in a context where concurrency is possible (event handlers, async functions, workers, multiple instances)
-6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. For race/lifecycle bugs, use deterministic latches, fake timers, mocked resources, or repeated interleavings when available.
+6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. For race/lifecycle bugs, use deterministic latches, fake timers, mocked resources, or repeated interleavings when available. The test must assert observable behavior or a public contract, not restate the implementation.
 7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
 8. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
 9. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
@@ -51,7 +51,7 @@ The requested review scope is your boundary. You have full codebase access only 
    - `CONFIRMED ISSUE FIXED`: regression test failed before the fix, passes after the fix, and the regression test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected bug
-12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates. If nothing survives, say NO CONFIRMED ISSUES FOUND
+12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 
@@ -61,7 +61,7 @@ Every finding MUST include:
 - The actual code that demonstrates the problem (verbatim)
 - A concrete interleaving, timing, or input scenario that triggers the bug
 - What goes wrong: data corruption, hang, leak, crash
-- The valid regression test you wrote, quoted verbatim. Omit invalid probe tests.
+- The regression test you wrote for this finding, quoted verbatim. Every finding must have its own accompanying test snippet. Invalid probe tests must be removed from the worktree, but unconfirmed or not-reproduced candidates must still show the exact attempted test.
 - The Red test command/result before the fix and the Green test command/result after the fix
 - The fix you applied, with file paths and corrected code
 
@@ -77,7 +77,7 @@ Title: Short description
 Description: The concurrency/resource bug, the triggering scenario, and the consequence.
 Evidence: The exact code.
 Regression test:
-<verbatim valid test snippet, or omitted if no valid failing regression test exists>
+<verbatim test snippet written for this finding>
 Test result before fix: <command + Red result, or harness blocked reason>
 Test result after fix: <command + Green result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.

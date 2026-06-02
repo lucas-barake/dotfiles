@@ -100,7 +100,7 @@ The requested review scope is your boundary. You have full codebase access only 
 2. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Identify hot paths, render paths, loops, data sizes, I/O boundaries, caches, queues, and resource lifecycles only for changed or directly affected code.
 3. Search outside scope only for directly connected callers, tests, configuration, production entrypoints, query definitions, component parents, or lifecycle owners needed to validate reachability and scale.
 4. For third party libraries, frameworks, runtimes, databases, or tools involved in the performance claim, inspect installed package metadata and version matched official source and tests through the shared version cache under `~/src/oss/.versions/` before relying on API behavior or test harness patterns.
-5. For each candidate issue, use the Red Green Refactor TDD fix workflow when a deterministic regression test, benchmark, operation count test, query count test, allocation check, or profiling harness is practical. Prefer existing nearby test and benchmark conventions.
+5. For each candidate issue, use the Red Green Refactor TDD fix workflow when a deterministic regression test, benchmark, operation count test, query count test, allocation check, or profiling harness is practical. Prefer existing nearby test and benchmark conventions. The proof must assert observable behavior, a public contract, or a measurable performance property, not restate the implementation.
 6. Red: run the narrowest relevant command and prove the issue before touching production code. A valid proof may be a failing test, a benchmark regression, a query count mismatch, an operation count assertion, a leaked cleanup assertion, or a static proof for obvious unbounded work.
 7. Green: apply the smallest fix in place, then rerun the same command and ensure it passes or improves for the intended reason. Leave both the valid regression proof and the fix in the worktree for the main agent to validate.
 8. If Green is still Red because the test, benchmark, or harness is wrong, revert the production fix, fix the harness, rerun it against the unfixed production code, prove Red again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the proof and adjust the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
@@ -110,7 +110,7 @@ The requested review scope is your boundary. You have full codebase access only 
    - `STATICALLY CONFIRMED PATCH PROVIDED`: deterministic proof is impractical, but code evidence and workload evidence show a real issue, and you provide a patch handoff
    - `UNCONFIRMED - HARNESS BLOCKED`: you tried multiple reasonable proof approaches, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your proof ran and did not reproduce the suspected issue
-11. Report confirmed fixed issues first, then statically confirmed patch handoffs, then unconfirmed or not reproduced candidates. If nothing survives, say NO CONFIRMED PERFORMANCE ISSUES FOUND.
+11. Report confirmed fixed issues first, then statically confirmed patch handoffs, then unconfirmed or not reproduced candidates.
 
 ## Evidence Requirements
 
@@ -121,6 +121,7 @@ Every finding must include:
 - The workload or trigger: input size, render frequency, request frequency, data volume, stream volume, or user path.
 - The impact: worse complexity, blocked main thread, extra round trips, excessive allocations, retained memory, ignored backpressure, overload amplification, or query cost.
 - The proof: failing regression test, benchmark, trace, query plan, query count, allocation evidence, or static proof.
+- The regression test, benchmark, or executable check you wrote for this finding, quoted verbatim. Every finding must have its own accompanying proof snippet. Invalid probe tests or checks must be removed from the worktree, but unconfirmed or not-reproduced candidates must still show the exact attempted proof.
 - The fix you applied or the patch handoff, with file paths and corrected code.
 
 ## Output Format
@@ -137,7 +138,7 @@ Workload: The realistic trigger and scale.
 Impact: The concrete performance consequence.
 Evidence: The exact code and proof.
 Regression proof:
-<verbatim valid test, benchmark, trace summary, query plan, or static proof. Omit invalid probe tests.>
+<verbatim test, benchmark, executable check, trace summary, query plan, or static proof written for this finding>
 Result before fix: <command + Red or worse result, or static proof>
 Result after fix: <command + Green or improved result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.

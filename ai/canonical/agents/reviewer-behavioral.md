@@ -39,7 +39,7 @@ The requested review scope is your boundary. You have full codebase access only 
 3. Read each caller to check if it still works correctly with the new behavior
 4. Check if the function is exported, but do not report hypothetical external breakage without a documented contract or concrete evidence
 5. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Read outside files only when they directly establish caller expectations for changed or directly affected code.
-6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions.
+6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. The test must assert observable behavior or a public contract, not restate the implementation.
 7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
 8. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
 9. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
@@ -48,7 +48,7 @@ The requested review scope is your boundary. You have full codebase access only 
    - `CONFIRMED ISSUE FIXED`: regression test failed before the fix, passes after the fix, and the regression test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected bug
-12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates. If nothing survives, say NO CONFIRMED ISSUES FOUND
+12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 
@@ -58,7 +58,7 @@ Every finding MUST include:
 - The exact file path and line numbers of the affected caller(s)
 - What the function did before vs what it does now (verbatim code for both)
 - Why the caller breaks: what it assumes and what's now different
-- The valid regression test you wrote, quoted verbatim. Omit invalid probe tests.
+- The regression test you wrote for this finding, quoted verbatim. Every finding must have its own accompanying test snippet. Invalid probe tests must be removed from the worktree, but unconfirmed or not-reproduced candidates must still show the exact attempted test.
 - The Red test command/result before the fix and the Green test command/result after the fix
 - The fix you applied, with file paths and corrected code
 
@@ -74,7 +74,7 @@ Title: Short description
 Description: What changed, which callers break, and why.
 Evidence: Before vs after code, and the affected caller code.
 Regression test:
-<verbatim valid test snippet, or omitted if no valid failing regression test exists>
+<verbatim test snippet written for this finding>
 Test result before fix: <command + Red result, or harness blocked reason>
 Test result after fix: <command + Green result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.
