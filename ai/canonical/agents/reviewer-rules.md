@@ -39,7 +39,7 @@ The requested review scope is your boundary. You have full codebase access only 
 3. For every new scoped import: verify the imported path exists and the symbol is exported. Search the codebase to confirm.
 4. For every scoped export that changed or is under review: grep for consumers across the entire codebase. Will they break?
 5. For dependency changes in scope: check for version conflicts and peer dependency requirements
-6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test or check that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test, typecheck, lint, migration check, or import check that should fail because of the suspected issue. Prefer existing project commands and nearby test conventions.
+6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test or check that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test, typecheck, lint, migration check, or import check that should fail because of the suspected issue. Prefer existing project commands and nearby test conventions. The test must assert observable behavior or a public contract, not restate the implementation.
 7. Red: run the narrowest relevant command and prove it fails for the suspected reason before touching production code. Try multiple reasonable test/check placements or harness approaches before giving up.
 8. Green: if the test/check is valid, apply the smallest production fix in place, then run the same command again and ensure it passes. Leave both the valid regression test/check and the fix in the worktree for the main agent to validate.
 9. If Green is still Red because the test/check or harness is wrong, revert the production fix, fix the test/check or harness, rerun it against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test/check and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
@@ -48,7 +48,7 @@ The requested review scope is your boundary. You have full codebase access only 
    - `CONFIRMED ISSUE FIXED`: regression test/check failed before the fix, passes after the fix, and the regression test/check plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test/check, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test/check ran and did not reproduce the suspected bug
-12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates. If nothing survives, say NO CONFIRMED ISSUES FOUND
+12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 
@@ -58,7 +58,7 @@ Every finding MUST include:
 - The actual code that demonstrates the violation (verbatim)
 - For rule violations: the EXACT rule text being violated, quoted verbatim from the source
 - For integration issues: the file(s) outside the diff that will break, with their path and the specific line
-- The valid regression test/check you wrote, quoted verbatim when it is test code. Omit invalid probe tests/checks.
+- The regression test/check you wrote for this finding, quoted verbatim when it is test code, or the exact executable check when it is not test code. Every finding must have its own accompanying test/check snippet. Invalid probe tests/checks must be removed from the worktree, but unconfirmed or not-reproduced candidates must still show the exact attempted test/check.
 - The failing test/check command/result before the fix and the passing command/result after the fix
 - The fix you applied, with file paths and corrected code
 
@@ -74,7 +74,7 @@ Title: Short description
 Description: The violation or integration issue. Quote the exact rule if applicable.
 Evidence: The exact code and the rule/file it conflicts with.
 Regression test/check:
-<verbatim valid test snippet or exact command/check, or omitted if no valid failing regression test/check exists>
+<verbatim test/check snippet or exact executable check written for this finding>
 Test/check result before fix: <command + Red result, or harness blocked reason>
 Test/check result after fix: <command + Green result, or omitted for unconfirmed/not reproduced candidates>
 Fix applied: Corrected code and file paths, or omitted when no valid fix remains.
