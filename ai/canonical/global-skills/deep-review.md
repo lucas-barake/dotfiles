@@ -124,6 +124,18 @@ The available reviewers and when to include them:
 
 **Always include Logic & Control Flow**. Always include Effect Correctness when the unit touches Effect or an Effect ecosystem package.
 
+Before launching reviewers, run an invariant extraction pass for each unit. Derive concrete invariants introduced or relied on by the scoped change from changed function names, PR text, tests, comments, constants, cache keys, limits, guards, and fallback branches.
+
+For each invariant, write:
+
+- Claim: what must always be true.
+- Observable boundary: where a user, caller, or test can observe it.
+- Internal work boundary: what work must also be bounded or correct before the observable boundary.
+- State matrix: empty, non-empty, cached, stale, fallback, mutated, reordered, appended, removed, duplicate, and maximum-size cases where applicable.
+- Likely proxy tests: tests that could pass while the invariant is still broken.
+
+Route these invariants to relevant reviewers. Reviewers must attack the invariant, not only inspect their usual bug class checklist.
+
 Every selected reviewer must do a negative space pass in its own domain before finalizing. Examples:
 
 - Logic and behavioral reviewers ask what boundary value, caller expectation, default, fallback, feature interaction, or silent contract change is missing from the diff.
@@ -183,6 +195,9 @@ Scoped files:
 Scope summary:
 <diff stat for diff-based reviews, or concise summary of the explicit file/directory scope>
 
+Scoped invariants:
+<Concrete invariants from the invariant extraction pass that are relevant to this reviewer and shard, or "None". Include the claim, observable boundary, internal work boundary, state matrix, and likely proxy tests when applicable.>
+
 Start by inspecting the requested review target. For PR-style reviews, run the provided diff command for these files. For staged/unstaged reviews, run the matching `git diff` command. For explicit file reviews, read the scoped files directly. In diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand changed hunks. Read files outside the requested scope only when needed to verify a direct consumer, caller, guard, lifecycle owner, test, or project rule causally connected to the scoped code.
 
 Strict review scope:
@@ -197,6 +212,13 @@ Negative space pass:
 - Look for missing callers, tests, registrations, migrations, config, auth checks, tenant boundaries, cleanup, cancellation, rollback, retry safety, old data compatibility, resource ownership, and observability only when they are causally implied by this shard.
 - Use the Domain gotchas as guidance, not as a closed checklist. Go beyond them when the code suggests another concrete risk.
 - Do not report a negative space issue unless you can tie it to a scoped changed hunk or a directly affected contract.
+
+Invariant attack pass:
+- Treat Scoped invariants as hypotheses to falsify. Do not assume tests in the diff prove them.
+- Enumerate all return sites, early returns, fallbacks, cache-hit paths, cache-miss paths, empty-result paths, and non-empty-result paths in scoped functions when they are relevant to an invariant.
+- Check whether validation, invalidation, authorization, cleanup, limits, ordering, and bounded-work guarantees are applied consistently on every path.
+- Prefer adversarial inputs that preserve the happy-path result while breaking a hidden assumption, such as stale but non-empty results, many filtered candidates before the first valid item, duplicate keys, reordered items, appended items, removed items, and maximum-size inputs.
+- Do not accept a proxy proof when the invariant is stronger. For example, a downstream bounded array does not prove upstream collection work is bounded, and an empty-result stale cache test does not prove non-empty stale cache correctness.
 
 Regression validation uses Red Green Refactor:
 - First identify candidate findings in your specialty.
