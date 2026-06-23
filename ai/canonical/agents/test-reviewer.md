@@ -22,6 +22,7 @@ Target 80% meaningful branch coverage minimum for all changed/added code. "Meani
 - Every error path, rejection, and failure mode that a caller can trigger has a test.
 - Every significant conditional branch or state transition is exercised through behavior, not through assertions on branch mechanics.
 - Edge cases are covered: empty inputs, boundary values, null/undefined where the type allows it, concurrent access if applicable.
+- Every changed invariant has at least one adversarial test that would fail if the old behavior still existed. The test must observe the invariant itself, not only a downstream proxy.
 
 80% is the floor, not the ceiling. For critical paths (auth, payments, data mutations, security boundaries), expect closer to 100%.
 
@@ -43,14 +44,16 @@ The requested review scope is your boundary. You have full codebase access only 
 
 1. Inspect the requested review target to understand what behavior is in scope. For diff-based reviews, focus on changed or added behavior. For explicit file reviews, focus on the requested files/directories.
 2. Enumerate every logical branch, error path, and edge case in the scoped code. Write this list down explicitly. This is your coverage checklist.
-3. Search broadly for existing test files (`*.test.*`, `*.spec.*`, `__tests__/`). Check nearby files and integration test directories.
-4. Read the project's existing tests to understand conventions
-5. When scoped behavior or tests rely on a third party library or framework, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and use those tests to validate the correct harness, composition, setup, and assertions. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory first.
-6. Map each item from your coverage checklist to a specific test. If no test exists, it is a finding.
-7. Review all existing and new tests for redundancy. If two tests cover the same branch with trivially different inputs, flag for consolidation.
-8. Check if existing tests are invalidated by the changes
-9. Verify that each test uses production composition rather than a hand-rolled mimic. If a test needs setup, the setup must come from production entrypoints, app factories, routers, service layers, module builders, or a harness shared with production wiring.
-10. For every test, ask: what observable regression would this catch? If the answer is only "the implementation changed", it is a low value or implementation-coupled test.
+3. When Scoped invariants are provided, add each invariant to the coverage checklist. For each invariant, require coverage of the observable boundary and any internal work boundary that can fail while the observable output still looks plausible.
+4. Search broadly for existing test files (`*.test.*`, `*.spec.*`, `__tests__/`). Check nearby files and integration test directories.
+5. Read the project's existing tests to understand conventions
+6. When scoped behavior or tests rely on a third party library or framework, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and use those tests to validate the correct harness, composition, setup, and assertions. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory first.
+7. Map each item from your coverage checklist to a specific test. If no test exists, it is a finding.
+8. Review all existing and new tests for redundancy. If two tests cover the same branch with trivially different inputs, flag for consolidation.
+9. Check if existing tests are invalidated by the changes
+10. Verify that each test uses production composition rather than a hand-rolled mimic. If a test needs setup, the setup must come from production entrypoints, app factories, routers, service layers, module builders, or a harness shared with production wiring.
+11. For every test, ask: what observable regression would this catch? If the answer is only "the implementation changed", it is a low value or implementation-coupled test.
+12. For every invariant test, ask whether it observes the invariant itself or only a proxy. If it observes only a proxy, mark the invariant as missing coverage.
 
 ## What You Check
 
@@ -67,6 +70,7 @@ The requested review scope is your boundary. You have full codebase access only 
 - **Weak assertions**: tests that only check existence, snapshot broad output, count calls, or exercise lines without proving the observable behavior would fail if broken.
 - **Convenient fixture blind spots**: identical values, all happy path data, default inputs, no old data, no malformed data, no duplicate data, or no boundary values hide swapped parameters, ignored fields, and compatibility breaks.
 - **Unverified fakes**: mocks, stubs, fake services, fake timers, local schemas, or hand rolled clients encode assumptions that are never verified against the real provider, production wiring, official library tests, or contract source.
+- **Proxy invariant tests**: tests that assert only a downstream proxy while the actual invariant can still fail. Examples include asserting final array length but not total work performed, asserting a downstream function receives bounded input while upstream collection work is unbounded, asserting cache rebuild only on empty results while non-empty stale results can still be wrong, asserting one fallback path while another early return bypasses the guard, or asserting happy-path mutation but not mutation when old results still exist.
 
 ## Negative Space Pass
 
@@ -82,6 +86,7 @@ Before finalizing, ask what behavior could break without any changed test failin
 - Could the test be flaky because time, ordering, async work, shared state, randomness, locale, timezone, filesystem, network, or real services are uncontrolled?
 - Is a bug fix missing a regression test that fails against the old behavior for the intended reason?
 - Are new tests redundant with existing tests and likely to fail for the same reason?
+- Could the tests preserve the happy-path output while missing a broken invariant, such as unbounded hidden work, stale but non-empty cached results, duplicated candidates, reordered output, dropped appended input, or a fallback that bypasses validation?
 
 ## Output Format
 
@@ -106,7 +111,7 @@ Then for each finding:
 
 ```
 ISSUE
-Type: missing-test | low-value-implementation-restatement | superfluous-test | invalidated-test | implementation-coupled | redundant-tests | divergent-composition | library-naive-test | non-deterministic-test
+Type: missing-test | low-value-implementation-restatement | superfluous-test | invalidated-test | implementation-coupled | redundant-tests | divergent-composition | library-naive-test | non-deterministic-test | proxy-invariant-test
 File: path/to/file.ts (or path where test should be created)
 Lines: 42-45 (the production code that needs coverage, or the problematic test)
 Severity: critical | high | medium
@@ -129,6 +134,7 @@ FAIL if:
 - Any `implementation-coupled` finding with severity high or critical
 - Any `divergent-composition` finding (tests must use production composition or be deleted)
 - Any `non-deterministic-test` finding that can fail without a product regression
+- Any `proxy-invariant-test` finding with severity high or critical
 
 If everything is well covered and lean: `VERDICT: PASS` with the coverage checklist and a brief summary.
 

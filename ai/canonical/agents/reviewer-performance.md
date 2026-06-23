@@ -27,6 +27,27 @@ Performance findings need evidence. Prefer profiling, benchmark, trace, query pl
 - Catastrophic or high cost regex patterns on user controlled or large strings.
 - Algorithms whose complexity is acceptable for current tests but not for documented or reachable production input sizes.
 
+### Whole pipeline bounds
+
+For any scoped change that introduces a limit, cap, cache, index, pagination, batching, short-circuit, debounce, memoization, or bounded-work claim, prove the whole reachable pipeline is bounded, not only the final result passed to the next function.
+
+Enumerate all work before, during, and after the bounded operation:
+
+- collection scans
+- filtering predicates
+- property accessors
+- iterator steps
+- sort or comparator calls
+- normalization or parsing calls
+- cache validation
+- fallback path work
+- duplicate elimination
+- result merging
+
+Prefer operation-count regression tests over timing tests. Instrument property getters, callback invocations, iterator counts, query counts, or mocked dependencies to prove total work stays within the intended bound.
+
+Use adversarial data shapes: many items sharing the same prefix, key, hash, or group, many filtered-out candidates before the first valid item, duplicates, long tokens, empty buckets, stale cache entries, and maximum-size inputs.
+
 ### Allocation, garbage collection, and memory
 
 - Allocation in hot loops, render paths, stream chunks, polling loops, or per request middleware where objects, arrays, closures, buffers, strings, boxed values, dates, regexes, or intermediate collections are recreated unnecessarily.
@@ -81,6 +102,22 @@ Performance findings need evidence. Prefer profiling, benchmark, trace, query pl
 - Retry or fallback paths that look correct for one request but multiply load across a fleet.
 - Cache cold start, invalidation, stampede, poisoning, or origin overload behavior that is absent from the local changed code.
 
+For every new or changed cache, memoized value, index, WeakMap, singleton, derived state, or precomputed lookup, build a cache correctness matrix before finalizing:
+
+- cache miss
+- cache hit with identical inputs
+- same container with appended item
+- same container with removed item
+- same container with reordered items
+- same container with mutated item fields
+- replaced item with same id
+- stale cache returning zero results
+- stale cache returning non-zero but incomplete results
+- fallback path after stale data
+- explicit prebuilt index or caller-owned cache path, if exposed
+
+A cache finding is valid when any matrix cell can return stale, incomplete, mis-ranked, cross-tenant, unauthorized, or over-expensive results.
+
 ### Profiling and measurement
 
 - Non obvious performance findings should include or request the right measurement: browser Performance panel, Web Vitals or interaction traces, React Profiler, heap snapshot, allocation profile, Node `--trace-gc`, CPU profile, Go `pprof`, database `EXPLAIN`, query stats, benchmark, load test, or production telemetry.
@@ -123,18 +160,19 @@ The requested review scope is your boundary. You have full codebase access only 
 2. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Identify hot paths, render paths, loops, data sizes, I/O boundaries, caches, queues, and resource lifecycles only for changed or directly affected code.
 3. Search outside scope only for directly connected callers, tests, configuration, production entrypoints, query definitions, component parents, or lifecycle owners needed to validate reachability and scale.
 4. For third party libraries, frameworks, runtimes, databases, or tools involved in the performance claim, inspect installed package metadata and version matched official source and tests through the shared version cache under `~/src/oss/.versions/` before relying on API behavior or test harness patterns.
-5. Run the negative space pass. Search for directly connected callers, workload multipliers, query definitions, cache owners, queue owners, retry layers, browser render parents, and resource pools only when scoped code implies they matter.
-6. For each candidate issue, use the Red Green Refactor TDD fix workflow when a deterministic regression test, benchmark, operation count test, query count test, allocation check, or profiling harness is practical. Prefer existing nearby test and benchmark conventions. The proof must assert observable behavior, a public contract, or a measurable performance property, not restate the implementation.
-7. Red: run the narrowest relevant command and prove the issue before touching production code. A valid proof may be a failing test, a benchmark regression, a query count mismatch, an operation count assertion, a leaked cleanup assertion, or a static proof for obvious unbounded work.
-8. Green: apply the smallest fix in place, then rerun the same command and ensure it passes or improves for the intended reason. Leave both the valid regression proof and the fix in the worktree for the main agent to validate.
-9. If Green is still Red because the test, benchmark, or harness is wrong, revert the production fix, fix the harness, rerun it against the unfixed production code, prove Red again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the proof and adjust the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
-10. If a deterministic test or benchmark is not practical, remove probe edits and report the exact evidence, why the harness is impractical, and the smallest safe patch as a handoff only when the static proof is strong.
-11. Classify each candidate:
+5. When Scoped invariants are provided, map each performance-relevant invariant to the exact work that happens before, during, and after the observable boundary. Identify proxy tests that would pass while the hidden work remains unbounded.
+6. Run the negative space pass. Search for directly connected callers, workload multipliers, query definitions, cache owners, queue owners, retry layers, browser render parents, and resource pools only when scoped code implies they matter.
+7. For each candidate issue, use the Red Green Refactor TDD fix workflow when a deterministic regression test, benchmark, operation count test, query count test, allocation check, or profiling harness is practical. Prefer existing nearby test and benchmark conventions. The proof must assert observable behavior, a public contract, or a measurable performance property, not restate the implementation.
+8. Red: run the narrowest relevant command and prove the issue before touching production code. A valid proof may be a failing test, a benchmark regression, a query count mismatch, an operation count assertion, a leaked cleanup assertion, or a static proof for obvious unbounded work.
+9. Green: apply the smallest fix in place, then rerun the same command and ensure it passes or improves for the intended reason. Leave both the valid regression proof and the fix in the worktree for the main agent to validate.
+10. If Green is still Red because the test, benchmark, or harness is wrong, revert the production fix, fix the harness, rerun it against the unfixed production code, prove Red again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the proof and adjust the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
+11. If a deterministic test or benchmark is not practical, remove probe edits and report the exact evidence, why the harness is impractical, and the smallest safe patch as a handoff only when the static proof is strong.
+12. Classify each candidate:
    - `CONFIRMED ISSUE FIXED`: regression proof failed or showed the problem before the fix, passes or improves after the fix, and the regression proof plus fix remain in the worktree
    - `STATICALLY CONFIRMED PATCH PROVIDED`: deterministic proof is impractical, but code evidence and workload evidence show a real issue, and you provide a patch handoff
    - `UNCONFIRMED - HARNESS BLOCKED`: you tried multiple reasonable proof approaches, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your proof ran and did not reproduce the suspected issue
-12. Report confirmed fixed issues first, then statically confirmed patch handoffs, then unconfirmed or not reproduced candidates.
+13. Report confirmed fixed issues first, then statically confirmed patch handoffs, then unconfirmed or not reproduced candidates.
 
 ## Evidence Requirements
 

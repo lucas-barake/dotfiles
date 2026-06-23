@@ -27,6 +27,7 @@ Maximize recall inside the requested review scope. A downstream validator filter
 - **Poison messages**: one malformed message or event can block a partition, hot loop a queue, distort age metrics, or be retried forever
 - **Schema and migration drift**: old clients, old workers, backfills, replicas, caches, or mixed deploys cannot read or write the new data shape safely
 - **Conversion loss**: precision, currency, timezone, enum, integer, unsigned, overflow, clipping, date parsing, null collapse, or database warning behavior changes stored meaning
+- **Derived state drift**: caches, memoized values, indexes, projections, or precomputed lookups preserve stale, incomplete, duplicated, or mis-keyed data after source data changes
 
 ## Negative Space Pass
 
@@ -43,6 +44,24 @@ Before finalizing, ask what failure or data lifecycle the scoped change implies 
 - Does any database, ORM, bulk load, parser, serializer, or conversion warning get ignored?
 - Does ack or offset commit happen before all required durable side effects are complete?
 - Are rollback, compensation, cleanup, and reconciliation failures surfaced, or can they be swallowed by `finally`, callbacks, hooks, or batch loops?
+
+## Cache And Derived State Matrix
+
+For every new or changed cache, memoized value, index, WeakMap, singleton, projection, derived state, or precomputed lookup, build this matrix before finalizing:
+
+- cache miss
+- cache hit with identical inputs
+- same container with appended item
+- same container with removed item
+- same container with reordered items
+- same container with mutated item fields
+- replaced item with same id
+- stale cache returning zero results
+- stale cache returning non-zero but incomplete results
+- fallback path after stale data
+- explicit prebuilt index or caller-owned cache path, if exposed
+
+A data integrity finding is valid when any matrix cell can silently preserve stale data, drop new data, duplicate data, mis-key data, mis-rank data where order is semantically meaningful, or let stale data drive a write, delete, publish, permission change, or durable side effect.
 
 ## Investigation Scope
 
@@ -62,17 +81,19 @@ The requested review scope is your boundary. You have full codebase access only 
 3. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Search outside the requested scope only for directly connected middleware, wrappers, callers, callees, tests, or type contracts needed to validate changed or directly affected code.
 4. Trace data transformations across module boundaries: is any data silently lost during conversion, serialization, or mapping?
 5. Check transaction boundaries: if multiple writes happen, are they atomic?
-6. Run the negative space pass. Search for directly connected retry layers, queue consumers, migration files, old data readers, backfills, cache owners, outbox patterns, and reconciliation jobs only when scoped code implies they matter.
-7. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. The test must assert observable behavior or a public contract, not restate the implementation.
-8. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
-9. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
-10. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
-11. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
-12. Classify each candidate:
+6. When Scoped invariants are provided, map each data-relevant invariant across all source, derived, cached, fallback, empty-result, and non-empty-result paths. Look for paths where stale but plausible data can hide a failure.
+7. Build the cache and derived state matrix when scoped data flow uses cached, memoized, indexed, projected, precomputed, or singleton state.
+8. Run the negative space pass. Search for directly connected retry layers, queue consumers, migration files, old data readers, backfills, cache owners, outbox patterns, and reconciliation jobs only when scoped code implies they matter.
+9. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. The test must assert observable behavior or a public contract, not restate the implementation.
+10. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
+11. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
+12. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
+13. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
+14. Classify each candidate:
    - `CONFIRMED ISSUE FIXED`: regression test failed before the fix, passes after the fix, and the regression test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected bug
-13. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
+15. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 
