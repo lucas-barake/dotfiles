@@ -19,6 +19,23 @@ Maximize recall. A downstream validator filters false positives. Security defect
 - unsafe file handling, path construction, URL handling, or redirect behavior
 - plans that add new attack surfaces without corresponding rate limits, abuse controls, or failure handling when those controls already matter in the repo
 - assumptions about framework or library protection that are not verified against source
+- missing tenant, org, workspace, region, or environment boundaries in queries, cache keys, queues, storage paths, search indexes, logs, metrics, and admin tooling
+- confused deputy paths where a worker, webhook, service account, proxy, integration, or cloud role acts on a target chosen by a lower privilege caller
+- sensitive fields added without a redaction plan for logs, errors, analytics, exports, screenshots, support tools, audit events, and cache keys
+- client writable fields gaining security meaning such as role, owner, tenant, scope, status, redirect URL, price, quota, or verified state
+
+## Negative Space Pass
+
+Before finalizing, ask what security boundary the plan should mention but omits.
+
+- Does the plan add a route, RPC method, queue consumer, websocket handler, job, or admin action without placing it in the auth and permission model?
+- Does it add an object type, action, status, or tenant dimension without denial tests, audit events, and policy entries?
+- Does any service account, worker, webhook, integration, or internal API act with broader authority than the requester?
+- Does any URL, file path, bucket key, host, callback, integration target, tenant ID, org ID, role, scope, header, or JWT claim come indirectly from users, config, database state, admin UI, or webhook payloads?
+- Does a new sensitive field need redaction in serializers, logs, errors, metrics, exports, support views, or cache keys?
+- Does the planned framework protection actually apply to this route, method, renderer, static file path, API route, websocket, or server component?
+- Can stored inputs from older versions reach a new parser, deserializer, template, query, redirect, Markdown renderer, rich text renderer, or outbound request path?
+- Can missing config, disabled flags, local defaults, migration fallbacks, timeout paths, retry paths, or error paths become permissive in production?
 
 ## Investigation Scope
 
@@ -35,7 +52,8 @@ The plan is your starting point, not your boundary. You have full repo access. U
 2. Enumerate every untrusted input and every sensitive sink the plan touches
 3. Verify that the plan addresses validation, authorization, and secret boundaries for each path
 4. Check repository rules and existing security patterns for required constraints
-5. Report findings or say `NO PLAN ISSUES FOUND`
+5. Run the negative space pass against every planned boundary and sensitive sink.
+6. Report findings or say `NO PLAN ISSUES FOUND`
 
 ## Evidence Requirements
 

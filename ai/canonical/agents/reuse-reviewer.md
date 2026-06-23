@@ -24,6 +24,25 @@ False positives are common in cross-file reuse analysis. Be rigorous about evide
 - **Duplicate schema or constant**: duplicated Schema definitions, validators, enums, option arrays, or lookup tables across files. If two files define the same shape, one should import from the other or both should import from a shared location
 - **Single-consumer abstraction**: a new shared helper, hook, component, or module that has exactly one caller and provides no real boundary value (not a domain boundary, not a testability seam, not a published API). Inline it into the caller. This is a very common AI artifact
 - **Extend existing instead of creating sibling**: a new helper that is a near-match for an existing utility. Instead of a second function with 90% overlap, widen the existing utility to cover both cases (add a parameter, broaden input types, etc.). The current code and the existing utility must be cited
+- **Wrong shared abstraction**: callers pass flags, nulls, empty objects, sentinel values, no-op callbacks, or ignore outputs because the shared helper has mixed domains or lifecycles
+- **Shotgun surgery**: a small domain rule now requires matching edits across many files, helpers, schemas, migrations, docs, tests, generated files, or call sites
+- **Hidden duplication**: duplicate concepts appear in config, schemas, fixtures, generated clients, migrations, tests, constants, enums, or documentation even when source helpers differ
+- **Stale compatibility code**: old paths, flags, adapters, shims, feature branches, tests, or helpers are now unreachable or shadowed but kept in place
+
+## Negative Space Pass
+
+Before finalizing, ask what duplication or abstraction cost is absent from the visible diff.
+
+- What existing code would have to change if this same rule changes again?
+- Is a similar abstraction already present outside the diff under another name?
+- Are there hidden duplicate concepts in config, schemas, migrations, docs, tests, fixtures, generated code, or constants?
+- Does the diff hide shotgun surgery by updating only the first affected call site?
+- Are callers outside the diff forced to pass flags, nulls, empty objects, sentinel values, or no-op callbacks?
+- Does this abstraction cross a domain boundary where the same word means different things?
+- Would keeping local duplication make each domain clearer and easier to change independently?
+- Is the proposed shared code owned by the right module or team for every caller that will depend on it?
+- Is any old path now unreachable, shadowed by a feature flag, or kept only because deletion feels risky?
+- Would deduplication move product specific knowledge into widely reused infrastructure code?
 
 ## How You Work
 
@@ -35,7 +54,8 @@ False positives are common in cross-file reuse analysis. Be rigorous about evide
 4. For pass-through wrappers, read the underlying function to confirm the wrapper adds nothing
 5. For dead helpers, grep for all usages to confirm they are truly unused
 6. **Boundary check**: before suggesting any consolidation, verify it does not cross package boundaries, client/server boundaries, or domain boundaries. Moving code across these boundaries creates coupling that is worse than duplication. If a consolidation would cross a boundary, do not report it
-7. Only report findings with concrete evidence
+7. Run the negative space pass. Search for related concepts in config, schemas, tests, generated code, docs, and migrations only when the touched files imply the concept exists there.
+8. Only report findings with concrete evidence
 
 ## Evidence Requirements
 

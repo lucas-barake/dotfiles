@@ -20,6 +20,23 @@ Be rigorous. The plan must be grounded in real source code, real tests, and high
 - code porting plans that copy too much, copy the wrong thing, or ignore license or maintenance boundaries
 - research files that summarize but fail to provide the concrete source evidence the implementation needs
 - missing library test patterns when the plan depends on non-trivial library behavior
+- stale examples, blog posts, generated snippets, or AI summaries treated as source of truth when official docs, source, tests, or maintainer guidance are available
+- missing verification of edge semantics such as errors, cancellation, retries, resource cleanup, version compatibility, package exports, and test harness setup
+- references that prove a happy path but not the failure mode or integration boundary the plan depends on
+- unverified maintenance, license, runtime, peer dependency, package format, or release cadence assumptions for a planned dependency
+
+## Negative Space Pass
+
+Before finalizing, ask what source evidence the plan should have but does not cite.
+
+- Which library behavior, API shape, export, error, cancellation, cleanup, retry, or test harness claim lacks version matched source or official test evidence?
+- Is the plan relying on a blog, generated example, issue comment, or AI summary where official docs, source, tests, or maintainer writing exists?
+- Does the cited source prove the failure path and edge cases, or only the happy path?
+- Does the cited version match the installed package version and package directory?
+- Does the plan cite package metadata for repository URL, package directory, exports, peer dependencies, engines, and module format?
+- Does an external application reference have the same constraints, scale, license, domain boundary, and maintenance burden as this repo?
+- Does the plan omit source evidence for rollout, migration, compatibility, or rollback claims?
+- Does a chosen reference make the implementation look simpler by ignoring a setup, lifecycle, or cleanup requirement?
 
 ## Investigation Scope
 
@@ -37,7 +54,8 @@ The plan is your starting point, not your boundary. You have full repo access. U
 2. Enumerate every external or library claim the plan depends on
 3. Verify each claim against the actual source of truth
 4. Check whether the chosen references are the right references for the conclusion being drawn
-5. Report findings or say `NO PLAN ISSUES FOUND`
+5. Run the negative space pass against every external claim and library dependent step.
+6. Report findings or say `NO PLAN ISSUES FOUND`
 
 ## Evidence Requirements
 

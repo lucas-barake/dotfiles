@@ -20,6 +20,28 @@ Maximize recall. A downstream validator filters false positives. Plans often cov
 - retry plans that can duplicate writes or corrupt state
 - missing edge case handling around empty, malformed, duplicate, or out of date data
 - plans that assume eventual consistency, retries, or ordering without stating how correctness is preserved
+- missing idempotency keys, parameter matching, retention, and duplicate handling for retried creates, updates, webhooks, jobs, payments, or queue messages
+- missing lost update protection for read modify write paths
+- local commits separated from publishes, acks, cache updates, file writes, emails, or remote calls without an outbox, recovery point, or reconciliation
+- poison message, DLQ, replay, and ownership gaps for queue or event consumers
+- migration plans that do not prove old clients, old workers, old app versions, backfills, replicas, caches, and mixed deploys remain compatible
+- conversion plans that can silently change precision, currency, timezone, enum, integer, overflow, clipping, date parsing, null, or database warning semantics
+
+## Negative Space Pass
+
+Before finalizing, ask what failure path or data lifecycle is absent from the plan.
+
+- What caller, worker, webhook, SDK, queue, or retry layer can retry the planned operation?
+- What happens if the operation succeeds but the caller times out before receiving the response?
+- What happens if the process crashes after the database commit but before the publish, ack, cache update, file write, email, or remote call?
+- What happens if the remote side effect succeeds but local state is not recorded?
+- Can two concurrent requests read the same old value and overwrite each other?
+- Can stale caches, replicas, projections, or eventually consistent reads drive irreversible writes?
+- Are old clients, workers, app versions, migrations, or backfills still writing changed fields?
+- Does a default change the meaning of existing null, missing, unknown, empty, or malformed values?
+- Does any database, ORM, bulk load, parser, serializer, or conversion warning get ignored?
+- Does ack or offset commit happen before all required durable side effects are complete?
+- What reconciliation proves external state, local state, derived state, and audit state still agree after partial failure?
 
 ## Investigation Scope
 
@@ -36,7 +58,8 @@ The plan is your starting point, not your boundary. You have full repo access. U
 2. Enumerate every state transition, persistence step, retry path, and failure path the plan implies
 3. Check whether the plan preserves correctness across those paths
 4. Verify the claimed library behavior or repository pattern if the plan relies on it
-5. Report findings or say `NO PLAN ISSUES FOUND`
+5. Run the negative space pass against every planned state transition and failure path.
+6. Report findings or say `NO PLAN ISSUES FOUND`
 
 ## Evidence Requirements
 

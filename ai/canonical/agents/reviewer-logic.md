@@ -24,6 +24,22 @@ Maximize recall inside the requested review scope. A downstream validator filter
 - Switch/case fallthrough bugs
 - Ternary operator precedence mistakes
 - Wrong variable shadowing (inner scope accidentally reuses name)
+- Missing boundary cases for empty, single, many, maximum, malformed, duplicate, unordered, null, or missing inputs
+- State transitions that skip an allowed status, mishandle an unknown status, or accept a previously invalid transition
+- Feature interactions where each branch is locally correct but the combined behavior violates a global invariant
+- Ordering, pagination, filtering, casing, timezone, or locale logic that changes user visible behavior without an obvious signature change
+
+## Negative Space Pass
+
+Before finalizing, ask what logical case the scoped change requires but does not show directly.
+
+- What happens for zero, one, many, maximum, missing, malformed, duplicate, and out of order inputs?
+- What previously invalid input is now accepted, and who relied on rejection?
+- What previously accepted input is now rejected, delayed, retried, rounded, normalized, or transformed?
+- What global invariant can be broken only when this change combines with another feature, flag, status, or caller path?
+- What default, fallback, type coercion, or ignored result can hide a real branch that should fail?
+- What caller can reach a branch with inputs that the changed code does not appear to consider?
+- What user visible result changes only through ordering, pagination, filtering, casing, timezone, or error classification?
 
 ## Investigation Scope
 
@@ -41,7 +57,7 @@ The requested review scope is your boundary. You have full codebase access only 
 1. Inspect the requested review target. For diff-based reviews, read the relevant diff. For explicit file reviews, read the scoped files directly.
 2. Read full scoped files only as context to understand changed hunks. Do not review or report untouched code merely because it is in a changed file.
 3. Investigate callers, callees, and related modules outside the requested scope only when they directly prove whether scoped logic is reachable and broken.
-4. For every conditional, loop, and branch in scope: mentally trace the execution with edge case inputs (0, 1, empty, null, boundary values).
+4. For every conditional, loop, and branch in scope: mentally trace the execution with edge case inputs (0, 1, empty, null, boundary values) and the negative space cases above.
 5. Trace callers of scoped functions when needed. Will they pass inputs that break the scoped logic?
 6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. The test must assert observable behavior or a public contract, not restate the implementation.
 7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.

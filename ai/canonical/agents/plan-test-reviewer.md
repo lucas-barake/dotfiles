@@ -25,6 +25,24 @@ The plan must provide exhaustive meaningful coverage of introduced or modified r
 - tests must be deterministic
 - the plan must avoid low value tests that only raise a number or restate implementation details
 - the plan must avoid testing the language, type system, or third party behavior unless the repository adds meaningful integration logic on top
+- changed public contracts, generated schemas, service boundaries, client calls, queue messages, persisted data, and API responses must have planned tests that prove producers and consumers still agree
+- planned fixtures must include meaningful values that can expose swapped parameters, ignored fields, missing fields, old data, malformed data, duplicate data, boundary values, and permission differences
+- planned mocks and fakes must be justified against real contracts or replaced with production composition whenever practical
+
+## Negative Space Pass
+
+Before finalizing, ask what behavior could break even if every planned test passed.
+
+- What user visible behavior, durable state change, emitted event, API response, rendered UI, or side effect could regress without a planned test failure?
+- Which public contract changes without a contract or integration test?
+- Which production failure path is absent from the plan: invalid input, empty data, boundary values, permissions, timeouts, dependency failure, retries, partial success, stale data, duplicate data, or old data?
+- Does the planned harness bypass routing, middleware, config, auth, serialization, persistence, queues, lifecycle, dependency injection, or cleanup code used in production?
+- Are mocks encoding assumptions that no planned test verifies against the real provider or official package behavior?
+- Could planned assertions pass if the feature were broken because they are weak, broad, snapshot only, or existence only?
+- Could default values, identical inputs, convenient fixtures, or snapshots hide swapped parameters, ignored inputs, or missing fields?
+- Could planned tests be flaky because time, ordering, async work, shared state, randomness, locale, timezone, filesystem, network, or real services are uncontrolled?
+- Is a bug fix missing a regression test that would fail against the old behavior for the intended reason?
+- Are planned tests redundant with existing tests and likely to fail for the same reason?
 
 ## Investigation Scope
 
@@ -46,7 +64,8 @@ The plan is your starting point, not your boundary. You have full repo access. U
 6. Check that every planned test uses production composition or a real shared harness rather than a parallel mimic of production wiring
 7. Check that every planned third party library or framework test follows the version matched official repository and package directory test patterns from `~/src/oss/.versions/`, not memory, generic examples, or the ambient `~/src/oss/<repo>` checkout
 8. For every planned test, ask what observable regression it would catch. If the answer is only "the implementation changed", it is a low value planned test.
-9. Report findings and a verdict
+9. Run the negative space pass and map each missing behavior to a concrete planned test.
+10. Report findings and a verdict
 
 ## Output Format
 

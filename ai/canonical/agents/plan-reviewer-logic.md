@@ -21,6 +21,21 @@ Maximize recall. A downstream validator filters false positives. If a step order
 - impossible verification steps
 - ambiguous items that leave a real design decision to the implementer
 - plan claims contradicted by the actual source code or referenced libraries
+- hidden feature interactions where locally plausible steps can violate a global invariant
+- missing boundary cases for empty, single, many, maximum, malformed, duplicate, unordered, null, or missing inputs
+- plan steps that assume a fallback, default, retry, or coercion will preserve behavior without proving it
+
+## Negative Space Pass
+
+Before finalizing, ask what prerequisite, decision, or logical case is absent from the plan.
+
+- What must be true before item 1 can run, and does the plan establish it?
+- What existing caller, config, data shape, flag, route, worker, or generated artifact does the plan rely on without mentioning it?
+- What happens for zero, one, many, maximum, missing, malformed, duplicate, and out of order inputs?
+- What global invariant can break only when the planned feature combines with another feature?
+- What prior default, fallback, or conversion might hide an error the plan should surface?
+- What plan step asks the implementer to decide behavior, ordering, or error handling during implementation?
+- What verification step cannot prove the stated behavior because the plan never creates the required setup?
 
 ## Investigation Scope
 
@@ -38,7 +53,8 @@ The plan is your starting point, not your boundary. You have full repo access. U
 2. Enumerate the intended implementation sequence and dependencies between checklist items
 3. Verify each prerequisite against the real codebase and referenced sources
 4. Check that the test ordering matches the planned behavior changes
-5. Report findings or say `NO PLAN ISSUES FOUND`
+5. Run the negative space pass against the checklist, research, and real codebase.
+6. Report findings or say `NO PLAN ISSUES FOUND`
 
 ## Evidence Requirements
 

@@ -49,8 +49,32 @@ Examples of valid Effect correctness areas include:
 - Stream, Layer, Queue, Deferred, Ref, FiberRef, Clock, Schedule, Config, Context, or Service usage that has different semantics than intended
 - ecosystem package behavior from `@effect/platform`, `@effect/sql`, `@effect/rpc`, `@effect/ai`, `@effect/atom`, or related packages that is misunderstood
 - tests that assert the wrong behavior because they misunderstand Effect semantics
+- Promise and callback interop without interruption plumbing, such as missing `AbortSignal` handling or cleanup on interrupt
+- scoped resources whose finalizers can accumulate in a long lived scope or never run on all success, failure, defect, and interruption paths
+- forked fibers, daemon fibers, scoped fibers, or runtime started work whose owner, shutdown path, and error observation are unclear
+- Layer construction that defeats memoization by rebuilding layers or uses `Layer.succeed` for resourceful services that need teardown
+- Schema excess property, encoded shape, decoded shape, transformed type, optional field, or one way encoding assumptions that callers or tests misunderstand
+- Stream early termination, backpressure, upstream finalizer, unbounded collection, or scope lifetime mistakes
+- retry and repeat schedules wrapped around non-idempotent work, acquisition, transactions, locks, or partially completed writes
 
 These are examples, not categories to exhaust. Follow the actual imports, production tests, official tests, and source behavior.
+
+## Negative Space Pass
+
+Before finalizing, ask what Effect semantic obligation the scoped change implies but does not show directly.
+
+- What resources are acquired by callees outside the diff, and who closes their scope?
+- Can this effect now run inside a long lived or never closing scope that accumulates finalizers?
+- What happens if a caller interrupts, times out, races, retries, or forks this effect?
+- Can any child fiber outlive the parent, request, stream, test, or layer that started it?
+- Where do background fiber errors go if nobody joins or awaits them?
+- Did a `never` error type hide a thrown exception, rejected Promise, parse error, or defect?
+- Does production dependency wiring provide the same services that the test wiring assumes?
+- Are layers rebuilt in multiple places, defeating memoization by reference?
+- Does a Schema consumer expect excess properties, encoded shape, decoded shape, reversible encoding, or transformed values?
+- Does a stream close upstream resources if the consumer stops early or fails mid pull?
+- Does a retry wrap non-idempotent work, acquisition, transactions, locks, or partially completed writes?
+- Do tests pass because they use raw Promises, real timers, or fake service wiring instead of the real Effect composition?
 
 ## Investigation Scope
 
@@ -65,13 +89,14 @@ Do not report generic bugs unless the root cause is specifically an Effect or Ef
 3. Read nearby production tests to understand what behavior the application expects.
 4. For every relevant imported module or ecosystem package, read the matching installed package metadata, then read version matched official source and tests from the package's official repository and package directory under `~/src/oss/.versions/`.
 5. Compare the implementation's apparent intent to the actual behavior shown by official source and tests, with installed package evidence when version matching matters.
-6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Use the official Effect or ecosystem tests to design the test harness and composition before writing the regression test. Write the smallest regression test that should fail because of the suspected Effect semantic bug. The test must assert observable behavior or a public contract, not restate the implementation.
-7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. If the test does not fail for the expected reason, the finding is not confirmed.
-8. Green: if the regression test is valid, apply the smallest production fix in place, then run the same command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
-9. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
-10. Return a confirmed finding only when the valid regression test and the applied fix remain in the worktree and you can report both the Red and Green command output plus a patch handoff. Do not report source verified issues as confirmed unless the regression test and fix are both present.
-11. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
-12. Classify each candidate:
+6. Run the negative space pass. Search directly connected scopes, layers, runtimes, stream consumers, tests, services, fiber owners, and Schema consumers only when scoped code implies they matter.
+7. For each candidate bug, use the Red Green Refactor TDD fix workflow. Use the official Effect or ecosystem tests to design the test harness and composition before writing the regression test. Write the smallest regression test that should fail because of the suspected Effect semantic bug. The test must assert observable behavior or a public contract, not restate the implementation.
+8. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. If the test does not fail for the expected reason, the finding is not confirmed.
+9. Green: if the regression test is valid, apply the smallest production fix in place, then run the same command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
+10. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
+11. Return a confirmed finding only when the valid regression test and the applied fix remain in the worktree and you can report both the Red and Green command output plus a patch handoff. Do not report source verified issues as confirmed unless the regression test and fix are both present.
+12. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
+13. Classify each candidate:
    - `CONFIRMED EFFECT ISSUE FIXED`: regression test failed before the fix, passes after the fix, and the regression test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected bug

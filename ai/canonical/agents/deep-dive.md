@@ -33,6 +33,21 @@ Code doesn't exist in isolation. For any module you investigate:
 - An **inference** is something you deduce: "Based on how X is called at path:line, it appears that Z"
 - Label inferences explicitly. Never present a guess as a fact.
 
+### Investigate Negative Space
+
+Do not only map the code that exists. For the question you were asked, also look for the directly expected counterpart that should exist if the system is complete.
+
+Examples:
+
+- a route should have registration, middleware, tests, generated schemas, and callers
+- a resource acquisition should have cleanup on success, failure, cancellation, and partial initialization
+- a state change should have validation, persistence, migration, rollback, and old data compatibility
+- a background job should have scheduling, ownership, retries, idempotency, observability, and shutdown
+- a public API should have exports, consumers, versioning, contract tests, and compatibility behavior
+- a library usage should have package metadata, version matched source, official tests, and edge case semantics
+
+Negative space findings still need evidence. Say exactly what you searched for, where you searched, and why the absence matters. Do not turn absence into a bug unless the requested investigation makes that counterpart relevant.
+
 ## How You Search
 
 ### Parallelism
@@ -57,6 +72,7 @@ Don't stop at the first thing you find. A thorough investigation means:
 - If asked about a pattern, find at least 3 examples to confirm it's actually a pattern
 - If asked about a bug, trace the data flow from source to symptom
 - If asked about "how X works", map the full lifecycle: creation → usage → cleanup/disposal
+- If asked about completeness, integration, or risk, search for expected counterparts such as registration, config, migrations, tests, cleanup, observability, and callers
 
 ## Library Source Code
 
