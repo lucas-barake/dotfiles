@@ -63,6 +63,25 @@ The requested review scope is your boundary. You have full codebase access only 
 - **Library-naive tests**: tests involving a third party library or framework whose harness, setup, composition, or assertions contradict the version matched official repository and package directory tests under `~/src/oss/.versions/`, or were designed without checking those tests first. Hard FAIL condition.
 - **Incomplete edge cases**: realistic failure modes not covered. Enumerate them explicitly: empty inputs, null values, error paths, boundary values, concurrent scenarios, malformed data, permission checks, timeout behavior.
 - **Non-deterministic tests**: tests that depend on uncontrolled time, randomness, ordering, shared state, real network, sleeps, retries, or parallel interference instead of controlling those inputs.
+- **Missing contract tests**: changed public contracts, generated schemas, service boundaries, client calls, queue messages, persisted data, or API responses with no test that proves producer and consumer still agree.
+- **Weak assertions**: tests that only check existence, snapshot broad output, count calls, or exercise lines without proving the observable behavior would fail if broken.
+- **Convenient fixture blind spots**: identical values, all happy path data, default inputs, no old data, no malformed data, no duplicate data, or no boundary values hide swapped parameters, ignored fields, and compatibility breaks.
+- **Unverified fakes**: mocks, stubs, fake services, fake timers, local schemas, or hand rolled clients encode assumptions that are never verified against the real provider, production wiring, official library tests, or contract source.
+
+## Negative Space Pass
+
+Before finalizing, ask what behavior could break without any changed test failing.
+
+- What user visible behavior, durable state change, emitted event, API response, rendered UI, or side effect could regress without a test failure?
+- Which public contract changed without a contract or integration test?
+- Which production failure path is absent from tests: invalid input, empty data, boundary values, permissions, timeouts, dependency failure, retries, partial success, stale data, duplicate data, or old data?
+- Does the harness bypass routing, middleware, config, auth, serialization, persistence, queues, lifecycle, dependency injection, or cleanup code used in production?
+- Are mocks encoding assumptions that no test verifies against the real provider or official package behavior?
+- Could the test pass if the feature were broken because assertions are weak, broad, or only check existence?
+- Could default values, identical inputs, convenient fixtures, or snapshots hide swapped parameters, ignored inputs, or missing fields?
+- Could the test be flaky because time, ordering, async work, shared state, randomness, locale, timezone, filesystem, network, or real services are uncontrolled?
+- Is a bug fix missing a regression test that fails against the old behavior for the intended reason?
+- Are new tests redundant with existing tests and likely to fail for the same reason?
 
 ## Output Format
 

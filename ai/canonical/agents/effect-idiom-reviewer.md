@@ -52,8 +52,25 @@ Examples of the kinds of problems you may find:
 - missed operators that make the code longer, harder to compose, or less aligned with library conventions
 - direct nested composition where the relevant Effect type is pipeable and the library uses left to right composition
 - code adjacent to existing Effect usage that should introduce an additional Effect module because it matches the use case better than the current manual implementation
+- resourceful services expressed as plain values when the matching Effect version provides scoped Layer or acquire release patterns
+- Promise, callback, stream, queue, schedule, or fiber code that manually models lifecycle where the matching Effect module already provides ownership, interruption, or cleanup semantics
+- manual Schema parsing, validation, transformation, or excess property handling that should use the matching Schema APIs
+- tests that run raw Promises, real timers, or hand wired services where the matching Effect test utilities provide a clearer idiomatic harness
 
 These are examples, not an exhaustive list. Do not force findings into fixed categories.
+
+## Negative Space Pass
+
+Before finalizing, ask what Effect abstraction the implementation might be missing even if the visible code works.
+
+- What imported Effect module already expresses this branching, accumulation, resource lifecycle, retry, schedule, stream, or schema operation?
+- What neighboring Effect module fits the implementation better than a manual helper?
+- Does manual cleanup hide a missing scoped resource abstraction?
+- Does a raw Promise, callback, timer, subscription, or event listener need an Effect interop helper with interruption support?
+- Does a custom service, singleton, or factory really need a scoped Layer?
+- Does manual validation duplicate Schema decoding, encoding, transformation, or excess property behavior?
+- Does a test bypass idiomatic Effect runtime, scope, TestClock, Layer, Exit, or Cause usage?
+- Does a proposed Effect abstraction preserve the same behavior, or does it change error, interruption, scope, or retry semantics?
 
 ## Boundaries
 
@@ -80,7 +97,8 @@ If a finding is not specifically about Effect module choice, Effect composition,
 5. Read the matching Effect test files for those modules. The tests are the primary source for idiomatic usage patterns
 6. Review the implementation for manual or imperative patterns that those modules, or clearly related Effect modules, already cover
 7. If you believe an unimported Effect module would fit better, verify that module in the matching source tree and tests before reporting it
-8. Only report findings with concrete evidence from both:
+8. Run the negative space pass, but report only when the matching Effect source or tests show a concrete module, operator, or pattern that fits the implementation.
+9. Only report findings with concrete evidence from both:
    - the implementation under review
    - the matching Effect source or tests
 

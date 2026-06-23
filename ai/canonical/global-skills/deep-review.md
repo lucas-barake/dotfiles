@@ -48,6 +48,8 @@ Note any feedback, suggestions, or concerns the user provided alongside their re
 
 Treat the user's requested review target as the boundary. In PR-style reviews, changed hunks are the review surface. Changed files are context, not automatic scope. In file-list reviews, the requested files/directories are the source of truth. Do not silently expand the review into unrelated areas.
 
+Negative space review is mandatory. Reviewers must look for obligations implied by the requested scope but absent from the diff, such as missing callers, registrations, migrations, auth checks, rollback paths, cleanup paths, tests, config, feature flags, old data compatibility, retry behavior, or resource ownership. This does not relax scope. A negative space finding is valid only when the requested scope creates the obligation or makes an existing directly connected obligation fail.
+
 Strict scope rules:
 
 1. Review only the requested target.
@@ -57,6 +59,8 @@ Strict scope rules:
 5. If the requested target does not touch an area, do not review that area.
 6. Public API or "could affect consumers" claims require actual in-repo consumers or concrete evidence that the requested target changes a real contract.
 7. Findings outside the requested target's causal scope are discarded even if they are true.
+
+When the review target is large, high risk, or uses an unfamiliar framework, library, domain, or platform behavior, run a short gotcha search before launching reviewers. Use dedicated `web-search` agents by reviewer domain, and ask only for credible sources from real engineers, maintainers, official engineering teams, security researchers, SRE material, or primary documentation. Avoid content farms and generic tutorial sites. Route only the concise, domain-relevant gotchas to the relevant reviewers. Do not send every web note to every agent.
 
 ### Step 2: Assess scope and decide whether to shard
 
@@ -120,6 +124,17 @@ The available reviewers and when to include them:
 
 **Always include Logic & Control Flow**. Always include Effect Correctness when the unit touches Effect or an Effect ecosystem package.
 
+Every selected reviewer must do a negative space pass in its own domain before finalizing. Examples:
+
+- Logic and behavioral reviewers ask what boundary value, caller expectation, default, fallback, feature interaction, or silent contract change is missing from the diff.
+- Security reviewers ask what trust boundary, permission matrix entry, tenant filter, secret redaction, framework protection, or confused deputy path is missing.
+- Data integrity reviewers ask what retry, idempotency key, transaction, outbox, lost update guard, migration phase, stale read guard, poison message policy, or reconciliation path is missing.
+- Concurrency reviewers ask what spawned work, cancellation path, queue bound, cleanup path, timeout behavior, lock scope, or shared state owner is missing.
+- Performance reviewers ask what realistic workload, resource saturation, query plan, hidden I/O loop, allocation rate, cache behavior, queue growth, retry amplification, or browser main thread work is missing.
+- Rules and integration reviewers ask what registration, export, config, migration, dependency compatibility, deploy order, rollback, canary signal, or old data compatibility step is missing.
+- Effect reviewers ask what scope owner, finalizer, interruption behavior, fiber supervision, Layer memoization, Schema shape, stream cleanup, or TestClock based assertion is missing.
+- Test reviewers ask what behavior, failure path, public contract, production composition, deterministic input, regression case, or integration boundary is missing.
+
 When sharding, different shards will typically need different reviewer sets. A frontend shard rarely needs the concurrency reviewer. A database shard rarely needs security review for XSS. Select per shard.
 
 ### Step 4: Launch reviewers in parallel
@@ -159,6 +174,9 @@ Project rules:
 User feedback:
 <user feedback refined into clear, actionable guidance for this reviewer, or "None" if no feedback is relevant to this reviewer>
 
+Domain gotchas:
+<Concise gotchas from credible source or library research that are relevant to this reviewer and shard, or "None". Include only items that should guide what to inspect. Do not paste broad web summaries.>
+
 Scoped files:
 <file list for this shard>
 
@@ -173,6 +191,12 @@ Strict review scope:
 - Do not report pre-existing issues, unrelated branch issues, or problems in areas the requested scope does not touch.
 - If the bug is in an unscoped file, report it only if scoped code now makes that unscoped code fail.
 - If a claim depends on public API breakage, verify actual in-repo consumers or concrete contract evidence.
+
+Negative space pass:
+- Before finalizing, ask what the scoped change requires elsewhere but does not show directly.
+- Look for missing callers, tests, registrations, migrations, config, auth checks, tenant boundaries, cleanup, cancellation, rollback, retry safety, old data compatibility, resource ownership, and observability only when they are causally implied by this shard.
+- Use the Domain gotchas as guidance, not as a closed checklist. Go beyond them when the code suggests another concrete risk.
+- Do not report a negative space issue unless you can tie it to a scoped changed hunk or a directly affected contract.
 
 Regression validation uses Red Green Refactor:
 - First identify candidate findings in your specialty.

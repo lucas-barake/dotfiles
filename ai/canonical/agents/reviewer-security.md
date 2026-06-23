@@ -21,6 +21,25 @@ Maximize recall inside the requested review scope. A downstream validator filter
 - **Regex**: ReDoS-vulnerable patterns with user-controlled input
 - **Input validation**: missing validation on user input that reaches sensitive operations, type confusion
 - **Information leakage**: stack traces, internal paths, or system details in error responses
+- **Tenant isolation**: missing tenant, org, workspace, region, or environment filters in queries, cache keys, queues, object storage paths, search indexes, logs, metrics, or admin tools
+- **Confused deputy**: service accounts, workers, webhooks, proxies, file fetchers, cloud roles, or internal APIs acting with more authority than the requester
+- **Framework protection gaps**: middleware order, route coverage, escape hatches, unsafe URL attributes, static routes, server components, websocket handlers, or version specific defaults that leave a path unprotected
+- **Sensitive field spread**: new fields becoming visible through serializers, logs, error handlers, analytics, cache keys, screenshots, support tools, exports, or audit events
+- **Client writable security meaning**: role, owner, tenant, scope, status, redirect URL, price, quota, or verified flags accepted from a client writable shape
+
+## Negative Space Pass
+
+Before finalizing, ask what security boundary the scoped change requires but does not show directly.
+
+- Was a new endpoint, route group, RPC method, queue consumer, websocket handler, or admin action registered outside the existing auth middleware or policy map?
+- Did the diff add a new object type, action, status, or tenant dimension without adding permission checks, denial tests, audit events, and policy entries?
+- Does a service account, worker, webhook, or internal API now act on a target chosen by a lower privilege requester?
+- Does any URL, file path, bucket key, host, callback, integration target, tenant ID, org ID, role, scope, header, or JWT claim come indirectly from config, database state, admin UI, or webhook payloads?
+- Did a sensitive field become exposed by existing serializers, logs, errors, metrics, exports, support views, or cache keys?
+- Does the framework protection actually apply to this path, method, template renderer, static route, API route, websocket, or server component?
+- Are stored inputs from older versions now reaching a parser, deserializer, template, query, redirect, Markdown renderer, rich text renderer, or outbound request path?
+- Can missing config, disabled flags, local defaults, test defaults, migration fallbacks, timeout paths, retry paths, or error paths become permissive in production?
+- Could two benign changes combine into an attack, such as open redirect with OAuth callback, IDOR with export, SSRF with metadata access, or XSS with CSRF bypass?
 
 ## Investigation Scope
 
@@ -39,16 +58,17 @@ The requested review scope is your boundary. You have full codebase access only 
 2. Trace each input through the code to see where it ends up. Does it reach a database query, HTML output, shell command, file path, redirect, or eval? Follow the trail across files and modules, not just within the diff.
 3. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Search outside the requested scope only for directly connected middleware, sanitization, validation, auth guards, routes, callers, or tests needed to validate changed or directly affected code.
 4. Check for auth middleware/guards on new endpoints or routes
-5. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression/security test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression/security test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. Use a concrete malicious input and assert the secure behavior. The test must assert observable behavior or a public contract, not restate the implementation.
-6. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
-7. Green: if the regression/security test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression/security test and the fix in the worktree for the main agent to validate.
-8. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
-9. If you cannot produce a valid failing regression/security test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
-10. Classify each candidate:
+5. Run the negative space pass. Search for directly connected policy maps, middleware registration, tenancy filters, serializers, logs, exports, and framework escape hatches only when scoped code implies they matter.
+6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression/security test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression/security test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. Use a concrete malicious input and assert the secure behavior. The test must assert observable behavior or a public contract, not restate the implementation.
+7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
+8. Green: if the regression/security test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression/security test and the fix in the worktree for the main agent to validate.
+9. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
+10. If you cannot produce a valid failing regression/security test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
+11. Classify each candidate:
    - `CONFIRMED ISSUE FIXED`: regression/security test failed before the fix, passes after the fix, and the regression/security test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected vulnerability
-11. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
+12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 
