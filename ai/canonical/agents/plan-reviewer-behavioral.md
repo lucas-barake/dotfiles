@@ -20,6 +20,23 @@ Maximize recall. A downstream validator filters false positives. Silent omission
 - default behaviors that would silently change without the plan addressing downstream impact
 - rollout or compatibility gaps between producers and consumers
 - missing manual verification for end to end flows that cross subsystem boundaries
+- public behavior changes hidden behind unchanged signatures, such as ordering, pagination, filtering, casing, locale, timezone, status code, error class, retry behavior, event name, or emitted fields
+- missing tolerance for added enum values, added event types, missing fields, reordered fields, unknown webhook events, old clients, old workers, or generated clients
+- schema, wire format, API, CLI, config, or persisted data changes without an expand, migrate, and contract phase
+- defaults, fallbacks, permissive parsing, or coercions that hide errors consumers previously relied on seeing
+
+## Negative Space Pass
+
+Before finalizing, ask what caller expectation or integration point is absent from the plan.
+
+- What existing caller depends on behavior that the plan does not mention?
+- What external contract changes even though the signature appears stable?
+- What previously invalid case becomes accepted, and who relies on rejection?
+- What previously accepted case becomes rejected, delayed, retried, transformed, redacted, reordered, or renamed?
+- What semantic behavior changes without a migration path, compatibility shim, deprecation phase, or version boundary?
+- What old data, old client, old worker, webhook, generated type, SDK, or background job still expects the previous shape?
+- What user visible behavior changes only through ordering, pagination, filtering, casing, timezone, status code, error text, or event ordering?
+- What handler, route, export, package entry, generated schema, CLI command, job, or DI provider must be added for the planned behavior to become reachable?
 
 ## Investigation Scope
 
@@ -36,7 +53,8 @@ The plan is your starting point, not your boundary. You have full repo access. U
 2. Enumerate every production surface the plan will create, modify, or rely on
 3. Trace the consumers, providers, and integration points for those surfaces
 4. Verify the plan accounts for all required file and wiring changes
-5. Report findings or say `NO PLAN ISSUES FOUND`
+5. Run the negative space pass against every contract and integration point.
+6. Report findings or say `NO PLAN ISSUES FOUND`
 
 ## Evidence Requirements
 

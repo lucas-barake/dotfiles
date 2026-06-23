@@ -20,6 +20,28 @@ Maximize recall inside the requested review scope. A downstream validator filter
 - **Missing config updates**: new features that need config entries, environment variables, or feature flags that weren't added
 - **Dependency conflicts**: new dependencies that conflict with existing ones, duplicate dependencies at different versions
 - **Import errors**: importing from paths that don't exist, circular imports introduced by the diff, importing internals that aren't exported
+- **Registration gaps**: handlers, routes, commands, jobs, providers, services, migrations, generated schemas, SDK types, exports, or package entry points present in code but not reachable in production wiring
+- **Rollout gaps**: schema, config, flag, dependency, or API changes that do not preserve old code and new code during rolling deploys and rollback
+- **Feature flag gaps**: missing default, rollout rule, owner, expiry, kill switch, safe off behavior, runtime visibility, or test coverage
+- **Dependency shape gaps**: peer ranges, engine requirements, lockfile changes, package exports, type resolution, bundler mode, module format, or generated client compatibility not updated
+- **Operational integration gaps**: canary criteria, rollback signals, migration observability, queue lag, domain correctness metrics, runbooks, or alerts required by the scoped change
+
+## Negative Space Pass
+
+Before finalizing, ask what integration, rollout, or rule obligation the scoped change requires but does not show directly.
+
+- Where is the migration, backfill, cleanup, generated file, or compatibility shim that this change requires?
+- Can old code run safely while the new schema, config, event shape, API response, or data format exists?
+- Does any writer produce a new format before all readers can consume it?
+- Are required columns, constraints, enum values, indexes, defaults, generated types, or package exports introduced in a way that breaks old writes or old reads?
+- Is a new handler present but not mounted, exported, registered, scheduled, wired into dependency injection, or included in generated manifests?
+- Did the change omit Helm, Terraform, Kubernetes, secrets, environment variables, queues, workers, cron jobs, cache config, or CI changes that the touched area normally requires?
+- Is a feature flag missing its default, rollout rule, owner, expiry, visibility, test coverage, or safe off behavior?
+- Does rollback still work after new data, cache entries, files, external state, webhook events, or messages have been written?
+- Does a dependency change require peer dependency, runtime, bundler, module export, package manager, lockfile, type resolution, or generated code updates?
+- Are old clients, SDKs, background jobs, replicas, search indexes, materialized views, CDNs, or mobile clients still expecting the old behavior?
+- Are alerts and canaries watching user symptoms and domain correctness, or only process health?
+- Are external API claims based on official docs or version matched source, not guessed fields, stale examples, or generic blog posts?
 
 ## Investigation Scope
 
@@ -39,16 +61,17 @@ The requested review scope is your boundary. You have full codebase access only 
 3. For every new scoped import: verify the imported path exists and the symbol is exported. Search the codebase to confirm.
 4. For every scoped export that changed or is under review: grep for consumers across the entire codebase. Will they break?
 5. For dependency changes in scope: check for version conflicts and peer dependency requirements
-6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test or check that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test, typecheck, lint, migration check, or import check that should fail because of the suspected issue. Prefer existing project commands and nearby test conventions. The test must assert observable behavior or a public contract, not restate the implementation.
-7. Red: run the narrowest relevant command and prove it fails for the suspected reason before touching production code. Try multiple reasonable test/check placements or harness approaches before giving up.
-8. Green: if the test/check is valid, apply the smallest production fix in place, then run the same command again and ensure it passes. Leave both the valid regression test/check and the fix in the worktree for the main agent to validate.
-9. If Green is still Red because the test/check or harness is wrong, revert the production fix, fix the test/check or harness, rerun it against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test/check and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
-10. If you cannot produce a valid failing regression test/check after multiple real attempts, remove probe test/check and fix edits before returning and report the exact code and commands tried.
-11. Classify each candidate:
+6. Run the negative space pass. Search directly connected manifests, migrations, generated files, package exports, route mounts, config, deployment files, feature flags, dependency metadata, and old data readers only when scoped code implies they matter.
+7. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test or check that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test, typecheck, lint, migration check, or import check that should fail because of the suspected issue. Prefer existing project commands and nearby test conventions. The test must assert observable behavior or a public contract, not restate the implementation.
+8. Red: run the narrowest relevant command and prove it fails for the suspected reason before touching production code. Try multiple reasonable test/check placements or harness approaches before giving up.
+9. Green: if the test/check is valid, apply the smallest production fix in place, then run the same command again and ensure it passes. Leave both the valid regression test/check and the fix in the worktree for the main agent to validate.
+10. If Green is still Red because the test/check or harness is wrong, revert the production fix, fix the test/check or harness, rerun it against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test/check and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
+11. If you cannot produce a valid failing regression test/check after multiple real attempts, remove probe test/check and fix edits before returning and report the exact code and commands tried.
+12. Classify each candidate:
    - `CONFIRMED ISSUE FIXED`: regression test/check failed before the fix, passes after the fix, and the regression test/check plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test/check, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test/check ran and did not reproduce the suspected bug
-12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
+13. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 

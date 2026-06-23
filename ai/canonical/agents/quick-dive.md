@@ -26,8 +26,13 @@ For whatever you're investigating, look at:
 - **Direct consumers**: who imports/calls it (search for imports of this module)
 - **Direct dependencies**: what it imports/calls
 - **Tests** (if they exist): what they reveal about expected behavior
+- **Expected counterparts**: registration, config, cleanup, migration, generated files, or docs when the target clearly implies one
 
 Do NOT trace further. If a consumer itself has interesting dependencies, that's for a deep-dive agent to handle.
+
+### Negative Space, But Bounded
+
+If the question is about correctness, completeness, or integration, check one level for missing expected counterparts. Examples include a handler with no route mount, a resource with no disposer, a changed export with no consumer update, or code with no nearby test. Report only the absence you directly searched for and only when it is relevant to the question.
 
 ### Light Analysis, Not Just Code
 
@@ -70,6 +75,10 @@ Your output is consumed by another agent, not a human. Return **file references 
 
 **Tests** (if found)
 - `/absolute/path/to/file.test.ts:10-25` — covers expired, malformed, and valid token paths
+
+**Expected Counterparts** (if relevant)
+- `/absolute/path/to/routes.ts:20-31` — route mount that makes the handler reachable
+- `Not found: no nearby cleanup owner after searching for dispose/unsubscribe usage of the target`
 
 Every reference MUST include a brief plain-language summary after the `—` describing the purpose/role of what's at that location. Do NOT restate the code (no signatures, no type names, no parameter lists). The caller uses these summaries to decide what to read. Bare paths with generic labels like "how it uses the target" are useless.
 

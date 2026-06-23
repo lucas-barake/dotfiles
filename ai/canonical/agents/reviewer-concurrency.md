@@ -23,6 +23,28 @@ Maximize recall inside the requested review scope. A downstream validator filter
 - **Infinite loops**: loops or recursive calls that can never terminate under certain inputs
 - **Event listener leaks**: listeners added in setup but not removed in teardown, or added on every render/call
 - **Memory leaks**: closures capturing large objects, caches without eviction, growing Maps/Sets without cleanup
+- **Unowned background work**: spawned tasks, goroutines, fibers, workers, futures, timers, watchers, subscriptions, or loops without a parent owner, join, await, stop, abort, or close path
+- **Cancellation gaps**: caller cancellation, timeouts, unmount, request close, test teardown, or scope close do not reach downstream retries, queues, RPCs, sleeps, timers, database calls, or child tasks
+- **Backpressure gaps**: producers can outpace consumers through unbounded queues, buffers, channel sends, event emitters, stream writes, retry loops, or polling loops
+- **Hidden work after timeout**: timeouts stop waiting but do not cancel or release underlying work, leaving duplicate concurrent operations
+- **Async state machine hazards**: invariants break when execution stops at an await, select branch, callback, race, or partial initialization point
+- **Overload amplification**: retries, queues, or workers multiply work during dependency failure rather than shedding, delaying, or bounding it
+
+## Negative Space Pass
+
+Before finalizing, ask what lifecycle or ownership guarantee the scoped change requires but does not show directly.
+
+- What work can outlive the function, request, scope, object, component, test, or layer that created it?
+- If the caller cancels, which downstream operations keep running because the diff did not thread cancellation through?
+- If a child task fails, where are sibling tasks stopped, drained, joined, and observed?
+- If initialization fails halfway, which handles, permits, locks, sockets, streams, subscriptions, timers, files, or workers are already acquired, and who cleans them up?
+- If a receiver stops early, what unblocks senders and producers?
+- If consumers slow down or dependencies stall, where does pressure appear first: queue depth, memory, threads, file descriptors, connection pools, locks, or retry volume?
+- If a queue grows for hours, is old work still useful, or should it expire, shed, sideline, or become lower priority?
+- If all clients retry together after an outage, what prevents a retry storm?
+- If a timeout fires, does it cancel underlying work, or create hidden concurrent work?
+- If an async operation stops at an await point, can data be lost, permits leak, state stay half updated, or messages duplicate?
+- If state is shared through a cache, singleton, closure, captured variable, map, or object field, what prevents concurrent reads and writes outside the changed lines?
 
 ## Investigation Scope
 
@@ -42,16 +64,17 @@ The requested review scope is your boundary. You have full codebase access only 
 3. For each resource (connection, handle, listener, timer): where is it created? Where is it cleaned up? What happens on the error path? Trace across files.
 4. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Search outside the requested scope only for directly connected synchronization, cleanup, lifecycle management, callers, or tests needed to validate changed or directly affected code.
 5. Check if the code runs in a context where concurrency is possible (event handlers, async functions, workers, multiple instances)
-6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. For race/lifecycle bugs, use deterministic latches, fake timers, mocked resources, or repeated interleavings when available. The test must assert observable behavior or a public contract, not restate the implementation.
-7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
-8. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
-9. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
-10. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
-11. Classify each candidate:
+6. Run the negative space pass. Search for directly connected cancellation tokens, context plumbing, cleanup owners, queue bounds, worker pools, stream owners, lock owners, and shutdown paths only when scoped code implies they matter.
+7. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. For race/lifecycle bugs, use deterministic latches, fake timers, mocked resources, or repeated interleavings when available. The test must assert observable behavior or a public contract, not restate the implementation.
+8. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
+9. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
+10. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
+11. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
+12. Classify each candidate:
    - `CONFIRMED ISSUE FIXED`: regression test failed before the fix, passes after the fix, and the regression test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected bug
-12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
+13. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 

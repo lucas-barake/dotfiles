@@ -20,6 +20,23 @@ Maximize recall inside the requested review scope. A downstream validator filter
 - **Breaking public interfaces**: exported functions, types, or constants that change in ways that break downstream code
 - **Side effect changes**: a function that used to be pure now has side effects (or vice versa), or side effects happen in a different order
 - **Semantic name drift**: a function whose name no longer matches what it does after the diff
+- **Observable behavior drift**: ordering, pagination, filtering, casing, locale, timezone, error class, status code, retry behavior, event name, or emitted fields change while the signature stays the same
+- **Consumer tolerance gaps**: callers, webhooks, SDKs, generated clients, serializers, background jobs, or old app versions cannot handle added enum values, added event types, missing fields, reordered fields, or new defaults
+- **Fallback and default traps**: new defaults, fallbacks, coercions, or permissive parsing hide errors that callers previously relied on seeing
+- **Compatibility phase gaps**: schema, wire format, API, CLI, config, or persisted data changes without an expand, migrate, and contract path
+
+## Negative Space Pass
+
+Before finalizing, ask what caller expectation the scoped change affects but does not show directly.
+
+- What existing caller depends on behavior that the diff did not mention?
+- What external contract changed even though the signature stayed the same?
+- What prior default, fallback, or implicit conversion now hides an error that callers should see?
+- What previously invalid case is now accepted, and who might rely on rejection?
+- What previously accepted case is now rejected, delayed, retried, transformed, redacted, reordered, or renamed?
+- What semantic behavior changed without a migration path, compatibility shim, deprecation phase, or version boundary?
+- What old data, old client, old worker, webhook, generated type, or SDK still expects the previous shape?
+- What user visible behavior changed only through ordering, pagination, filtering, casing, timezone, status code, error text, or event ordering?
 
 ## Investigation Scope
 
@@ -38,17 +55,18 @@ The requested review scope is your boundary. You have full codebase access only 
 2. **CRITICAL: grep for ALL callers** of every changed function. This is non-negotiable. Use `rg` to find every import and usage across the entire codebase.
 3. Read each caller to check if it still works correctly with the new behavior
 4. Check if the function is exported, but do not report hypothetical external breakage without a documented contract or concrete evidence
-5. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Read outside files only when they directly establish caller expectations for changed or directly affected code.
-6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. The test must assert observable behavior or a public contract, not restate the implementation.
-7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
-8. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
-9. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
-10. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
-11. Classify each candidate:
+5. Run the negative space pass. Search directly connected consumers, old data readers, generated schemas, API contracts, webhook handlers, CLI usage, and route registrations only when scoped behavior implies they matter.
+6. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Read outside files only when they directly establish caller expectations for changed or directly affected code.
+7. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. The test must assert observable behavior or a public contract, not restate the implementation.
+8. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
+9. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
+10. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
+11. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
+12. Classify each candidate:
    - `CONFIRMED ISSUE FIXED`: regression test failed before the fix, passes after the fix, and the regression test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected bug
-12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
+13. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 

@@ -18,6 +18,22 @@ Maximize recall. A downstream validator filters false positives. Be strict about
 - planned dependency changes that conflict with documented project constraints
 - missing branch, verification, or workflow steps that the repository explicitly requires
 - integration assumptions that contradict the repo's real file layout, exports, or conventions
+- missing generated files, manifests, route registrations, package exports, migrations, config, environment variables, feature flags, workers, cron jobs, queues, or deployment files required by the documented workflow
+- rollout or rollback steps missing where explicit rules or repository patterns require safe deploy order
+- dependency, runtime, peer, lockfile, bundler, module format, or type resolution updates omitted from the plan
+
+## Negative Space Pass
+
+Before finalizing, ask what documented rule or integration obligation is absent from the plan.
+
+- What rule file applies to the directories the plan touches, and did the plan account for it?
+- Where is the migration, backfill, generated file, manifest, route mount, export, config, environment variable, worker, or cron change required by the rule or local pattern?
+- Can old code run safely while the planned schema, config, event shape, API response, or data format exists?
+- Is a feature flag missing its default, rollout rule, owner, expiry, visibility, test coverage, or safe off behavior?
+- Does rollback still work after new data, cache entries, files, external state, webhook events, or messages have been written?
+- Does a dependency change require peer dependency, runtime, bundler, module export, package manager, lockfile, type resolution, or generated code updates?
+- Are external API claims backed by official docs or version matched source rather than guessed fields, stale examples, or generic blog posts?
+- Does the plan omit a verification command that repository rules explicitly require?
 
 ## Investigation Scope
 
@@ -33,7 +49,8 @@ The plan is your starting point, not your boundary. You have full repo access. U
 1. Read the repository rules thoroughly
 2. Read the plan target thoroughly
 3. Check the plan against the explicit rules and required integration surfaces
-4. Report findings or say `NO PLAN ISSUES FOUND`
+4. Run the negative space pass against every touched directory and integration surface.
+5. Report findings or say `NO PLAN ISSUES FOUND`
 
 ## Evidence Requirements
 

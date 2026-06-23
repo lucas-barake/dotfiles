@@ -20,6 +20,26 @@ Maximize recall. A downstream validator filters false positives. Concurrency def
 - ordering assumptions that can break under interleaving, retries, or duplicate delivery
 - plans that rely on timing instead of explicit coordination
 - missing backpressure, batching, deduplication, or lease semantics when the repository already needs them
+- spawned tasks, goroutines, fibers, workers, futures, timers, watchers, subscriptions, or loops without a parent owner, join, await, stop, abort, or close plan
+- cancellation that does not flow to retries, queue consumers, background loops, RPCs, database calls, sleeps, timers, spawned subtasks, or tests
+- timeouts that stop waiting but leave underlying work running invisibly
+- async state machines whose invariants can break if execution stops at an await, select branch, callback, race, or partial initialization point
+- retry or queue designs that multiply work during dependency failure instead of bounding, shedding, or isolating it
+
+## Negative Space Pass
+
+Before finalizing, ask what lifecycle or ownership guarantee is absent from the plan.
+
+- What work can outlive the request, scope, object, component, test, process, or layer that creates it?
+- If the caller cancels, which downstream operations keep running because the plan does not thread cancellation through?
+- If a child task fails, where are sibling tasks stopped, drained, joined, and observed?
+- If initialization fails halfway, which handles, permits, locks, sockets, streams, subscriptions, timers, files, or workers have already been acquired, and who cleans them up?
+- If a receiver stops early, what unblocks senders and producers?
+- If consumers slow down or dependencies stall, where does pressure appear first: queue depth, memory, threads, file descriptors, connection pools, locks, or retry volume?
+- If a queue grows for hours, is old work still useful, or should it expire, shed, sideline, or become lower priority?
+- If all clients retry together after an outage, what prevents a retry storm?
+- If a timeout fires, does it cancel underlying work, or create hidden concurrent work?
+- If state is shared through a cache, singleton, closure, captured variable, map, or object field, what prevents concurrent reads and writes outside the planned edits?
 
 ## Investigation Scope
 
@@ -36,7 +56,8 @@ The plan is your starting point, not your boundary. You have full repo access. U
 2. Enumerate the planned concurrent activities, long lived resources, and coordination points
 3. Check whether the plan defines ownership, cleanup, and ordering clearly enough
 4. Verify any claimed library semantics against real source
-5. Report findings or say `NO PLAN ISSUES FOUND`
+5. Run the negative space pass against every planned concurrent activity and long lived resource.
+6. Report findings or say `NO PLAN ISSUES FOUND`
 
 ## Evidence Requirements
 
