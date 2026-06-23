@@ -21,6 +21,28 @@ Maximize recall inside the requested review scope. A downstream validator filter
 - **Transaction boundaries**: multiple writes that should be atomic but aren't wrapped in a transaction — partial failure leaves inconsistent state
 - **Partial failure**: operations that modify state, then fail partway through, leaving half-updated data
 - **Null/undefined dereference**: accessing properties on values that could be null or undefined in error paths
+- **Idempotency gaps**: retried creates, updates, queue handlers, webhooks, or payments without stable idempotency keys, parameter matching, retention, and duplicate handling
+- **Lost updates**: read-modify-write paths without version checks, locks, atomic updates, serializable isolation, or conflict retries
+- **Foreign side effects**: database commits separated from publishes, acks, cache updates, file writes, email sends, or remote calls without an outbox, recovery point, or reconciliation
+- **Poison messages**: one malformed message or event can block a partition, hot loop a queue, distort age metrics, or be retried forever
+- **Schema and migration drift**: old clients, old workers, backfills, replicas, caches, or mixed deploys cannot read or write the new data shape safely
+- **Conversion loss**: precision, currency, timezone, enum, integer, unsigned, overflow, clipping, date parsing, null collapse, or database warning behavior changes stored meaning
+
+## Negative Space Pass
+
+Before finalizing, ask what failure or data lifecycle the scoped change implies but does not show directly.
+
+- What caller, worker, webhook, SDK, queue, or retry layer can retry this path even though the diff does not show retries?
+- What happens if the operation succeeds but the caller times out before receiving the response?
+- What happens if the process crashes after the database commit but before the publish, ack, cache update, file write, email, or remote call?
+- What happens if the remote side effect succeeds but local state is not recorded?
+- Can two concurrent requests read the same old value and overwrite each other?
+- Can a stale cache, replica, projection, or eventually consistent read drive a delete, payment, permission change, or overwrite?
+- Are old clients, workers, app versions, migrations, or backfills still writing fields changed by this scope?
+- Does a default change the meaning of existing null, missing, unknown, empty, or malformed values?
+- Does any database, ORM, bulk load, parser, serializer, or conversion warning get ignored?
+- Does ack or offset commit happen before all required durable side effects are complete?
+- Are rollback, compensation, cleanup, and reconciliation failures surfaced, or can they be swallowed by `finally`, callbacks, hooks, or batch loops?
 
 ## Investigation Scope
 
@@ -40,16 +62,17 @@ The requested review scope is your boundary. You have full codebase access only 
 3. For diff based reviews, changed hunks are the review surface. Read full scoped files only as context to understand those hunks. Search outside the requested scope only for directly connected middleware, wrappers, callers, callees, tests, or type contracts needed to validate changed or directly affected code.
 4. Trace data transformations across module boundaries: is any data silently lost during conversion, serialization, or mapping?
 5. Check transaction boundaries: if multiple writes happen, are they atomic?
-6. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. The test must assert observable behavior or a public contract, not restate the implementation.
-7. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
-8. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
-9. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
-10. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
-11. Classify each candidate:
+6. Run the negative space pass. Search for directly connected retry layers, queue consumers, migration files, old data readers, backfills, cache owners, outbox patterns, and reconciliation jobs only when scoped code implies they matter.
+7. For each candidate bug, use the Red Green Refactor TDD fix workflow. Before writing a regression test that depends on third party library or framework behavior, inspect installed package metadata for the official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`, and follow its test harness, composition, setup, and assertion patterns. This applies to any library. Write the smallest regression test that should fail because of the suspected bug. Prefer existing nearby test files and conventions. The test must assert observable behavior or a public contract, not restate the implementation.
+8. Red: run the narrowest relevant test command and prove the test fails for the suspected reason before touching production code. Try multiple reasonable test placements or harness approaches before giving up.
+9. Green: if the regression test is valid, apply the smallest production fix in place, then run the same test command again and ensure it passes. Leave both the valid regression test and the fix in the worktree for the main agent to validate.
+10. If Green is still Red because the test or harness is wrong, revert the production fix, fix the test or harness, rerun the test against the unfixed production code, ensure Red for the suspected reason again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, keep the test and iterate on the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks.
+11. If you cannot produce a valid failing regression test after multiple real attempts, remove probe test and fix edits before returning and report the exact code and commands tried.
+12. Classify each candidate:
    - `CONFIRMED ISSUE FIXED`: regression test failed before the fix, passes after the fix, and the regression test plus fix remain in the worktree
    - `UNCONFIRMED - HARNESS BLOCKED`: you wrote the exact test, tried multiple reasonable ways to run it, but the harness is too complex or blocked
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected bug
-12. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
+13. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
 ## Evidence Requirements
 

@@ -30,6 +30,21 @@ Be precise. Every suggestion must preserve the exact same observable behavior, e
 - **Lexical scope pollution**: variables declared further from their usage than necessary. If a variable is only used inside one branch, move it into that branch. If a variable is only used in one block, declare it there, not at the top of the function. If a variable is used once and the expression is readable, inline it. The goal is to keep each lexical scope free of names that don't belong to it
 - **Local dead code**: unreachable branches (code after an unconditional return/throw, impossible conditions), unused private methods, stale local variables that are assigned but never read, and leftover imports after a refactor. Grep for usages before reporting
 - **Boolean simplification**: `if (x) return true; else return false;` or `if (x) return true; return false;` should be `return x`. `!!value` where a boolean is already expected. `condition ? true : false` should be `condition`. Negated conditions that invert readability (`if (!x) { } else { doThing() }` should be `if (x) { doThing() }`). Duplicated branches where both sides of an if/else do the same thing
+- **Speculative local machinery**: local options, modes, callbacks, classes, factories, caches, or indirection added for future cases that have no current caller or invariant
+- **Wrong abstraction symptoms**: one helper handles multiple unrelated local cases through flags, sentinel values, nulls, empty objects, or ignored return values
+- **Leftover compatibility paths**: branches, parameters, comments, or tests kept after a refactor even though no local caller can reach them
+
+## Negative Space Pass
+
+Before finalizing, ask what local complexity remains because nobody looked for absence.
+
+- What branch, parameter, helper, option, callback, or fallback has no current caller or reachable input?
+- What local abstraction has exactly one real use and no boundary value?
+- What defensive check guards a case already guaranteed by the type, caller, parser, schema, or invariant?
+- What future mode, unused field, or stale compatibility path is adding reader cost without present behavior?
+- What simplification would be unsafe because it hides a real boundary, invariant, lifecycle, or error path?
+- What duplicate branch or boolean expression could be removed without changing any observable result?
+- What code is only present because deletion feels risky, and what grep or test evidence proves whether it is still needed?
 
 ## How You Work
 
@@ -39,7 +54,8 @@ Be precise. Every suggestion must preserve the exact same observable behavior, e
    - Read the nearest test file for the module (search for `*.test.*` or `*.spec.*` with the same base name). Understanding what tests assert helps you confirm behavior is preserved and avoids false positives
    - Check callers to ensure they don't depend on the current structure
    - Check if defensive code guards a real boundary (user input, external API, etc.)
-4. Only report simplifications where you are confident behavior is preserved
+4. Run the negative space pass and verify absence with callers, types, tests, or grep before reporting dead local machinery.
+5. Only report simplifications where you are confident behavior is preserved
 
 ## Evidence Requirements
 
