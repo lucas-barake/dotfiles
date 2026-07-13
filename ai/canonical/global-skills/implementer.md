@@ -78,7 +78,7 @@ After implementation and planned tests are complete, review the actual code befo
 
 After all implementation and tests are complete, spawn these agents **in parallel** with the full list of files you created or modified during implementation:
 
-1. **`code-simplifier`** — finds within-file simplifications: redundant variables, verbose control flow, unnecessary async/types, dead indirection, nested Pipeable calls, overengineered patterns, overly defensive code
+1. **`code-simplifier`**: finds verified reductions in total complexity across directly connected architecture, installed library capabilities, module boundaries, data flow, and local code. It proves every candidate in isolated executable repository snapshots before reporting it
 2. **`reuse-reviewer`** — finds cross-file issues: reimplemented utilities, duplicate helpers across files, pass-through wrappers, dead private helpers, redundant normalization layers
 3. A domain-specific reviewer when the stack clearly warrants it
 
@@ -86,18 +86,19 @@ After all implementation and tests are complete, spawn these agents **in paralle
 
 - The complete list of files created or modified (full paths)
 - A note that these files were just implemented from a plan
+- The task goal and plan path so the agent can recover the intended behavioral contract
 
 Wait for the agents to finish before doing your own simplification or reuse pass in the same scope.
 
-**When results come back**, validate each suggestion yourself:
+**When results come back**, validate each finding yourself:
 
 1. Read the code each agent flagged
-2. For each suggestion, verify that the change genuinely preserves behavior. Check callers, tests, and contracts
+2. For each finding, verify that the change genuinely preserves behavior. Check callers, tests, and contracts
 3. Apply changes that are clearly correct and beneficial
 4. Skip suggestions that would remove intentional guarantees, reduce clarity, or break contracts
 5. If you apply any changes, re-run linter, typechecker, and tests to confirm nothing broke
 
-Do not blindly apply all suggestions. Both agents maximize recall. Your job is precision.
+Do not blindly apply findings. Validate the reported proof against the current worktree before applying it. Your job is final precision.
 
 ### Step 8: Verify
 
