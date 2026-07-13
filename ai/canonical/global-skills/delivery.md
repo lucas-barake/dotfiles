@@ -302,10 +302,10 @@ Write the full result to `09-implementation-review.md`.
 
 Once the code is functionally correct:
 
-1. Spawn `code-simplifier` and `reuse-reviewer` in parallel on the complete modified file list
+1. Spawn `code-simplifier` and `reuse-reviewer` in parallel with the task goal, current diff boundary, complete modified file list, and relevant task or plan artifact paths
 2. Add any domain specific reviewer agent that materially matches the stack under review
 3. Wait for the agents to finish before doing your own simplification or reuse pass in the same scope
-4. Validate each suggestion yourself against the actual code and contracts
+4. Validate each finding and its reported snapshot proof yourself against the actual code and contracts
 5. Apply only changes that clearly preserve or improve behavior and clarity
 6. Rerun the relevant quality gates after any accepted simplification
 
