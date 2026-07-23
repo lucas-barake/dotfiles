@@ -6,6 +6,16 @@
 - Also read adjacent rule files that are clearly task specific or directory specific when you enter that area of the codebase.
 - Treat project rule files as higher priority than your defaults.
 
+## Task Ledger
+
+- Maintain a `LEDGER.md` file at the root of the current git worktree for any task.
+- Keep it locally git ignored. If it is not already ignored, add `LEDGER.md` to the repository's `info/exclude` file, located via `git rev-parse --git-common-dir`. Never commit it and never add it to the shared `.gitignore`.
+- Before starting anything, write the preliminary tasks as markdown checkboxes. Check items off as they complete. Add new items as new work appears along the way.
+- Keep a top level `# Current State` section that states where the work stands right now: what is done, what is in progress, and the exact next action.
+- Beyond the checklist, record what the task needs to be recoverable. Generally aim for design decisions, invariants, checkpoints, exact commands, and source notes pointing to the files and docs directly relevant to the work. Adapt the sections to the task.
+- Keep the ledger updated as you work so a fresh agent, or your own context after compaction, can rebuild the goal and the full state of the work from the ledger alone.
+- When starting new unrelated work, clear the ledger and start it over for the new task.
+
 ## Code Intent
 
 - Before changing code, understand the intent, inputs, outputs, error cases, invariants, and caller expectations of the code you are touching.

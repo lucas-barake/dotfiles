@@ -1,6 +1,6 @@
 ---
 name: delivery
-description: Autonomous end-to-end implementation mode. Investigates the system, writes agent-oriented plan artifacts, implements the work, reviews it, commits it, and opens a draft PR. Triggers on "ship", "implement end to end", "take it from task to PR", "do it all".
+description: Autonomous end-to-end implementation mode. Investigates the system, maintains a comprehensive task ledger, implements the work, reviews it, commits it, and opens a draft PR. Triggers on "ship", "implement end to end", "take it from task to PR", "do it all".
 ---
 
 # Delivery Mode
@@ -20,71 +20,49 @@ Only interrupt if one of these is true:
 - Verify library and framework APIs against source code, tests, and exact signatures. Never trust memory
 - For non-trivial work, gather external references from reputable sources and clone the best open source examples into `~/src/oss/`
 - Prefer mature open source application code and official library sources over low trust tutorials or generated snippets
-- Treat the plan as an execution artifact, not a brainstorm
+- Treat the ledger as an execution artifact, not a brainstorm
 - Use TDD for behavior modifying work and regression fixes
 - Run quality gates continuously, not only at the end
 - Reviewer findings are hypotheses until you validate them yourself
-- Keep one source of truth for the task under `.context/implementation-plans/<task-slug>/`
+- Keep one source of truth for the task in `LEDGER.md` at the worktree root
 
-## Task Artifact Directory
+## Task Ledger
 
-Write all delivery artifacts under `./.context/implementation-plans/<task-slug>/`. Create and maintain these files:
+`LEDGER.md` at the worktree root is the single source of truth for the task. There are no separate plan or research files. Keep it locally git ignored per the base rules and never commit it.
 
-1. `00-task.md`
+The ledger must be comprehensive. Another agent picking it up cold, or your own context after compaction, must be able to rebuild the full picture from the ledger alone: the goal, what is true about the system, what was decided and why, what is done, and what remains. Every claim in the ledger must carry its source. Use exact file paths with line references, exact URLs, and exact commands.
+
+Maintain these top level sections:
+
+1. `# Current State`
+   - always the first section
+   - what is done, what is in progress, and the exact next action
+   - base branch, execution branch, and any blocking issues
+2. `# Task`
    - normalized task statement
    - inferred acceptance criteria
-   - chosen base branch and current branch
-   - protected branch status
-   - task slug
-2. `01-current-state.md`
-   - relevant surfaces, modules, routes, commands, jobs, or entry points
-   - current architecture and data flow
-   - partial implementations already on the branch
-   - repository rules and constraints
-3. `02-internal-research.md`
-   - reusable abstractions
-   - nearby patterns worth following
-   - missing capabilities
-   - refactors that may be required
-4. `03-library-research.md`
-   - exact dependency APIs from source code and tests
-   - required setup and initialization patterns
-   - anti-patterns and version specific gotchas
-   - exact test utilities and consumer testing patterns
-5. `04-external-references.md`
-   - reputable URLs
-   - cloned reference repositories and local paths
-   - extracted engineering principles and patterns
-   - dependency adoption versus code porting analysis
-6. `05-design-prd.md`
-   - requirements
-   - invariants
-   - constraints
-   - decisions
-   - rejected alternatives
-   - refactor boundaries
-7. `06-test-plan.md`
-   - test matrix
+3. `# Checklist`
+   - ordered execution checklist as markdown checkboxes
+   - every item marked `[TDD]` or `[Additive]` with exact file paths and symbols
+   - check items off the moment they complete and add new items as new work appears
+4. `# Source Notes`
+   - current system behavior with exact file paths and key constraints
+   - reusable code, nearby patterns, and missing capabilities
+   - library APIs verified from version matched source, with the checkout paths under `~/src/oss/.versions/`
+   - external references with URLs, clone paths, and extracted principles
+   - direct pointers to the docs, rule files, and skills relevant to this work
+5. `# Decisions`
+   - requirements, invariants, and constraints
+   - chosen approach and rejected alternatives with reasons
+6. `# Test Plan`
+   - test files and named test cases with purpose
    - TDD versus Additive classification
-   - exact test cases
-   - deterministic setup strategy
-   - verification commands
-8. `07-implementation-plan.md`
-   - master plan and checklist
-   - source of truth for execution progress
-   - references into the supporting research files
-9. `08-plan-review.md`
-   - plan reviewer findings
-   - validation notes
-   - accepted corrections
-   - rejected false positives
-10. `09-implementation-review.md`
-    - code review findings
-    - regression test notes
-    - simplification decisions
-    - final verification record
+   - deterministic setup strategy and exact verification commands
+7. `# Review Log`
+   - plan and implementation review findings
+   - validation results, accepted corrections, and rejected false positives
 
-`07-implementation-plan.md` must include these major sections so another agent can resume from it if needed: Skills, Summary, Current State, Implementation Checklist, Test Plan, Verification, References.
+Adapt the sections to the task when it clearly warrants it, but keep `# Current State` first and keep checkpoints, invariants, decisions, and exact commands recorded somewhere in the ledger. Update the ledger continuously so it never drifts from reality. If starting new unrelated work in the same worktree, clear the ledger and start it over.
 
 ## Execution
 
@@ -98,7 +76,7 @@ Before spawning agents:
 2. If no upstream answer exists, prefer the remote default branch, then `main`, `master`, `develop`, `development`
 3. Run branch state and diff checks to understand what already exists
 4. Search for partial implementations, experiments, and existing fixes already on the branch
-5. Normalize the user's task into a precise scope and write `00-task.md`
+5. Create `LEDGER.md` at the worktree root, ensure it is locally git ignored per the base rules, and write the `# Current State` and `# Task` sections plus a preliminary `# Checklist`. If the ledger already holds unrelated prior work, clear it first
 
 If investigation shows the task is already complete, or no code changes are necessary, stop and report that.
 
@@ -117,7 +95,7 @@ Every spawned agent prompt must be highly specific and self contained. Include t
 
 After spawning investigation agents, wait for them to finish before doing your own investigation in the same scope. Do not duplicate their work while they run. Use that time only for coordination, handling failed agents, and preserving the task scope. Synthesize and validate once their results return.
 
-The goal is to understand how the system is actually built, not just where the requested change appears. Before designing code, be able to state the intent, inputs, outputs, invariants, error cases, domain expectations, and caller contracts of the code you will touch. Read surrounding implementation, relevant callers and callees, types or schemas, configuration, and existing domain tests. Capture the result in `01-current-state.md` with exact file paths and key constraints.
+The goal is to understand how the system is actually built, not just where the requested change appears. Before designing code, be able to state the intent, inputs, outputs, invariants, error cases, domain expectations, and caller contracts of the code you will touch. Read surrounding implementation, relevant callers and callees, types or schemas, configuration, and existing domain tests. Capture the result in the ledger's `# Source Notes` with exact file paths and key constraints.
 
 ### Step 3: Audit reuse, gaps, and refactor needs
 
@@ -129,7 +107,7 @@ Only after the structural agents return:
 4. Decide whether the right move is to extend the system with that capability instead of working around the gap
 5. If a refactor is required, bound it tightly and record the safety constraints
 
-Write the result to `02-internal-research.md`.
+Write the result to the ledger's `# Source Notes`.
 
 ### Step 4: Investigate libraries and frameworks from source
 
@@ -143,7 +121,7 @@ If the task touches any library or framework behavior, investigate it before des
 6. Prefer source code and test files over docs. Use docs only as a secondary source
 7. If behavior remains uncertain, write temporary verification code, run it, record the answer, and delete the temporary artifact immediately
 
-Record the exact findings in `03-library-research.md`. This file must include the real APIs you will rely on, expected inputs and outputs, errors and edge cases, lifecycle or setup constraints, the real testing pattern, and anything that will not work.
+Record the exact findings in the ledger's `# Source Notes`. Include the real APIs you will rely on, expected inputs and outputs, errors and edge cases, lifecycle or setup constraints, the real testing pattern, and anything that will not work.
 
 ### Step 5: Investigate external references
 
@@ -156,7 +134,7 @@ Default to doing this for any task that is not obviously tiny and local.
 5. Spawn agents on the cloned repositories to study how they solve the relevant capability, how they test it, what architecture they use, and what tradeoffs they chose
 6. Extract principles, not cargo cult code. The goal is to translate sound patterns into the existing system and stack
 
-`04-external-references.md` must capture:
+The ledger's `# Source Notes` must capture:
 
 - the selected URLs
 - the cloned repository paths
@@ -174,22 +152,22 @@ Based on the internal and external research, decide what approach is actually co
 4. Prefer smaller safe refactors first. If none produce a correct and maintainable result, plan the larger refactor with tests guarding behavior
 5. Never conclude that the task is impossible merely because the most obvious module does not support it. Investigate alternate modules, different library entry points, or a better architecture first
 
-Write the decisions, constraints, invariants, and rejected alternatives to `05-design-prd.md`.
+Write the decisions, constraints, invariants, and rejected alternatives to the ledger's `# Decisions` section.
 
 ### Step 7: Write the executable plan
 
-Produce `06-test-plan.md` and `07-implementation-plan.md` only after the research is complete.
+Finalize the ledger's `# Checklist` and `# Test Plan` sections only after the research is complete.
 
-Requirements for `07-implementation-plan.md`:
+Requirements for the `# Checklist`:
 
 - every checklist item is explicit and unambiguous
 - every checklist item is marked `[TDD]` or `[Additive]`
 - every item has exact file paths and exact functions, modules, commands, or symbols to touch
-- every non-trivial step points to a concrete reference in the research files
-- the plan distinguishes modified behavior from net new additive work
+- every non-trivial step points to a concrete reference in `# Source Notes`
+- the checklist distinguishes modified behavior from net new additive work
 - the checklist is ordered so the implementation can proceed without making new design decisions
 
-Requirements for `06-test-plan.md`:
+Requirements for the `# Test Plan`:
 
 - specify every test file that will be created or updated
 - specify every test case by name and purpose
@@ -204,7 +182,7 @@ Requirements for `06-test-plan.md`:
 - do not test third party behavior unless the repository adds meaningful integration logic above it
 - for bug fixes and behavior-changing findings, add regression tests that fail before the fix and pass after it
 
-### Step 8: Review the plan with plan-specific reviewers
+### Step 8: Review the ledger plan with plan-specific reviewers
 
 Do not trust the first draft of the plan.
 
@@ -224,8 +202,8 @@ Conditionally include these reviewers when the task warrants them:
 
 Spawn them in parallel with:
 
-- the plan target path
-- the task goal from `00-task.md`
+- the ledger path
+- the task goal from the ledger's `# Task` section
 - the relevant rule files
 - the cloned reference roots and library roots they may need
 
@@ -238,8 +216,8 @@ After they return:
 1. Deduplicate overlapping findings
 2. Validate every finding yourself against the repo, the libraries, and the references
 3. For uncertain claims, spawn narrow follow up agents against the specific source of truth
-4. Revise the research files and the implementation plan until no valid gaps remain
-5. Write the full review log to `08-plan-review.md`
+4. Revise the ledger until no valid gaps remain
+5. Write the full review log to the ledger's `# Review Log`
 
 Do not proceed to code until the plan is coherent, feasible, and fully sourced.
 
@@ -249,19 +227,19 @@ Before editing code, ensure you are not working on a protected or shared branch.
 
 1. If the current branch is protected or shared, create a feature branch from the current HEAD using `delivery/<task-slug>`
 2. If the current branch is already dedicated to the task, keep it
-3. Record the chosen branch in `00-task.md`
+3. Record the chosen branch in the ledger's `# Current State`
 
 ### Step 10: Load execution context
 
 Before writing a single line of production or test code:
 
-1. Read every skill listed in the plan's Skills section from `./.context/skills/`
-2. Read every file referenced in `07-implementation-plan.md`, `06-test-plan.md`, and the research files
-3. Recheck the current repo state. If the referenced files have drifted materially since planning, update the plan first
+1. Read every skill referenced in the ledger's `# Source Notes` from `./.context/skills/`
+2. Read every file referenced in the ledger's `# Checklist`, `# Test Plan`, and `# Source Notes`
+3. Recheck the current repo state. If the referenced files have drifted materially since planning, update the ledger first
 
 ### Step 11: Implement the plan
 
-Work through the master checklist in order.
+Work through the ledger's `# Checklist` in order.
 
 For `[TDD]` items, follow Red Green Refactor:
 
@@ -279,8 +257,8 @@ For `[Additive]` items:
 For all items:
 
 - after every meaningful file change, run the smallest relevant lint, typecheck, test, or build command before moving on
-- mark each checklist item complete in `07-implementation-plan.md` as soon as it is done
-- update the research or plan artifacts if reality changes
+- check each checklist item off in the ledger as soon as it is done and add new items as new work appears
+- keep the ledger's `# Current State` and other sections updated if reality changes
 
 ### Step 12: Run a post-implementation deep review
 
@@ -296,13 +274,13 @@ After the implementation and planned tests are complete, review the actual code 
 8. Treat high-confidence findings as only those reproduced by a failing regression test. If the regression test is correct and does not fail, treat the finding as a false positive and move on
 9. Fix valid findings and rerun the relevant checks
 
-Write the full result to `09-implementation-review.md`.
+Write the full result to the ledger's `# Review Log`.
 
 ### Step 13: Run simplification and reuse passes
 
 Once the code is functionally correct:
 
-1. Spawn `code-simplifier` and `reuse-reviewer` in parallel with the task goal, current diff boundary, complete modified file list, and relevant task or plan artifact paths
+1. Spawn `code-simplifier` and `reuse-reviewer` in parallel with the task goal, current diff boundary, complete modified file list, and the ledger path
 2. Add any domain specific reviewer agent that materially matches the stack under review
 3. Wait for the agents to finish before doing your own simplification or reuse pass in the same scope
 4. Validate each finding and its reported snapshot proof yourself against the actual code and contracts
@@ -315,8 +293,8 @@ Before committing:
 
 1. Run the full relevant test suite
 2. Run lint, typecheck, and build commands where they exist
-3. Perform any manual verification steps listed in the plan
-4. Ensure every checklist item is complete and every artifact reflects the final truth
+3. Perform any manual verification steps listed in the ledger
+4. Ensure every checklist item is checked off and the ledger reflects the final truth, with `# Current State` marking the work complete
 
 If anything fails, fix it before moving on.
 
