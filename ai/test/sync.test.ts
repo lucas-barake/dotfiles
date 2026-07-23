@@ -303,11 +303,28 @@ describe("syncTarget", () => {
       expect(written.get("/out/skills/ship/SKILL.md")).toContain("# Test Skill")
     }))
 
+  it.effect("writes global instructions to CLAUDE.md for claude", () =>
+    Effect.gen(function*() {
+      const instructions = `# Base Rules
+
+Use the canonical instructions.
+`
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/instructions.md": instructions
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "claude").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(written.get("/out/CLAUDE.md")).toBe(instructions)
+    }))
+
   it.effect("syncs agent files for opencode", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/agents/deep-dive.md": sampleAgent,
-        "/src/global-skills/ship.md": sampleSkill
+        "/src/global-skills/ship.md": sampleSkill,
+        "/src/instructions.md": "# Base Rules\n"
       }, ["/out"])
 
       yield* syncTarget("/src", "/out", "opencode").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
@@ -317,6 +334,8 @@ describe("syncTarget", () => {
       expect(agent).not.toMatch(/^name:/m)
       expect(agent).toContain("bash: false")
       expect(written.get("/out/skills/ship/SKILL.md")).not.toContain("model:")
+      expect(written.has("/out/CLAUDE.md")).toBe(false)
+      expect(written.has("/out/AGENTS.md")).toBe(false)
     }))
 
   it.effect("syncs codex agent files and config entries", () =>
