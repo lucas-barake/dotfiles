@@ -192,7 +192,7 @@ const syncProviderSkills = (
     )
   })
 
-const syncCodexInstructions = (sourceDir: string, targetDir: string) =>
+const syncInstructions = (sourceDir: string, targetDir: string, fileName: string) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const p = yield* Path.Path
@@ -200,7 +200,7 @@ const syncCodexInstructions = (sourceDir: string, targetDir: string) =>
 
     if (!(yield* fs.exists(sourcePath))) return
 
-    yield* fs.copyFile(sourcePath, p.join(targetDir, "AGENTS.md"))
+    yield* fs.copyFile(sourcePath, p.join(targetDir, fileName))
   })
 
 const mergeCodexConfig = (targetDir: string, agents: Array<{ name: string; description: string }>) =>
@@ -321,7 +321,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     if (target === "codex") {
       yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
       yield* syncProviderSkills(sourceDir, targetDir, target, modelMap)
-      yield* syncCodexInstructions(sourceDir, targetDir)
+      yield* syncInstructions(sourceDir, targetDir, "AGENTS.md")
       const agentEntries: Array<{ name: string; description: string }> = []
 
       yield* Effect.forEach(
@@ -352,6 +352,9 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
       { concurrency: "unbounded" }
     )
     yield* syncProviderSkills(sourceDir, targetDir, target, modelMap)
+    if (target === "claude") {
+      yield* syncInstructions(sourceDir, targetDir, "CLAUDE.md")
+    }
 
     return false
   })
@@ -431,11 +434,11 @@ const global = Command.make(
         const skipped = yield* syncTarget(`${home}/canonical`, targetPaths[currentTarget], currentTarget, modelMap)
         yield* Console.log(skipped ? `Skipped ${currentTarget} (directory not found)` : `Synced ${currentTarget} agents`)
         if (
-          currentTarget === "codex" &&
+          (currentTarget === "codex" || currentTarget === "claude") &&
           !skipped &&
           (yield* fs.exists(p.join(home, "canonical", "instructions.md")))
         ) {
-          yield* Console.log("Synced codex instructions")
+          yield* Console.log(`Synced ${currentTarget} instructions`)
         }
         if (currentTarget !== "codex") {
           const configSkipped = yield* syncConfig(`${home}/canonical`, targetPaths[currentTarget], currentTarget)
