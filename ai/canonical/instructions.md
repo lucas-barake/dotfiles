@@ -69,6 +69,7 @@
 ## TDD Fix Workflow
 
 - Use Red Green Refactor for bug fixes and validated reviewer findings.
+- This requirement applies only to that scope. Do not force test first ordering on other work. For other work, write the planned tests with the implementation.
 - Red: write the regression test first and run the narrowest relevant command to prove it fails for the expected reason before changing production code.
 - Before writing a regression test that depends on a third party library, framework, runtime, or integration, inspect the installed package metadata for its official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`. Use the library's own tests to learn the correct harness, composition, setup, and assertions. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory in the version matched official Effect repo first.
 - Green: apply the smallest fix, rerun the same command, and prove the test now passes.
