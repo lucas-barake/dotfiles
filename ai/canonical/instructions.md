@@ -6,6 +6,16 @@
 - Also read adjacent rule files that are clearly task specific or directory specific when you enter that area of the codebase.
 - Treat project rule files as higher priority than your defaults.
 
+## Task Ledger
+
+- Maintain a `LEDGER.md` file at the root of the current git worktree for any task.
+- Keep it locally git ignored. If it is not already ignored, add `LEDGER.md` to the repository's `info/exclude` file, located via `git rev-parse --git-common-dir`. Never commit it and never add it to the shared `.gitignore`.
+- Before starting anything, write the preliminary tasks as markdown checkboxes. Check items off as they complete. Add new items as new work appears along the way.
+- Keep a top level `# Current State` section that states where the work stands right now: what is done, what is in progress, and the exact next action.
+- Beyond the checklist, record what the task needs to be recoverable. Generally aim for design decisions, invariants, checkpoints, exact commands, and source notes pointing to the files and docs directly relevant to the work. Adapt the sections to the task.
+- Keep the ledger updated as you work so a fresh agent, or your own context after compaction, can rebuild the goal and the full state of the work from the ledger alone.
+- When starting new unrelated work, clear the ledger and start it over for the new task.
+
 ## Code Intent
 
 - Before changing code, understand the intent, inputs, outputs, error cases, invariants, and caller expectations of the code you are touching.
@@ -37,6 +47,7 @@
 - Keep each agent's mission pure. A logic reviewer should not receive security suspicions unless they affect logic. A test reviewer should not receive implementation theories unless needed to assess coverage. An Effect reviewer should receive Effect-specific context, imports, and expected behavior, not unrelated product or style concerns.
 - When routing user feedback to agents, rewrite it into the narrow form relevant to that agent. If feedback is not relevant to that agent's purpose, omit it. Do not include ambiguous "just in case" context that can poison the agent's goal.
 - Prefer several narrow agents with precise missions over one broad agent with an open ended mission.
+- Let spawned agents modify the worktree. Do not prohibit file edits in agent prompts and do not tell agents to stay read only. Agents must validate suspicions with real execution: write the test, prove it fails, apply the fix, prove it passes. A read only constraint blocks that validation.
 - Use `fast-lookup` for unknown signatures, exports, return shapes, and exact API questions.
 - Do not use `fast-lookup` when you already know the exact file path or name and can read the file directly.
 - Use `quick-dive` for nearby structure and immediate codebase context.
@@ -59,6 +70,7 @@
 ## TDD Fix Workflow
 
 - Use Red Green Refactor for bug fixes and validated reviewer findings.
+- This requirement applies only to that scope. Do not force test first ordering on other work. For other work, write the planned tests with the implementation.
 - Red: write the regression test first and run the narrowest relevant command to prove it fails for the expected reason before changing production code.
 - Before writing a regression test that depends on a third party library, framework, runtime, or integration, inspect the installed package metadata for its official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`. Use the library's own tests to learn the correct harness, composition, setup, and assertions. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory in the version matched official Effect repo first.
 - Green: apply the smallest fix, rerun the same command, and prove the test now passes.
