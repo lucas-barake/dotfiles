@@ -47,6 +47,7 @@
 - Keep each agent's mission pure. A logic reviewer should not receive security suspicions unless they affect logic. A test reviewer should not receive implementation theories unless needed to assess coverage. An Effect reviewer should receive Effect-specific context, imports, and expected behavior, not unrelated product or style concerns.
 - When routing user feedback to agents, rewrite it into the narrow form relevant to that agent. If feedback is not relevant to that agent's purpose, omit it. Do not include ambiguous "just in case" context that can poison the agent's goal.
 - Prefer several narrow agents with precise missions over one broad agent with an open ended mission.
+- Let spawned agents modify the worktree. Do not prohibit file edits in agent prompts and do not tell agents to stay read only. Agents must validate suspicions with real execution: write the test, prove it fails, apply the fix, prove it passes. A read only constraint blocks that validation.
 - Use `fast-lookup` for unknown signatures, exports, return shapes, and exact API questions.
 - Do not use `fast-lookup` when you already know the exact file path or name and can read the file directly.
 - Use `quick-dive` for nearby structure and immediate codebase context.
