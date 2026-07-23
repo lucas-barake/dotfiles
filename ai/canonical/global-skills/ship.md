@@ -67,6 +67,8 @@ Adapt the sections to the task when it clearly warrants it, but keep `# Current 
 
 Follow these steps in order.
 
+Investigation is the highest leverage phase. You work through pattern recognition, and the quality of your patterns is set by the quality of the sources you studied. Deep reading of real library source, mature open source systems, and rigorous references is what produces correct invariants and first principles reasoning. Shallow investigation produces plausible code built on wrong assumptions. Spend the effort here.
+
 ### Step 1: Establish baseline and scope
 
 Before spawning agents:
@@ -127,8 +129,8 @@ Record the exact findings in the ledger's `# Source Notes`. Include the real API
 Default to doing this for any task that is not obviously tiny and local.
 
 1. Use the `web-search` agent to find high trust references
-2. Prioritize official documentation, maintained open source libraries, mature open source application code, and engineering writeups from established teams
-3. Ignore low trust sources, thin tutorials, and examples that are not clearly battle tested
+2. Be rigorous about source quality. Accept academic papers, specifications and standards, official documentation, maintained open source libraries, mature open source application code, engineering writeups from established teams, and posts from identifiable engineers with a real track record in the domain
+3. Filter out low value content aggressively. Reject SEO blog posts, content farms, listicles, thin tutorials, unattributed posts, and examples that are not clearly battle tested. A source with no identifiable author or no evidence behind its claims does not enter the ledger
 4. Clone the strongest open source references into `~/src/oss/` if they are not already present
 5. Spawn agents on the cloned repositories to study how they solve the relevant capability, how they test it, what architecture they use, and what tradeoffs they chose
 6. Extract principles, not cargo cult code. The goal is to translate sound patterns into the existing system and stack
