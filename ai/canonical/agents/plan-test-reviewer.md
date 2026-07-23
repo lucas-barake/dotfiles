@@ -59,7 +59,7 @@ The plan is your starting point, not your boundary. You have full repo access. U
 1. Read the plan target thoroughly
 2. Enumerate every behavioral path, branch, and failure mode the plan intends to add or modify
 3. Map each one to a specific planned test case
-4. Check the TDD versus Additive ordering and confirm the test sequence is correct
+4. Check that planned bug fixes and validated reviewer findings order the regression test before the fix, and that other work does not force test first ordering
 5. Check for low value, redundant, non-deterministic, or implementation coupled planned tests
 6. Check that every planned test uses production composition or a real shared harness rather than a parallel mimic of production wiring
 7. Check that every planned third party library or framework test follows the version matched official repository and package directory test patterns from `~/src/oss/.versions/`, not memory, generic examples, or the ambient `~/src/oss/<repo>` checkout

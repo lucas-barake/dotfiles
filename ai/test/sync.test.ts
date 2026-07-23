@@ -251,21 +251,21 @@ describe("syncTarget", () => {
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/agents/deep-dive.md": sampleAgent,
-        "/src/global-skills/planning.md": sampleSkill
+        "/src/global-skills/ship.md": sampleSkill
       }, ["/out"])
 
       const skipped = yield* syncTarget("/src", "/out", "claude").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(skipped).toBe(false)
       expect(written.get("/out/agents/deep-dive.md")).toContain("name: test-agent")
-      expect(written.get("/out/skills/planning/SKILL.md")).toContain("model: claude-sonnet-4-20250514")
+      expect(written.get("/out/skills/ship/SKILL.md")).toContain("model: claude-sonnet-4-20250514")
     }))
 
   it.effect("applies model remapping during agent sync", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/agents/a.md": sampleAgent,
-        "/src/global-skills/planning.md": sampleSkill
+        "/src/global-skills/ship.md": sampleSkill
       }, ["/out"])
 
       yield* syncTarget("/src", "/out", "claude", {
@@ -276,7 +276,7 @@ describe("syncTarget", () => {
       )
 
       expect(written.get("/out/agents/a.md")).toContain("model: bedrock-haiku")
-      expect(written.get("/out/skills/planning/SKILL.md")).toContain("model: bedrock-sonnet")
+      expect(written.get("/out/skills/ship/SKILL.md")).toContain("model: bedrock-sonnet")
     }))
 
   it.effect("skips target when target directory does not exist", () =>
@@ -294,20 +294,20 @@ describe("syncTarget", () => {
   it.effect("syncs global skills even when there are no agents", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/global-skills/planning.md": sampleSkill
+        "/src/global-skills/ship.md": sampleSkill
       }, ["/out"])
 
       const skipped = yield* syncTarget("/src", "/out", "claude").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(skipped).toBe(false)
-      expect(written.get("/out/skills/planning/SKILL.md")).toContain("# Test Skill")
+      expect(written.get("/out/skills/ship/SKILL.md")).toContain("# Test Skill")
     }))
 
   it.effect("syncs agent files for opencode", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/agents/deep-dive.md": sampleAgent,
-        "/src/global-skills/planning.md": sampleSkill
+        "/src/global-skills/ship.md": sampleSkill
       }, ["/out"])
 
       yield* syncTarget("/src", "/out", "opencode").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
@@ -316,7 +316,7 @@ describe("syncTarget", () => {
       expect(agent).toContain("mode: subagent")
       expect(agent).not.toMatch(/^name:/m)
       expect(agent).toContain("bash: false")
-      expect(written.get("/out/skills/planning/SKILL.md")).not.toContain("model:")
+      expect(written.get("/out/skills/ship/SKILL.md")).not.toContain("model:")
     }))
 
   it.effect("syncs codex agent files and config entries", () =>
@@ -327,7 +327,7 @@ Use the canonical Codex instructions.
 `
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/agents/deep-dive.md": sampleAgent,
-        "/src/global-skills/planning.md": sampleSkill,
+        "/src/global-skills/ship.md": sampleSkill,
         "/src/instructions.md": instructions
       }, ["/out"])
 
@@ -336,7 +336,7 @@ Use the canonical Codex instructions.
       expect(written.get("/out/agents/deep-dive.toml")).toContain("developer_instructions")
       expect(written.get("/out/config.toml")).toContain("[agents.deep-dive]")
       expect(written.get("/out/AGENTS.md")).toBe(instructions)
-      expect(written.get("/out/skills/planning/SKILL.md")).not.toContain("model:")
+      expect(written.get("/out/skills/ship/SKILL.md")).not.toContain("model:")
     }))
 })
 

@@ -1,9 +1,9 @@
 ---
-name: delivery
+name: ship
 description: Autonomous end-to-end implementation mode. Investigates the system, maintains a comprehensive task ledger, implements the work, reviews it, commits it, and opens a draft PR. Triggers on "ship", "implement end to end", "take it from task to PR", "do it all".
 ---
 
-# Delivery Mode
+# Ship Mode
 
 You own the task end to end. Investigate, plan, implement, review, verify, and ship. Do not stop after producing a plan. Do not ask the user for intermediate direction once execution starts.
 
@@ -21,7 +21,7 @@ Only interrupt if one of these is true:
 - For non-trivial work, gather external references from reputable sources and clone the best open source examples into `~/src/oss/`
 - Prefer mature open source application code and official library sources over low trust tutorials or generated snippets
 - Treat the ledger as an execution artifact, not a brainstorm
-- Use TDD for behavior modifying work and regression fixes
+- Use TDD Red Green Refactor for bug fixes and validated reviewer findings. Other work adds its planned tests with the implementation
 - Run quality gates continuously, not only at the end
 - Reviewer findings are hypotheses until you validate them yourself
 - Keep one source of truth for the task in `LEDGER.md` at the worktree root
@@ -43,7 +43,7 @@ Maintain these top level sections:
    - inferred acceptance criteria
 3. `# Checklist`
    - ordered execution checklist as markdown checkboxes
-   - every item marked `[TDD]` or `[Additive]` with exact file paths and symbols
+   - every item has exact file paths and symbols
    - check items off the moment they complete and add new items as new work appears
 4. `# Source Notes`
    - current system behavior with exact file paths and key constraints
@@ -56,7 +56,6 @@ Maintain these top level sections:
    - chosen approach and rejected alternatives with reasons
 6. `# Test Plan`
    - test files and named test cases with purpose
-   - TDD versus Additive classification
    - deterministic setup strategy and exact verification commands
 7. `# Review Log`
    - plan and implementation review findings
@@ -161,10 +160,8 @@ Finalize the ledger's `# Checklist` and `# Test Plan` sections only after the re
 Requirements for the `# Checklist`:
 
 - every checklist item is explicit and unambiguous
-- every checklist item is marked `[TDD]` or `[Additive]`
 - every item has exact file paths and exact functions, modules, commands, or symbols to touch
 - every non-trivial step points to a concrete reference in `# Source Notes`
-- the checklist distinguishes modified behavior from net new additive work
 - the checklist is ordered so the implementation can proceed without making new design decisions
 
 Requirements for the `# Test Plan`:
@@ -225,7 +222,7 @@ Do not proceed to code until the plan is coherent, feasible, and fully sourced.
 
 Before editing code, ensure you are not working on a protected or shared branch.
 
-1. If the current branch is protected or shared, create a feature branch from the current HEAD using `delivery/<task-slug>`
+1. If the current branch is protected or shared, create a feature branch from the current HEAD using `ship/<task-slug>`
 2. If the current branch is already dedicated to the task, keep it
 3. Record the chosen branch in the ledger's `# Current State`
 
@@ -241,7 +238,7 @@ Before writing a single line of production or test code:
 
 Work through the ledger's `# Checklist` in order.
 
-For `[TDD]` items, follow Red Green Refactor:
+For bug fixes and validated reviewer findings, follow Red Green Refactor:
 
 1. Red: write the test first, run it, and confirm it fails for the expected behavioral reason. The test must fail because the observable behavior is absent or wrong, not because it expects a private implementation detail
 2. Green: only after Red, implement the production change, rerun the same test, and confirm it passes
@@ -249,7 +246,7 @@ For `[TDD]` items, follow Red Green Refactor:
 4. If the test stays Red because the implementation is wrong, keep the test and adjust the implementation until Green
 5. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks
 
-For `[Additive]` items:
+For everything else:
 
 1. Implement first
 2. Then add the planned tests
