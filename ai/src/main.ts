@@ -192,13 +192,25 @@ const syncProviderSkills = (
     )
   })
 
-const syncInstructions = (sourceDir: string, targetDir: string, fileName: string) =>
+const syncInstructions = (sourceDir: string, targetDir: string, fileName: string, prefixFileName?: string) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const p = yield* Path.Path
     const sourcePath = p.join(sourceDir, "instructions.md")
 
     if (!(yield* fs.exists(sourcePath))) return
+
+    if (prefixFileName) {
+      const prefixPath = p.join(sourceDir, prefixFileName)
+      if (yield* fs.exists(prefixPath)) {
+        const prefix = (yield* fs.readFileString(prefixPath)).trim()
+        if (prefix.length > 0) {
+          const instructions = (yield* fs.readFileString(sourcePath)).trimStart()
+          yield* fs.writeFileString(p.join(targetDir, fileName), `${prefix}\n\n${instructions}`)
+          return
+        }
+      }
+    }
 
     yield* fs.copyFile(sourcePath, p.join(targetDir, fileName))
   })
@@ -321,7 +333,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     if (target === "codex") {
       yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
       yield* syncProviderSkills(sourceDir, targetDir, target, modelMap)
-      yield* syncInstructions(sourceDir, targetDir, "AGENTS.md")
+      yield* syncInstructions(sourceDir, targetDir, "AGENTS.md", "instructions.codex.md")
       const agentEntries: Array<{ name: string; description: string }> = []
 
       yield* Effect.forEach(
