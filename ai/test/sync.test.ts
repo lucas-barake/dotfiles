@@ -311,6 +311,7 @@ Use the canonical instructions.
 `
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/agents/deep-dive.md": sampleAgent,
+        "/src/instructions.codex.md": "# Codex Rules\n",
         "/src/instructions.md": instructions
       }, ["/out"])
 
@@ -324,6 +325,7 @@ Use the canonical instructions.
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/agents/deep-dive.md": sampleAgent,
         "/src/global-skills/ship.md": sampleSkill,
+        "/src/instructions.codex.md": "# Codex Rules\n",
         "/src/instructions.md": "# Base Rules\n"
       }, ["/out"])
 
@@ -340,6 +342,10 @@ Use the canonical instructions.
 
   it.effect("syncs codex agent files and config entries", () =>
     Effect.gen(function*() {
+      const codexInstructions = `# Codex Rules
+
+Run independent tool calls concurrently.
+`
       const instructions = `# Base Rules
 
 Use the canonical Codex instructions.
@@ -347,6 +353,7 @@ Use the canonical Codex instructions.
       const { layer: fsLayer, written } = makeMemoryFs({
         "/src/agents/deep-dive.md": sampleAgent,
         "/src/global-skills/ship.md": sampleSkill,
+        "/src/instructions.codex.md": codexInstructions,
         "/src/instructions.md": instructions
       }, ["/out"])
 
@@ -354,8 +361,35 @@ Use the canonical Codex instructions.
 
       expect(written.get("/out/agents/deep-dive.toml")).toContain("developer_instructions")
       expect(written.get("/out/config.toml")).toContain("[agents.deep-dive]")
-      expect(written.get("/out/AGENTS.md")).toBe(instructions)
+      expect(written.get("/out/AGENTS.md")).toBe(`${codexInstructions.trim()}\n\n${instructions}`)
       expect(written.get("/out/skills/ship/SKILL.md")).not.toContain("model:")
+    }))
+
+  it.effect("copies shared instructions unchanged when codex instructions are absent", () =>
+    Effect.gen(function*() {
+      const instructions = "# Base Rules\n"
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/instructions.md": instructions
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "codex").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(written.get("/out/AGENTS.md")).toBe(instructions)
+    }))
+
+  it.effect("copies shared instructions unchanged when codex instructions are blank", () =>
+    Effect.gen(function*() {
+      const instructions = "\n# Base Rules\n\n"
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/instructions.codex.md": " \n\t",
+        "/src/instructions.md": instructions
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "codex").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(written.get("/out/AGENTS.md")).toBe(instructions)
     }))
 })
 
