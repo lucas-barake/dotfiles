@@ -25,7 +25,11 @@ context: fork
 Write output to \`./.context/plans/output.md\`.
 `
 
-const makeMemoryFs = (files: Record<string, string>, dirs: ReadonlyArray<string> = []) => {
+const makeMemoryFs = (
+  files: Record<string, string>,
+  dirs: ReadonlyArray<string> = [],
+  failingWrites: ReadonlySet<string> = new Set()
+) => {
   const dirSet = new Set(dirs)
   const written = new Map<string, string>()
   const removed = new Set<string>()
@@ -43,6 +47,7 @@ const makeMemoryFs = (files: Record<string, string>, dirs: ReadonlyArray<string>
       return Effect.succeed(content)
     },
     writeFileString: (path: string, data: string) => {
+      if (failingWrites.has(path)) return Effect.die(`Expected write failure: ${path}`)
       written.set(path, data)
       removed.delete(path)
       return Effect.void
@@ -261,6 +266,21 @@ describe("syncTarget", () => {
       expect(written.get("/out/skills/ship/SKILL.md")).toContain("model: claude-sonnet-4-20250514")
     }))
 
+  it.effect("removes retired claude agents and renamed global skills", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, removed } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/global-skills/change-audit.md": sampleSkill,
+        "/out/agents/reviewer-logic.md": "stale",
+        "/out/skills/deep-review/SKILL.md": "stale"
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "claude").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(removed.has("/out/agents/reviewer-logic.md")).toBe(true)
+      expect(removed.has("/out/skills/deep-review")).toBe(true)
+    }))
+
   it.effect("applies model remapping during agent sync", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
@@ -340,6 +360,18 @@ Use the canonical instructions.
       expect(written.has("/out/AGENTS.md")).toBe(false)
     }))
 
+  it.effect("removes retired opencode agents", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, removed } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/out/agents/reviewer-behavioral.md": "stale"
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "opencode").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(removed.has("/out/agents/reviewer-behavioral.md")).toBe(true)
+    }))
+
   it.effect("syncs codex agent files and config entries", () =>
     Effect.gen(function*() {
       const codexInstructions = `# Codex Rules
@@ -363,6 +395,54 @@ Use the canonical Codex instructions.
       expect(written.get("/out/config.toml")).toContain("[agents.deep-dive]")
       expect(written.get("/out/AGENTS.md")).toBe(`${codexInstructions.trim()}\n\n${instructions}`)
       expect(written.get("/out/skills/ship/SKILL.md")).not.toContain("model:")
+    }))
+
+  it.effect("removes retired codex agents and preserves unmanaged config", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, written, removed } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/out/agents/effect-reviewer.toml": "stale",
+        "/out/config.toml": [
+          "approval_policy = \"never\"",
+          "",
+          "# --- dotai agents start ---",
+          "[agents.effect-reviewer]",
+          "config_file = \"agents/effect-reviewer.toml\"",
+          "# --- dotai agents end ---",
+          ""
+        ].join("\n")
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "codex").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(removed.has("/out/agents/effect-reviewer.toml")).toBe(true)
+      expect(written.get("/out/config.toml")).toContain("approval_policy = \"never\"")
+      expect(written.get("/out/config.toml")).not.toContain("[agents.effect-reviewer]")
+    }))
+
+  it.effect("preserves retired resources when a codex sync fails before registration", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, removed } = makeMemoryFs({
+        "/src/agents/retained.md": sampleAgent,
+        "/src/global-skills/change-audit.md": sampleSkill,
+        "/out/agents/effect-reviewer.toml": "stale",
+        "/out/skills/deep-review/SKILL.md": "stale",
+        "/out/config.toml": [
+          "# --- dotai agents start ---",
+          "[agents.effect-reviewer]",
+          'config_file = "agents/effect-reviewer.toml"',
+          "# --- dotai agents end ---",
+          ""
+        ].join("\n")
+      }, ["/out"], new Set(["/out/agents/retained.toml"]))
+
+      const exit = yield* Effect.exit(
+        syncTarget("/src", "/out", "codex").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+      )
+
+      expect(exit._tag).toBe("Failure")
+      expect(removed.has("/out/agents/effect-reviewer.toml")).toBe(false)
+      expect(removed.has("/out/skills/deep-review")).toBe(false)
     }))
 
   it.effect("copies shared instructions unchanged when codex instructions are absent", () =>
