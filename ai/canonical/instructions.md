@@ -38,8 +38,13 @@
 
 ## Agents
 
-- Preserve main context. Delegate broad exploration and structural investigation to agents first.
-- Spawn agents aggressively and in parallel when the questions are independent.
+- Delegate to preserve main context. Agents exist for investigation, search, and review whose reading would otherwise flood your context.
+- Spawning is not free. Every agent costs a full context load and its own token budget, so each one must buy back more context than it spends.
+- Before spawning, state the exact question the agent must answer and why you cannot already answer it. If you can answer it by reading files you already know the paths to, read them yourself.
+- Do not spawn an agent to write, rewrite, redesign, or restructure content when you already know what the result should be. Authoring and editing you have the context to do stay with you. Delegating a decision you have already made pays for it twice.
+- Do not spawn an agent for a small, bounded, obvious edit, for a file you have already read, or for work whose only output is applying a change you already specified.
+- One agent per independent question, spawned in parallel in a single message. Do not split one question across several agents and do not spawn a follow up agent on a question an earlier agent already answered.
+- Prefer the narrowest agent that can answer the question. Reach for `fast-lookup` before `quick-dive`, and `quick-dive` before `deep-dive`, unless the wider scope is genuinely required.
 - After spawning investigation or review agents, wait for them to finish before doing your own investigation or review in that same scope. Do not duplicate agent work in the background. Your job while they run is coordination only. Validate, deduplicate, and continue after their results return.
 - Agent prompts must be highly specific and self contained. Do not send vague prompts like "investigate this" or "look into the bug".
 - Every agent prompt should include the exact paths, directories, symbols, or URLs to inspect, the exact question to answer, why that question matters, any constraints or exclusions, and the exact shape of the response you want back.
@@ -52,7 +57,9 @@
 - Do not use `fast-lookup` when you already know the exact file path or name and can read the file directly.
 - Use `quick-dive` for nearby structure and immediate codebase context.
 - Use `deep-dive` for subsystem traces, cross cutting patterns, and behavior that spans multiple files or repos.
-- Use `effect-reviewer` for every review of code that imports or uses Effect or Effect ecosystem packages. It must validate behavior against installed package metadata and version matched official Effect or ecosystem source and tests under the shared version cache in `~/src/oss/.versions/`.
+- Use `reviewer-security` when a review touches trust boundaries, authentication, authorization, tenant isolation, secrets, untrusted inputs, injection surfaces, file or network access, dependency supply chain changes, or sensitive data flow. It owns over permission: what an attacker or unauthorized principal can reach.
+- Use `reviewer-data-integrity` when a review touches stored or derived data, error handling, transactions, retries, partial failure, ownership, lifecycle transitions, access policy state, or whether legitimate users and systems can still reach and act on their resources. It owns over denial and state corruption: what a valid principal wrongly loses.
+- These two are one boundary split by direction, not two views of the same question. Select both only when the change can fail in both directions.
 - Use `reviewer-performance` for hot paths, large data, UI rendering, responsiveness, I/O, database or network access, queues, workers, caching, retries, batching, backpressure, allocation heavy code, or changes that may affect time complexity, memory pressure, garbage collection, or resource consumption.
 - Use `web-search` for web lookups.
 - Tell agents whether you need structural mapping, exact signatures, behavioral verification, test patterns, or external references. Do not make them infer the investigation mode.

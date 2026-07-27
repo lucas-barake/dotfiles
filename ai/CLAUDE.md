@@ -13,9 +13,9 @@ canonical/
     fast-lookup.md
     quick-dive.md
     deep-dive.md
-    deep-reviewer.md
     web-search.md
   global-skills/               # Skills synced to provider skill directories
+    change-audit.md             # Relevance selected implementation review
     <skill-name>.md
   project-skills/              # Skills written into project .context/skills
     <skill-name>.md
@@ -37,6 +37,8 @@ All agents and skills use Claude Code frontmatter as the superset format. The sy
 - **Codex**: generates per-agent TOML files with `developer_instructions` (body text), prepends `canonical/instructions.codex.md` to `canonical/instructions.md` when writing `~/.codex/AGENTS.md`, and merges `[agents.<name>]` entries into `~/.codex/config.toml`. Drops `model`/`context` from skills
 
 Global sync writes agents to all providers, writes `canonical/global-skills/` into provider `skills/` directories for Claude Code, OpenCode, and Codex using each platform's expected `skills/<name>/SKILL.md` layout, writes global instructions to `~/.claude/CLAUDE.md` for Claude Code and `~/.codex/AGENTS.md` for Codex, and syncs provider config where supported. Project sync writes selected `canonical/project-skills/` files to `./.context/skills/<skill-name>.md` with frontmatter removed, stores the selection in `./.context/settings.json`, and updates `./AGENTS.md` with a managed skill reference table.
+
+Renamed or retired built in reviewers and global skills are removed from provider directories during global sync. Custom provider assets are left untouched.
 
 ## Workflow
 

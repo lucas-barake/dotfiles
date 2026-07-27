@@ -31,6 +31,36 @@ const CODEX_AGENTS_START = "# --- dotai agents start ---"
 const CODEX_AGENTS_END = "# --- dotai agents end ---"
 const PROJECT_SKILLS_START = "<!-- dotai skills table start -->"
 const PROJECT_SKILLS_END = "<!-- dotai skills table end -->"
+const RETIRED_AGENT_NAMES = [
+  "effect-idiom-reviewer",
+  "effect-reviewer",
+  "reuse-reviewer",
+  "reviewer-behavioral",
+  "reviewer-logic"
+] as const
+const RETIRED_GLOBAL_SKILL_NAMES = ["deep-review"] as const
+
+const removeRetiredProviderAssets = (targetDir: string, target: Target) =>
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const p = yield* Path.Path
+    const targetAgentExtension = target === "codex" ? ".toml" : ".md"
+
+    yield* Effect.forEach(
+      RETIRED_AGENT_NAMES,
+      (name) => fs.remove(p.join(targetDir, "agents", `${name}${targetAgentExtension}`), { force: true }),
+      { concurrency: "unbounded" }
+    )
+    yield* Effect.forEach(
+      RETIRED_GLOBAL_SKILL_NAMES,
+      (skillName) =>
+        Effect.gen(function*() {
+          yield* fs.remove(p.join(targetDir, "skills", skillName), { recursive: true, force: true })
+          yield* fs.remove(p.join(targetDir, "skills", `${skillName}.md`), { force: true })
+        }),
+      { concurrency: "unbounded" }
+    )
+  })
 
 const readModelMap = (home: string) =>
   Effect.gen(function*() {
@@ -350,6 +380,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
       )
 
       yield* mergeCodexConfig(targetDir, agentEntries)
+      yield* removeRetiredProviderAssets(targetDir, target)
       return false
     }
 
@@ -367,6 +398,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     if (target === "claude") {
       yield* syncInstructions(sourceDir, targetDir, "CLAUDE.md")
     }
+    yield* removeRetiredProviderAssets(targetDir, target)
 
     return false
   })

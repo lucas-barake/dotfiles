@@ -85,6 +85,8 @@ If investigation shows the task is already complete, or no code changes are nece
 
 Do not perform broad structural exploration in the main context. Delegate it.
 
+Delegate exploration, not the work itself. Agents map what you do not yet know. They do not write, redesign, or restructure content whose shape you have already decided, and they are not worth spawning for a surface you have already read or can read directly from known paths.
+
 1. Spawn agents in parallel for each affected surface and for the important consumers and providers of that surface
 2. Use `quick-dive` to map module purpose and immediate neighbors
 3. Use `deep-dive` when you need a subsystem trace, cross file flow, or convention inventory
@@ -259,34 +261,22 @@ For all items:
 - check each checklist item off in the ledger as soon as it is done and add new items as new work appears
 - keep the ledger's `# Current State` and other sections updated if reality changes
 
-### Step 12: Run a post-implementation deep review
+### Step 12: Audit the implementation
 
-After the implementation and planned tests are complete, review the actual code with the existing code reviewers.
+After implementation and planned tests are complete, review the full change as one connected unit.
 
-1. Decide whether to review the full implementation as one unit or to shard it by domain. Shard when the modified files span clearly different concerns or the diff is large enough that one reviewer would need unrelated context
-2. Always include `reviewer-logic` and `test-reviewer`. Include `effect-reviewer` for any implementation that imports, configures, tests, or meaningfully interacts with Effect or Effect ecosystem packages. Include `reviewer-behavioral`, `reviewer-data-integrity`, `reviewer-security`, `reviewer-concurrency`, and `reviewer-rules` when the implementation warrants them. Include `reviewer-performance` when the implementation touches hot paths, large data, UI rendering, responsiveness, I/O, database or network access, queues, workers, caching, retries, batching, backpressure, allocation heavy paths, or time complexity
-3. Spawn the selected reviewers in parallel with the modified file list, branch context, project rules, and a note that this is freshly implemented code. Tell them the modified files/current diff are the review boundary; they may inspect outside files only to validate direct callers, guards, tests, rules, or integration points causally connected to the modified code
-4. Wait for the reviewers to finish before doing your own review in the same scope
-5. Deduplicate overlapping findings and keep the best supported version of each root issue
-6. Require each bug reviewer to use Red Green Refactor for every candidate finding. They must inspect installed package metadata and version matched official library source and tests through `~/src/oss/.versions/` before writing any regression test that depends on third party library or framework behavior, reusing an existing shared version checkout and using those tests for harness, composition, setup, and assertion patterns. This applies to any library, including Effect and Effect ecosystem packages. They must use metadata fields such as `repository.url`, `repository.directory`, exports, and version to find monorepo package directories. Red: write the smallest regression test and prove it fails for the suspected reason before changing production code. Green: apply the smallest fix in place and prove the same test passes. If Green is still Red because the test or harness is wrong, they must revert the production fix, fix the test or harness, rerun it against the unfixed production code, prove Red again, reapply the fix, and rerun until Green. If Green is still Red because the fix is wrong, they must keep the test and adjust the fix until Green. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks. Confirmed reviewers must leave the valid regression test and fix in the worktree and report the test path, exact test code, Red output before the fix, Green output after the fix, and the fix they applied. If the candidate is not reproduced or the harness is blocked after multiple real attempts, reviewers must remove any probe test and fix edits before returning and report the exact code and commands tried as an unconfirmed candidate
-7. Validate every finding yourself before acting on it
-8. Treat high-confidence findings as only those reproduced by a failing regression test. If the regression test is correct and does not fail, treat the finding as a false positive and move on
-9. Fix valid findings and rerun the relevant checks
+1. Select only materially relevant reviewers from `reviewer-concurrency`, `reviewer-rules`, `reviewer-security`, `reviewer-data-integrity`, `reviewer-performance`, `code-simplifier`, and `test-reviewer`.
+2. Use `reviewer-concurrency` for production logic, behavior, state, async work, or resources. Use `reviewer-rules` for applicable repository rules and integration obligations. Use `reviewer-security` for trust boundaries, permissions, tenant isolation, secrets, untrusted inputs, injection surfaces, file or network access, dependency risk, or sensitive data. Use `reviewer-data-integrity` for data, error handling, transactions, partial failure, ownership, lifecycle, access policy state, or legitimate resource access. Use `reviewer-performance` only when the change affects realistic workload, I/O, rendering, allocation, caching, queues, backpressure, or complexity. Use `code-simplifier` when abstractions, helpers, dependencies, composition, ownership, or duplication changed. Use `test-reviewer` only to assess the value of existing tests that are in scope or directly affected.
+3. Record why every selected reviewer is relevant and why every omitted reviewer is not. `reviewer-security` and `reviewer-data-integrity` split one boundary by direction. Security owns over permission and integrity owns over denial and state corruption. Select both only when the change can fail in both directions, and never route the same suspicion to both.
+4. Spawn the selected reviewers in parallel with the complete diff and full modified file list. Do not shard the change.
+5. Wait for the reviewers before reviewing the same domains yourself. Deduplicate findings and validate every candidate in the main worktree.
+6. Require Red Green Refactor for correctness and rules findings. Before tests that depend on third party behavior, inspect installed metadata and exact version matched official source and tests under `~/src/oss/.versions/`.
+7. Apply only reproduced fixes and executable simplifications. Remove invalid probe edits and rerun the narrow quality gates.
+8. After accepted fixes, recompute affected domains. Rerun the originating reviewer and only reviewers whose domain the fixes materially changed. Skip performance when the fixes do not change workload, algorithms, I/O, allocation, caching, queues, or backpressure. Skip security when they do not change trust boundaries, permissions, inputs, secrets, sensitive data, file or network capabilities, or dependency risk. Skip data integrity when they do not change stored or derived state, error handling, ownership, lifecycle, access policy outcomes, or legitimate resource access.
+9. Continue until the latest affected domain batch yields no confirmed fixes or accepted simplifications. Do not stop after the first batch and do not respawn the entire initial set automatically.
+10. Write every batch, reviewer selection, omission, finding, fix, and verification result to the ledger's `# Review Log`.
 
-Write the full result to the ledger's `# Review Log`.
-
-### Step 13: Run simplification and reuse passes
-
-Once the code is functionally correct:
-
-1. Spawn `code-simplifier` and `reuse-reviewer` in parallel with the task goal, current diff boundary, complete modified file list, and the ledger path
-2. Add any domain specific reviewer agent that materially matches the stack under review
-3. Wait for the agents to finish before doing your own simplification or reuse pass in the same scope
-4. Validate each finding and its reported snapshot proof yourself against the actual code and contracts
-5. Apply only changes that clearly preserve or improve behavior and clarity
-6. Rerun the relevant quality gates after any accepted simplification
-
-### Step 14: Final verification
+### Step 13: Final verification
 
 Before committing:
 
@@ -297,7 +287,7 @@ Before committing:
 
 If anything fails, fix it before moving on.
 
-### Step 15: Commit and open a draft PR
+### Step 14: Commit and open a draft PR
 
 When the task is complete:
 
