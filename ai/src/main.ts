@@ -13,7 +13,8 @@ import { agentToToml, parseFrontmatter, stripFrontmatter, transformAgent, transf
 const targetPaths: Record<Target, string> = {
   claude: `${process.env.HOME}/.claude`,
   opencode: `${process.env.HOME}/.config/opencode`,
-  codex: `${process.env.HOME}/.codex`
+  codex: `${process.env.HOME}/.codex`,
+  kimi: process.env.KIMI_CODE_HOME ?? `${process.env.HOME}/.kimi-code`
 }
 
 const configFiles: Partial<Record<Target, { source: string; target: string; merge: boolean }>> = {
@@ -398,6 +399,10 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     if (target === "claude") {
       yield* syncInstructions(sourceDir, targetDir, "CLAUDE.md")
     }
+    if (target === "kimi") {
+      // Kimi Code reads global instructions from $KIMI_CODE_HOME/AGENTS.md
+      yield* syncInstructions(sourceDir, targetDir, "AGENTS.md")
+    }
     yield* removeRetiredProviderAssets(targetDir, target)
 
     return false
@@ -458,9 +463,9 @@ const project = Command.make(
 const global = Command.make(
   "global",
   {
-    target: Flag.choice("target", ["claude", "opencode", "codex", "all"]).pipe(
+    target: Flag.choice("target", ["claude", "opencode", "codex", "kimi", "all"]).pipe(
       Flag.withDefault("all" as const),
-      Flag.withDescription("Target to sync: claude, opencode, codex, or all")
+      Flag.withDescription("Target to sync: claude, opencode, codex, kimi, or all")
     ),
     home: Flag.directory("home").pipe(
       Flag.withDefault(dirname(dirname(realpathSync(process.execPath)))),
@@ -472,19 +477,19 @@ const global = Command.make(
       const fs = yield* FileSystem.FileSystem
       const p = yield* Path.Path
       const modelMap = yield* readModelMap(home)
-      const targets: ReadonlyArray<Target> = target === "all" ? ["claude", "opencode", "codex"] : [target]
+      const targets: ReadonlyArray<Target> = target === "all" ? ["claude", "opencode", "codex", "kimi"] : [target]
 
       for (const currentTarget of targets) {
         const skipped = yield* syncTarget(`${home}/canonical`, targetPaths[currentTarget], currentTarget, modelMap)
         yield* Console.log(skipped ? `Skipped ${currentTarget} (directory not found)` : `Synced ${currentTarget} agents`)
         if (
-          (currentTarget === "codex" || currentTarget === "claude") &&
+          (currentTarget === "codex" || currentTarget === "claude" || currentTarget === "kimi") &&
           !skipped &&
           (yield* fs.exists(p.join(home, "canonical", "instructions.md")))
         ) {
           yield* Console.log(`Synced ${currentTarget} instructions`)
         }
-        if (currentTarget !== "codex") {
+        if (currentTarget === "claude" || currentTarget === "opencode") {
           const configSkipped = yield* syncConfig(`${home}/canonical`, targetPaths[currentTarget], currentTarget)
           yield* Console.log(configSkipped ? `Skipped ${currentTarget} config (directory not found)` : `Synced ${currentTarget} config`)
         }

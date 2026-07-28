@@ -122,6 +122,15 @@ Body.
     expect(result).not.toContain("bash: false")
   })
 
+  it("keeps claude-style fields for kimi but drops model", () => {
+    const result = transformAgent(sampleAgent, "kimi")
+    expect(result).toContain("name: test-agent")
+    expect(result).toContain("description: A test agent for verification.")
+    expect(result).toContain("tools: Read, Glob, Grep")
+    expect(result).not.toMatch(/^model:/m)
+    expect(result).toContain("You are a test agent.")
+  })
+
   it("remaps model when modelMap is provided", () => {
     const result = transformAgent(sampleAgent, "claude", { haiku: "us.anthropic.claude-haiku-4-5-20251001" })
     expect(result).toContain("model: us.anthropic.claude-haiku-4-5-20251001")
@@ -469,6 +478,30 @@ Use the canonical Codex instructions.
 
       yield* syncTarget("/src", "/out", "codex").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
+      expect(written.get("/out/AGENTS.md")).toBe(instructions)
+    }))
+
+  it.effect("syncs kimi agents, skills, and global instructions", () =>
+    Effect.gen(function*() {
+      const instructions = `# Base Rules
+
+Use the canonical global instructions.
+`
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/global-skills/planning.md": sampleSkill,
+        "/src/instructions.md": instructions
+      }, ["/out"])
+
+      const skipped = yield* syncTarget("/src", "/out", "kimi").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(skipped).toBe(false)
+      const agent = written.get("/out/agents/deep-dive.md")!
+      expect(agent).toContain("name: test-agent")
+      expect(agent).toContain("tools: Read, Glob, Grep")
+      expect(agent).not.toMatch(/^model:/m)
+      expect(written.get("/out/skills/planning/SKILL.md")).toContain("name: test-skill")
+      expect(written.get("/out/skills/planning/SKILL.md")).not.toContain("model:")
       expect(written.get("/out/AGENTS.md")).toBe(instructions)
     }))
 })

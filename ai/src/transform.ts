@@ -1,4 +1,4 @@
-export type Target = "claude" | "opencode" | "codex"
+export type Target = "claude" | "opencode" | "codex" | "kimi"
 
 export const parseFrontmatter = (content: string) => {
   const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
@@ -52,6 +52,14 @@ export const transformAgent = (content: string, target: Target, modelMap?: Recor
   if (target === "codex") {
     const description = getField(fields, "description") ?? ""
     return { description, developerInstructions: body.trim() }
+  }
+
+  if (target === "kimi") {
+    // Kimi Code reads Claude Code-style agent files: it keeps `name`,
+    // `description`, and comma-separated `tools`, and ignores unknown fields.
+    // Drop `model`/`context` since they have no Kimi equivalent.
+    const keptFields = fields.filter(([key]) => key !== "model" && key !== "context")
+    return `${serializeFrontmatter(keptFields)}\n${body}`
   }
 
   const description = getField(fields, "description") ?? ""

@@ -1,6 +1,6 @@
 # dotai
 
-Centralized AI tool configuration. Define agents and skills once in `canonical/`, sync global assets to Claude Code (`~/.claude/`), OpenCode (`~/.config/opencode/`), and Codex (`~/.codex/`), and write project local skills into `.context/skills`.
+Centralized AI tool configuration. Define agents and skills once in `canonical/`, sync global assets to Claude Code (`~/.claude/`), OpenCode (`~/.config/opencode/`), Codex (`~/.codex/`), and Kimi Code (`~/.kimi-code/`, or `$KIMI_CODE_HOME` when set), and write project local skills into `.context/skills`.
 
 ## Project Structure
 
@@ -35,8 +35,9 @@ All agents and skills use Claude Code frontmatter as the superset format. The sy
 - **Claude Code**: keeps all fields verbatim
 - **OpenCode**: drops `name`/`model` from agents, adds `mode: subagent`, converts `tools` to a deny-object. Drops `model`/`context` from skills
 - **Codex**: generates per-agent TOML files with `developer_instructions` (body text), prepends `canonical/instructions.codex.md` to `canonical/instructions.md` when writing `~/.codex/AGENTS.md`, and merges `[agents.<name>]` entries into `~/.codex/config.toml`. Drops `model`/`context` from skills
+- **Kimi Code**: keeps `name`/`description`/`tools` on agents (Kimi Code reads Claude Code-style agent files) and drops `model`/`context`. Drops `model`/`context` from skills. Writes `canonical/instructions.md` to `$KIMI_CODE_HOME/AGENTS.md`
 
-Global sync writes agents to all providers, writes `canonical/global-skills/` into provider `skills/` directories for Claude Code, OpenCode, and Codex using each platform's expected `skills/<name>/SKILL.md` layout, writes global instructions to `~/.claude/CLAUDE.md` for Claude Code and `~/.codex/AGENTS.md` for Codex, and syncs provider config where supported. Project sync writes selected `canonical/project-skills/` files to `./.context/skills/<skill-name>.md` with frontmatter removed, stores the selection in `./.context/settings.json`, and updates `./AGENTS.md` with a managed skill reference table.
+Global sync writes agents to all providers, writes `canonical/global-skills/` into provider `skills/` directories for Claude Code, OpenCode, Codex, and Kimi Code using each platform's expected `skills/<name>/SKILL.md` layout, writes global instructions to `~/.claude/CLAUDE.md` for Claude Code, `~/.codex/AGENTS.md` for Codex, and `$KIMI_CODE_HOME/AGENTS.md` for Kimi Code, and syncs provider config where supported. Project sync writes selected `canonical/project-skills/` files to `./.context/skills/<skill-name>.md` with frontmatter removed, stores the selection in `./.context/settings.json`, and updates `./AGENTS.md` with a managed skill reference table.
 
 Renamed or retired built in reviewers and global skills are removed from provider directories during global sync. Custom provider assets are left untouched.
 
@@ -50,6 +51,7 @@ Edit files in `canonical/`, then sync:
  bun run src/bin.ts global --target claude
  bun run src/bin.ts global --target opencode
  bun run src/bin.ts global --target codex
+ bun run src/bin.ts global --target kimi
 ```
 
 For development (without building the binary):
@@ -104,4 +106,4 @@ Running `dotai models` again preserves your custom values and adds entries for a
 
 ## Key Invariant
 
-`canonical/agents/` is the source of truth for synced provider agents. `canonical/instructions.md` is the shared source of truth for Claude Code and Codex global instructions. `canonical/instructions.codex.md` contains the additional Codex only prefix. `canonical/global-skills/` is the source of truth for provider global skills. `canonical/project-skills/` is the source of truth for project local skill documents.
+`canonical/agents/` is the source of truth for synced provider agents. `canonical/instructions.md` is the shared source of truth for Claude Code, Codex, and Kimi Code global instructions. `canonical/instructions.codex.md` contains the additional Codex only prefix. `canonical/global-skills/` is the source of truth for provider global skills. `canonical/project-skills/` is the source of truth for project local skill documents.
