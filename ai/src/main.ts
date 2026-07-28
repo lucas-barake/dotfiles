@@ -348,26 +348,35 @@ const readDesktopWorkspaceDir = (rootDir: string) =>
   })
 
 // The Kimi desktop app runs a kimi-code kernel with its own conventions:
-// the harness builds its skill index from <root>/skills, the kernel config at
-// <root>/runtime/kimi-code/config.toml supports extra_agent_dirs /
-// extra_skill_dirs, and the harness reads AGENTS.md from the session
-// workspace (not from the kernel home).
+// the harness builds its skill index from <root>/skills, and the harness
+// reads AGENTS.md from the session workspace (not from the kernel home).
+// Custom agents are discovered (by kimi-code versions new enough to support
+// them) from extra_agent_dirs in <root>/runtime/kimi-code/config.toml and
+// from the generic ~/.agents/agents directory; the kernel vendored in the
+// desktop app today predates custom agents, so both locations stay dormant
+// until the app updates.
 const syncKimiDesktop = (sourceDir: string, rootDir: string, modelMap?: Record<string, string>) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const p = yield* Path.Path
 
-    // Agents land in a dotai-managed directory and are registered through
-    // extra_agent_dirs in the kernel config below.
+    // Agents land in two places: a dotai-managed directory registered through
+    // extra_agent_dirs in the kernel config below, and the generic
+    // ~/.agents/agents directory that kimi-code scans unconditionally (no
+    // config needed), so discovery works however the desktop wires its home.
     const agentsDir = p.join(rootDir, "user", "agents")
+    const genericAgentsDir = p.join(process.env.HOME ?? "", ".agents", "agents")
     yield* fs.makeDirectory(agentsDir, { recursive: true })
+    yield* fs.makeDirectory(genericAgentsDir, { recursive: true })
     const agentFiles = yield* fs.readDirectory(p.join(sourceDir, "agents"))
     yield* Effect.forEach(
       agentFiles.filter((file) => file.endsWith(".md")),
       (file) =>
         Effect.gen(function*() {
           const content = yield* fs.readFileString(p.join(sourceDir, "agents", file))
-          yield* fs.writeFileString(p.join(agentsDir, file), transformAgent(content, "kimi-desktop", modelMap) as string)
+          const transformed = transformAgent(content, "kimi-desktop", modelMap) as string
+          yield* fs.writeFileString(p.join(agentsDir, file), transformed)
+          yield* fs.writeFileString(p.join(genericAgentsDir, file), transformed)
         }),
       { concurrency: "unbounded" }
     )
@@ -377,6 +386,7 @@ const syncKimiDesktop = (sourceDir: string, rootDir: string, modelMap?: Record<s
 
     // Remove retired reviewers and skills from the desktop locations too.
     yield* removeRetiredProviderAssets(rootDir, "kimi-desktop", "user/agents")
+    yield* removeRetiredProviderAssets(p.join(process.env.HOME ?? "", ".agents"), "kimi-desktop")
 
     // Global instructions land in the desktop session workspace: the harness
     // reads <workDir>/AGENTS.md and ignores the kernel home, so writing there
