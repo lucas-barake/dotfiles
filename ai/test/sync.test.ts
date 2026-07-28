@@ -521,6 +521,7 @@ api_key = "secret-stays"
         "/src/agents/deep-dive.md": sampleAgent,
         "/src/global-skills/planning.md": sampleSkill,
         "/src/instructions.md": instructions,
+        "/out/config.json": JSON.stringify({ agents: { entries: { main: { workDir: "/desktop-workspace" } } } }),
         "/out/runtime/kimi-code/config.toml": existingConfig
       }, ["/out"])
 
@@ -537,7 +538,9 @@ api_key = "secret-stays"
 
       expect(written.get("/out/skills/planning/SKILL.md")).toContain("name: test-skill")
       expect(written.get("/out/skills/planning/SKILL.md")).not.toContain("model:")
-      expect(written.get("/out/runtime/kimi-code/home/AGENTS.md")).toBe(instructions)
+      // instructions land in the session workspace from config.json, not the kernel home
+      expect(written.get("/desktop-workspace/AGENTS.md")).toBe(instructions)
+      expect(written.has("/out/runtime/kimi-code/home/AGENTS.md")).toBe(false)
 
       const config = written.get("/out/runtime/kimi-code/config.toml")!
       expect(config).toContain('extra_agent_dirs = ["/out/user/agents"]')
@@ -561,6 +564,21 @@ api_key = "secret-stays"
       const config = written.get("/out/runtime/kimi-code/config.toml")!
       expect(config.split("dotai desktop start").length - 1).toBe(1)
       expect(config.split("dotai desktop end").length - 1).toBe(1)
+    }))
+
+  it.effect("falls back to the default desktop workspace when config.json is missing or invalid", () =>
+    Effect.gen(function*() {
+      const instructions = "# Base Rules\n"
+      const defaultWorkspace = `${process.env.HOME}/Documents/kimi/workspace`
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/instructions.md": instructions,
+        "/out/config.json": "not json {"
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "kimi-desktop").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(written.get(`${defaultWorkspace}/AGENTS.md`)).toBe(instructions)
     }))
 
   it.effect("merges canonical kimi-desktop.toml settings into the kernel config", () =>

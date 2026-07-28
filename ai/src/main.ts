@@ -327,11 +327,31 @@ export const mergeTomlTables = (existing: string, fragment: string) => {
   return result
 }
 
+// The desktop harness injects global instructions from the session
+// workspace's AGENTS.md (<main agent workDir>/AGENTS.md, truncated past
+// 32 KB). The workspace path lives in <root>/config.json; fall back to the
+// default location when the config is missing or unreadable.
+const readDesktopWorkspaceDir = (rootDir: string) =>
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const p = yield* Path.Path
+    const fallback = p.join(process.env.HOME ?? "", "Documents", "kimi", "workspace")
+    const configPath = p.join(rootDir, "config.json")
+    if (!(yield* fs.exists(configPath))) return fallback
+    const raw = yield* fs.readFileString(configPath)
+    try {
+      const workDir: unknown = JSON.parse(raw)?.agents?.entries?.main?.workDir
+      return typeof workDir === "string" && workDir.trim().length > 0 ? workDir : fallback
+    } catch {
+      return fallback
+    }
+  })
+
 // The Kimi desktop app runs a kimi-code kernel with its own conventions:
 // the harness builds its skill index from <root>/skills, the kernel config at
 // <root>/runtime/kimi-code/config.toml supports extra_agent_dirs /
-// extra_skill_dirs, and the kernel home at <root>/runtime/kimi-code/home
-// reads AGENTS.md.
+// extra_skill_dirs, and the harness reads AGENTS.md from the session
+// workspace (not from the kernel home).
 const syncKimiDesktop = (sourceDir: string, rootDir: string, modelMap?: Record<string, string>) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
@@ -358,11 +378,12 @@ const syncKimiDesktop = (sourceDir: string, rootDir: string, modelMap?: Record<s
     // Remove retired reviewers and skills from the desktop locations too.
     yield* removeRetiredProviderAssets(rootDir, "kimi-desktop", "user/agents")
 
-    // Global instructions land in the kernel home (best effort; honored when
-    // the desktop kernel reads $KIMI_CODE_HOME/AGENTS.md).
-    const kernelHome = p.join(rootDir, "runtime", "kimi-code", "home")
-    yield* fs.makeDirectory(kernelHome, { recursive: true })
-    yield* syncInstructions(sourceDir, kernelHome, "AGENTS.md")
+    // Global instructions land in the desktop session workspace: the harness
+    // reads <workDir>/AGENTS.md and ignores the kernel home, so writing there
+    // would be a dead copy.
+    const workspaceDir = yield* readDesktopWorkspaceDir(rootDir)
+    yield* fs.makeDirectory(workspaceDir, { recursive: true })
+    yield* syncInstructions(sourceDir, workspaceDir, "AGENTS.md")
 
     // Register the extra dirs in the kernel config without touching any other
     // key — the file also holds credentials and provider settings.
