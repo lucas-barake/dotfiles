@@ -517,12 +517,14 @@ Use the canonical global instructions.
 type = "kimi"
 api_key = "secret-stays"
 `
-      const { layer: fsLayer, written } = makeMemoryFs({
+      const genericAgentsDir = `${process.env.HOME}/.agents/agents`
+      const { layer: fsLayer, written, removed } = makeMemoryFs({
         "/src/agents/deep-dive.md": sampleAgent,
         "/src/global-skills/planning.md": sampleSkill,
         "/src/instructions.md": instructions,
         "/out/config.json": JSON.stringify({ agents: { entries: { main: { workDir: "/desktop-workspace" } } } }),
-        "/out/runtime/kimi-code/config.toml": existingConfig
+        "/out/runtime/kimi-code/config.toml": existingConfig,
+        [`${genericAgentsDir}/effect-reviewer.md`]: "stale"
       }, ["/out"])
 
       const skipped = yield* syncTarget("/src", "/out", "kimi-desktop").pipe(
@@ -535,6 +537,11 @@ api_key = "secret-stays"
       expect(agent).toContain("name: test-agent")
       expect(agent).toContain("tools: Read, Glob, Grep")
       expect(agent).not.toMatch(/^model:/m)
+
+      // agents are mirrored to the generic ~/.agents/agents directory, and
+      // retired agents are cleaned from it too
+      expect(written.get(`${genericAgentsDir}/deep-dive.md`)).toBe(agent)
+      expect(removed.has(`${genericAgentsDir}/effect-reviewer.md`)).toBe(true)
 
       expect(written.get("/out/skills/planning/SKILL.md")).toContain("name: test-skill")
       expect(written.get("/out/skills/planning/SKILL.md")).not.toContain("model:")
