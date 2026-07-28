@@ -14,7 +14,8 @@ const targetPaths: Record<Target, string> = {
   claude: `${process.env.HOME}/.claude`,
   opencode: `${process.env.HOME}/.config/opencode`,
   codex: `${process.env.HOME}/.codex`,
-  kimi: process.env.KIMI_CODE_HOME ?? `${process.env.HOME}/.kimi-code`
+  kimi: process.env.KIMI_CODE_HOME ?? `${process.env.HOME}/.kimi-code`,
+  "kimi-desktop": `${process.env.HOME}/Library/Application Support/kimi-desktop/daimon-share/daimon`
 }
 
 const configFiles: Partial<Record<Target, { source: string; target: string; merge: boolean }>> = {
@@ -41,7 +42,10 @@ const RETIRED_AGENT_NAMES = [
 ] as const
 const RETIRED_GLOBAL_SKILL_NAMES = ["deep-review"] as const
 
-const removeRetiredProviderAssets = (targetDir: string, target: Target) =>
+const DESKTOP_CONFIG_START = "# --- dotai desktop start ---"
+const DESKTOP_CONFIG_END = "# --- dotai desktop end ---"
+
+const removeRetiredProviderAssets = (targetDir: string, target: Target, agentsDirName = "agents") =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const p = yield* Path.Path
@@ -49,7 +53,7 @@ const removeRetiredProviderAssets = (targetDir: string, target: Target) =>
 
     yield* Effect.forEach(
       RETIRED_AGENT_NAMES,
-      (name) => fs.remove(p.join(targetDir, "agents", `${name}${targetAgentExtension}`), { force: true }),
+      (name) => fs.remove(p.join(targetDir, agentsDirName, `${name}${targetAgentExtension}`), { force: true }),
       { concurrency: "unbounded" }
     )
     yield* Effect.forEach(
@@ -246,6 +250,76 @@ const syncInstructions = (sourceDir: string, targetDir: string, fileName: string
     yield* fs.copyFile(sourcePath, p.join(targetDir, fileName))
   })
 
+// TOML top-level keys must appear before any [table] header, so a new managed
+// block is inserted before the first table instead of appended at the end.
+const upsertDesktopConfig = (existing: string, block: string) => {
+  const startIndex = existing.indexOf(DESKTOP_CONFIG_START)
+  const endIndex = existing.indexOf(DESKTOP_CONFIG_END)
+  if (startIndex >= 0 && endIndex > startIndex) {
+    return replaceManagedBlock(existing, DESKTOP_CONFIG_START, DESKTOP_CONFIG_END, block)
+  }
+
+  const lines = existing.split("\n")
+  const firstTable = lines.findIndex((line) => line.startsWith("["))
+  if (firstTable === -1) {
+    return existing.trim().length > 0 ? `${existing.trimEnd()}\n\n${block}\n` : `${block}\n`
+  }
+
+  const head = lines.slice(0, firstTable).join("\n").trimEnd()
+  const tail = lines.slice(firstTable).join("\n")
+  return head.length > 0 ? `${head}\n\n${block}\n\n${tail}` : `${block}\n\n${tail}`
+}
+
+// The Kimi desktop app runs a kimi-code kernel with its own conventions:
+// the harness builds its skill index from <root>/skills, the kernel config at
+// <root>/runtime/kimi-code/config.toml supports extra_agent_dirs /
+// extra_skill_dirs, and the kernel home at <root>/runtime/kimi-code/home
+// reads AGENTS.md.
+const syncKimiDesktop = (sourceDir: string, rootDir: string, modelMap?: Record<string, string>) =>
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const p = yield* Path.Path
+
+    // Agents land in a dotai-managed directory and are registered through
+    // extra_agent_dirs in the kernel config below.
+    const agentsDir = p.join(rootDir, "user", "agents")
+    yield* fs.makeDirectory(agentsDir, { recursive: true })
+    const agentFiles = yield* fs.readDirectory(p.join(sourceDir, "agents"))
+    yield* Effect.forEach(
+      agentFiles.filter((file) => file.endsWith(".md")),
+      (file) =>
+        Effect.gen(function*() {
+          const content = yield* fs.readFileString(p.join(sourceDir, "agents", file))
+          yield* fs.writeFileString(p.join(agentsDir, file), transformAgent(content, "kimi-desktop", modelMap) as string)
+        }),
+      { concurrency: "unbounded" }
+    )
+
+    // Skills go to the harness skill directory as <name>/SKILL.md.
+    yield* syncProviderSkills(sourceDir, rootDir, "kimi-desktop", modelMap)
+
+    // Remove retired reviewers and skills from the desktop locations too.
+    yield* removeRetiredProviderAssets(rootDir, "kimi-desktop", "user/agents")
+
+    // Global instructions land in the kernel home (best effort; honored when
+    // the desktop kernel reads $KIMI_CODE_HOME/AGENTS.md).
+    const kernelHome = p.join(rootDir, "runtime", "kimi-code", "home")
+    yield* fs.makeDirectory(kernelHome, { recursive: true })
+    yield* syncInstructions(sourceDir, kernelHome, "AGENTS.md")
+
+    // Register the extra dirs in the kernel config without touching any other
+    // key — the file also holds credentials and provider settings.
+    const configPath = p.join(rootDir, "runtime", "kimi-code", "config.toml")
+    const existing = (yield* fs.exists(configPath)) ? yield* fs.readFileString(configPath) : ""
+    const block = [
+      DESKTOP_CONFIG_START,
+      `extra_agent_dirs = [${escapeTomlString(agentsDir)}]`,
+      `extra_skill_dirs = [${escapeTomlString(p.join(rootDir, "skills"))}]`,
+      DESKTOP_CONFIG_END
+    ].join("\n")
+    yield* fs.writeFileString(configPath, upsertDesktopConfig(existing, block))
+  })
+
 const mergeCodexConfig = (targetDir: string, agents: Array<{ name: string; description: string }>) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
@@ -385,6 +459,11 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
       return false
     }
 
+    if (target === "kimi-desktop") {
+      yield* syncKimiDesktop(sourceDir, targetDir, modelMap)
+      return false
+    }
+
     yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
     yield* Effect.forEach(
       agentFiles.filter((file) => file.endsWith(".md")),
@@ -463,9 +542,9 @@ const project = Command.make(
 const global = Command.make(
   "global",
   {
-    target: Flag.choice("target", ["claude", "opencode", "codex", "kimi", "all"]).pipe(
+    target: Flag.choice("target", ["claude", "opencode", "codex", "kimi", "kimi-desktop", "all"]).pipe(
       Flag.withDefault("all" as const),
-      Flag.withDescription("Target to sync: claude, opencode, codex, kimi, or all")
+      Flag.withDescription("Target to sync: claude, opencode, codex, kimi, kimi-desktop, or all")
     ),
     home: Flag.directory("home").pipe(
       Flag.withDefault(dirname(dirname(realpathSync(process.execPath)))),
@@ -477,7 +556,7 @@ const global = Command.make(
       const fs = yield* FileSystem.FileSystem
       const p = yield* Path.Path
       const modelMap = yield* readModelMap(home)
-      const targets: ReadonlyArray<Target> = target === "all" ? ["claude", "opencode", "codex", "kimi"] : [target]
+      const targets: ReadonlyArray<Target> = target === "all" ? ["claude", "opencode", "codex", "kimi", "kimi-desktop"] : [target]
 
       for (const currentTarget of targets) {
         const skipped = yield* syncTarget(`${home}/canonical`, targetPaths[currentTarget], currentTarget, modelMap)

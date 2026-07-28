@@ -504,6 +504,64 @@ Use the canonical global instructions.
       expect(written.get("/out/skills/planning/SKILL.md")).not.toContain("model:")
       expect(written.get("/out/AGENTS.md")).toBe(instructions)
     }))
+
+  it.effect("syncs kimi-desktop agents, skills, instructions, and kernel config", () =>
+    Effect.gen(function*() {
+      const instructions = `# Base Rules
+
+Use the canonical global instructions.
+`
+      const existingConfig = `default_model = "k2d6-agent"
+
+[providers.daimon-kimi-code]
+type = "kimi"
+api_key = "secret-stays"
+`
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/global-skills/planning.md": sampleSkill,
+        "/src/instructions.md": instructions,
+        "/out/runtime/kimi-code/config.toml": existingConfig
+      }, ["/out"])
+
+      const skipped = yield* syncTarget("/src", "/out", "kimi-desktop").pipe(
+        Effect.provide(Layer.mergeAll(fsLayer, Path.layer))
+      )
+
+      expect(skipped).toBe(false)
+
+      const agent = written.get("/out/user/agents/deep-dive.md")!
+      expect(agent).toContain("name: test-agent")
+      expect(agent).toContain("tools: Read, Glob, Grep")
+      expect(agent).not.toMatch(/^model:/m)
+
+      expect(written.get("/out/skills/planning/SKILL.md")).toContain("name: test-skill")
+      expect(written.get("/out/skills/planning/SKILL.md")).not.toContain("model:")
+      expect(written.get("/out/runtime/kimi-code/home/AGENTS.md")).toBe(instructions)
+
+      const config = written.get("/out/runtime/kimi-code/config.toml")!
+      expect(config).toContain('extra_agent_dirs = ["/out/user/agents"]')
+      expect(config).toContain('extra_skill_dirs = ["/out/skills"]')
+      // top-level keys must land before the first [table] header
+      expect(config.indexOf("extra_agent_dirs")).toBeLessThan(config.indexOf("[providers.daimon-kimi-code]"))
+      // existing content (including credentials) is preserved
+      expect(config).toContain('api_key = "secret-stays"')
+      expect(config).toContain('default_model = "k2d6-agent"')
+    }))
+
+  it.effect("replaces the managed kimi-desktop config block on re-sync", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "kimi-desktop").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+      yield* syncTarget("/src", "/out", "kimi-desktop").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      const config = written.get("/out/runtime/kimi-code/config.toml")!
+      expect(config.split("dotai desktop start").length - 1).toBe(1)
+      expect(config.split("dotai desktop end").length - 1).toBe(1)
+    }))
 })
 
 describe("syncConfig", () => {
