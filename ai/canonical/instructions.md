@@ -24,6 +24,26 @@
 - Do not make blind edits based only on a symbol name, a failing line, or an isolated diff hunk. If intent is unclear, investigate until you can state the expected behavior and why the change preserves or corrects it.
 - When changing tests, understand the production behavior they protect and the harness they use before adding, deleting, or rewriting assertions.
 
+## Correctness Over Convenience
+
+- Always implement the best solution for the problem. Perceived complexity, refactor size, and implementation time are never valid reasons to choose a weaker design.
+- Never trade correctness for convenience. Do not pick a narrower or hackier approach just because the correct one touches more files, more layers, or more tests.
+- If the right solution requires refactoring existing code, refactor it. Do not warp new code around a structure that should itself change.
+- Judge solution options by correctness, clarity, and long term fit for the problem. Never judge them by how little existing code they disturb.
+- If you catch yourself scoping a solution to avoid touching certain files, subsystems, or tests, stop and reassess what the problem actually needs.
+- When the best solution is genuinely large, state the full correct design and then sequence the work. Do not silently downgrade the design to fit a smaller effort.
+- Do not present a compromised design as the recommendation and bury the correct one as an alternative. Lead with the best solution.
+
+## Comments
+
+- Default to no comment. Comment only when the code is non obvious.
+- Explain the why, never the how. The code already shows what it does. A comment earns its place only when the reason lives outside the code: a bug being avoided, a spec or edge case being honored, a library quirk, a measured performance constraint.
+- Comment when the solution uses something a typical developer would not have reached for, or when deleting the comment would invite someone to simplify the code back into a bug.
+- Write for an outside contributor reading the repository cold, as if the project were open source. Plain language, one or two sentences, no jargon the code does not already require.
+- Do not restate types, parameter names, control flow, or the function or variable name. Do not add section banners or boilerplate headers.
+- If a comment needs the words "this function" or "this line" to make sense, it is narrating. Delete it.
+- When the why can be expressed in code through a better name or a smaller function, do that instead of commenting.
+
 ## External Libraries
 
 - Distrust your built in knowledge for external libraries, frameworks, and tools.
