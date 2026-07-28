@@ -562,6 +562,63 @@ api_key = "secret-stays"
       expect(config.split("dotai desktop start").length - 1).toBe(1)
       expect(config.split("dotai desktop end").length - 1).toBe(1)
     }))
+
+  it.effect("merges canonical kimi-desktop.toml settings into the kernel config", () =>
+    Effect.gen(function*() {
+      const canonicalToml = `[loop_control]
+max_steps_per_turn = 2000
+max_retries_per_step = 15
+`
+      const existingConfig = `default_model = "k2d6-agent"
+
+[loop_control]
+max_steps_per_turn = 100
+
+[providers.daimon-kimi-code]
+type = "kimi"
+api_key = "secret-stays"
+`
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/kimi-desktop.toml": canonicalToml,
+        "/out/runtime/kimi-code/config.toml": existingConfig
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "kimi-desktop").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      const config = written.get("/out/runtime/kimi-code/config.toml")!
+      // existing key updated in place inside its table
+      expect(config).toContain("max_steps_per_turn = 2000")
+      expect(config).not.toContain("max_steps_per_turn = 100")
+      // missing key added to the existing table, before the next table header
+      expect(config).toContain("max_retries_per_step = 15")
+      expect(config.indexOf("max_retries_per_step")).toBeLessThan(config.indexOf("[providers.daimon-kimi-code]"))
+      // unrelated content preserved
+      expect(config).toContain('api_key = "secret-stays"')
+    }))
+
+  it.effect("appends missing tables from canonical kimi-desktop.toml at the end", () =>
+    Effect.gen(function*() {
+      const canonicalToml = `[loop_control]
+max_steps_per_turn = 2000
+`
+      const existingConfig = `default_model = "k2d6-agent"
+
+[providers.daimon-kimi-code]
+type = "kimi"
+`
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/kimi-desktop.toml": canonicalToml,
+        "/out/runtime/kimi-code/config.toml": existingConfig
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "kimi-desktop").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      const config = written.get("/out/runtime/kimi-code/config.toml")!
+      expect(config.trimEnd().endsWith("[loop_control]\nmax_steps_per_turn = 2000")).toBe(true)
+      expect(config).toContain('default_model = "k2d6-agent"')
+    }))
 })
 
 describe("syncConfig", () => {
