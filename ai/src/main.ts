@@ -270,6 +270,63 @@ const upsertDesktopConfig = (existing: string, block: string) => {
   return head.length > 0 ? `${head}\n\n${block}\n\n${tail}` : `${block}\n\n${tail}`
 }
 
+// Merges `[table]` sections from a canonical TOML fragment into an existing
+// TOML document: existing keys are updated in place inside their table,
+// missing keys are added right after the table header, and missing tables
+// are appended at the end. Everything else in the document is preserved.
+export const mergeTomlTables = (existing: string, fragment: string) => {
+  const fragmentSections: Array<{ table: string; entries: Array<string> }> = []
+  for (const line of fragment.split("\n")) {
+    const trimmed = line.trim()
+    if (trimmed.length === 0 || trimmed.startsWith("#")) continue
+    const tableMatch = trimmed.match(/^\[([^\]]+)\]$/)
+    if (tableMatch) {
+      fragmentSections.push({ table: tableMatch[1], entries: [] })
+      continue
+    }
+    if (trimmed.includes("=") && fragmentSections.length > 0) {
+      fragmentSections[fragmentSections.length - 1].entries.push(trimmed)
+    }
+  }
+
+  let result = existing
+  for (const section of fragmentSections) {
+    const lines = result.split("\n")
+    const header = `[${section.table}]`
+    const headerIndex = lines.findIndex((line) => line.trim() === header)
+
+    if (headerIndex === -1) {
+      const addition = [header, ...section.entries].join("\n")
+      result = result.trim().length > 0 ? `${result.trimEnd()}\n\n${addition}\n` : `${addition}\n`
+      continue
+    }
+
+    let sectionEnd = lines.length
+    for (let i = headerIndex + 1; i < lines.length; i++) {
+      if (lines[i].trimStart().startsWith("[")) {
+        sectionEnd = i
+        break
+      }
+    }
+
+    const additions: Array<string> = []
+    for (const entry of section.entries) {
+      const key = entry.slice(0, entry.indexOf("=")).trim()
+      const keyPattern = new RegExp(`^\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*=`)
+      const existingIndex = lines.findIndex((line, i) => i > headerIndex && i < sectionEnd && keyPattern.test(line))
+      if (existingIndex === -1) {
+        additions.push(entry)
+      } else {
+        lines[existingIndex] = entry
+      }
+    }
+    lines.splice(headerIndex + 1, 0, ...additions.reverse())
+    result = lines.join("\n")
+  }
+
+  return result
+}
+
 // The Kimi desktop app runs a kimi-code kernel with its own conventions:
 // the harness builds its skill index from <root>/skills, the kernel config at
 // <root>/runtime/kimi-code/config.toml supports extra_agent_dirs /
@@ -317,7 +374,16 @@ const syncKimiDesktop = (sourceDir: string, rootDir: string, modelMap?: Record<s
       `extra_skill_dirs = [${escapeTomlString(p.join(rootDir, "skills"))}]`,
       DESKTOP_CONFIG_END
     ].join("\n")
-    yield* fs.writeFileString(configPath, upsertDesktopConfig(existing, block))
+    let merged = upsertDesktopConfig(existing, block)
+
+    // Apply canonical kernel settings (loop control, etc.) without touching
+    // any other key in the config.
+    const canonicalConfigPath = p.join(sourceDir, "kimi-desktop.toml")
+    if (yield* fs.exists(canonicalConfigPath)) {
+      merged = mergeTomlTables(merged, yield* fs.readFileString(canonicalConfigPath))
+    }
+
+    yield* fs.writeFileString(configPath, merged)
   })
 
 const mergeCodexConfig = (targetDir: string, agents: Array<{ name: string; description: string }>) =>
