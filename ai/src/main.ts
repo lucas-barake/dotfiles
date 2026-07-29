@@ -573,7 +573,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     )
     yield* syncProviderSkills(sourceDir, targetDir, target, modelMap)
     if (target === "claude") {
-      yield* syncInstructions(sourceDir, targetDir, "CLAUDE.md")
+      yield* syncInstructions(sourceDir, targetDir, "CLAUDE.md", "instructions.claude.md")
     }
     if (target === "kimi") {
       // Kimi Code reads global instructions from $KIMI_CODE_HOME/AGENTS.md

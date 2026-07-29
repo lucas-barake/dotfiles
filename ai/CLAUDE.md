@@ -8,6 +8,7 @@ Centralized AI tool configuration. Define agents and skills once in `canonical/`
 canonical/
   opencode.json                # OpenCode config file (copied verbatim)
   instructions.md              # Shared Claude Code and Codex instructions
+  instructions.claude.md       # Instructions prepended only for Claude Code
   instructions.codex.md        # Instructions prepended only for Codex
   agents/                      # Agent definitions (frontmatter + markdown body)
     fast-lookup.md
@@ -32,7 +33,7 @@ test/
 
 All agents and skills use Claude Code frontmatter as the superset format. The sync tool transforms per target:
 
-- **Claude Code**: keeps all fields verbatim
+- **Claude Code**: keeps all fields verbatim, and prepends `canonical/instructions.claude.md` to `canonical/instructions.md` when writing `~/.claude/CLAUDE.md`
 - **OpenCode**: drops `name`/`model` from agents, adds `mode: subagent`, converts `tools` to a deny-object. Drops `model`/`context` from skills
 - **Codex**: generates per-agent TOML files with `developer_instructions` (body text), prepends `canonical/instructions.codex.md` to `canonical/instructions.md` when writing `~/.codex/AGENTS.md`, and merges `[agents.<name>]` entries into `~/.codex/config.toml`. Drops `model`/`context` from skills
 - **Kimi Code**: keeps `name`/`description`/`tools` on agents (Kimi Code reads Claude Code-style agent files) and drops `model`/`context`. Drops `model`/`context` from skills. Writes `canonical/instructions.md` to `$KIMI_CODE_HOME/AGENTS.md`
@@ -108,4 +109,4 @@ Running `dotai models` again preserves your custom values and adds entries for a
 
 ## Key Invariant
 
-`canonical/agents/` is the source of truth for synced provider agents. `canonical/instructions.md` is the shared source of truth for Claude Code, Codex, and Kimi global instructions. `canonical/instructions.codex.md` contains the additional Codex only prefix. `canonical/global-skills/` is the source of truth for provider global skills. `canonical/project-skills/` is the source of truth for project local skill documents.
+`canonical/agents/` is the source of truth for synced provider agents. `canonical/instructions.md` is the shared source of truth for Claude Code, Codex, and Kimi global instructions. `canonical/instructions.claude.md` contains the additional Claude Code only prefix, and `canonical/instructions.codex.md` the Codex only prefix. `canonical/global-skills/` is the source of truth for provider global skills. `canonical/project-skills/` is the source of truth for project local skill documents.

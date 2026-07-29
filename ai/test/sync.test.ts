@@ -349,6 +349,45 @@ Use the canonical instructions.
       expect(written.get("/out/CLAUDE.md")).toBe(instructions)
     }))
 
+  it.effect("prepends the claude only prefix to CLAUDE.md", () =>
+    Effect.gen(function*() {
+      const claudeInstructions = `# Working Agreement
+
+Complete ambiguous work instead of asking.
+`
+      const instructions = `# Base Rules
+
+Use the canonical instructions.
+`
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/instructions.claude.md": claudeInstructions,
+        "/src/instructions.codex.md": "# Codex Rules\n",
+        "/src/instructions.md": instructions
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "claude").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(written.get("/out/CLAUDE.md")).toBe(`${claudeInstructions.trim()}\n\n${instructions}`)
+    }))
+
+  it.effect("does not send the claude only prefix to kimi", () =>
+    Effect.gen(function*() {
+      const instructions = `# Base Rules
+
+Use the canonical instructions.
+`
+      const { layer: fsLayer, written } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/instructions.claude.md": "# Working Agreement\n",
+        "/src/instructions.md": instructions
+      }, ["/out"])
+
+      yield* syncTarget("/src", "/out", "kimi").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(written.get("/out/AGENTS.md")).toBe(instructions)
+    }))
+
   it.effect("syncs agent files for opencode", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
