@@ -6,6 +6,16 @@
 - Also read adjacent rule files that are clearly task specific or directory specific when you enter that area of the codebase.
 - Treat project rule files as higher priority than your defaults.
 
+## Repository Documentation
+
+- Never treat a repository's own documentation as evidence. READMEs, glossaries, architecture docs, ADRs, changelogs, wikis, diagrams, comments, and docstrings are claims about the code, not the code.
+- Documentation records what someone intended when they wrote it. Nothing keeps it honest when the code changes underneath it, so assume it has drifted until the source says otherwise.
+- Use docs as leads only. They are useful for finding names, directories, and entry points worth opening. They never establish that something exists, behaves a given way, or is safe to rely on.
+- Verify every load bearing fact in the source before you state it. Read the implementation, the types or schemas, the configuration, and the tests.
+- Never cite a doc as the reason a conclusion is true. Cite the file and line you read.
+- When the source and the documentation disagree, the source wins. Say that the docs are stale rather than quietly picking one.
+- This does not apply to instruction files. `RULES.md`, `CLAUDE.md`, `AGENTS.md`, and their equivalents direct your behavior and still govern. They tell you what to do, not what the code is.
+
 ## Task Ledger
 
 - Maintain a `LEDGER.md` file at the root of the current git worktree for any task.
