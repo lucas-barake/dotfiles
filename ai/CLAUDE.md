@@ -17,6 +17,7 @@ canonical/
     web-search.md
   global-skills/               # Skills synced to provider skill directories
     change-audit.md             # Relevance selected implementation review
+    code-explainer.md           # Natural language walkthrough of a change or file set
     <skill-name>.md
   project-skills/              # Skills written into project .context/skills
     <skill-name>.md
