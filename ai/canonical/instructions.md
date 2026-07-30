@@ -53,6 +53,9 @@
 - Do not restate types, parameter names, control flow, or the function or variable name. Do not add section banners or boilerplate headers.
 - If a comment needs the words "this function" or "this line" to make sense, it is narrating. Delete it.
 - When the why can be expressed in code through a better name or a smaller function, do that instead of commenting.
+- Never comment the change. A comment describes the code as it stands, not what it replaced, what you altered, or why the diff exists. That belongs in the commit message or the PR body.
+- Delete dead code. Never comment it out to keep it around.
+- Do not raise the comment density of a file you are editing. When the surrounding code carries no comments, yours does not either unless the reason clears the bar above.
 
 ## External Libraries
 
