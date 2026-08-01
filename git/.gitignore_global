@@ -47,6 +47,7 @@ result-*
 # AI
 .context/
 .worktrees/
+LEDGER.md
 CLAUDE.md
 CLAUDE.local.md
 AGENTS.md
