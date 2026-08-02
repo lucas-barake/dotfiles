@@ -272,8 +272,10 @@ After implementation and planned tests are complete, review the full change as o
 6. Require Red Green Refactor for correctness and rules findings. Before tests that depend on third party behavior, inspect installed metadata and exact version matched official source and tests under `~/src/oss/.versions/`.
 7. Apply only reproduced fixes and executable simplifications. Remove invalid probe edits and rerun the narrow quality gates.
 8. After accepted fixes, recompute affected domains. Rerun the originating reviewer and only reviewers whose domain the fixes materially changed. Skip performance when the fixes do not change workload, algorithms, I/O, allocation, caching, queues, or backpressure. Skip security when they do not change trust boundaries, permissions, inputs, secrets, sensitive data, file or network capabilities, or dependency risk. Skip data integrity when they do not change stored or derived state, error handling, ownership, lifecycle, access policy outcomes, or legitimate resource access.
-9. Continue until the latest affected domain batch yields no confirmed fixes or accepted simplifications. Do not stop after the first batch and do not respawn the entire initial set automatically.
-10. Write every batch, reviewer selection, omission, finding, fix, and verification result to the ledger's `# Review Log`.
+9. Only a fix that changes production behavior, a contract, state, or integration wiring opens another batch. Accepted simplifications, test only edits, and comment, naming, formatting, or type only changes do not. `code-simplifier` runs once for the task.
+10. Budget three batches at most, and no reviewer runs more than twice. Stop at the first of these: the latest batch confirmed no new defect caused by your fixes, the budget is spent, or the only remaining candidates are preferences, style, or unreproduced suspicions. Follow up batches exist to catch defects your own fixes introduced, not to re-audit the change until it is perfect.
+11. Record anything left unsettled in `# Review Log` and in the PR body as an open candidate with the evidence so far and what would settle it. Shipping with a documented open candidate beats another review cycle.
+12. Write every batch, reviewer selection, omission, finding, fix, and verification result to the ledger's `# Review Log`.
 
 ### Step 13: Final verification
 

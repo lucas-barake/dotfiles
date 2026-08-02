@@ -86,11 +86,21 @@ For simplification findings, require the isolated baseline and candidate snapsho
 
 Apply only confirmed fixes and verified simplifications. Run the narrow checks after each accepted patch group.
 
-## 6. Continue Until Stable
+## 6. Converge And Stop
 
-Do not stop after the first batch when accepted fixes may have introduced new issues. Do not respawn the entire original batch automatically.
+Follow up batches exist to catch defects your own fixes introduced. They are not a second audit of the target, and they are not a search for a perfect change set.
 
-After each accepted patch group:
+Budget: three batches at most, and no reviewer runs more than twice. Most audits end after one batch.
+
+Only a fix that changes production behavior, a contract, state, or integration wiring reopens a domain. These never trigger another batch on their own:
+
+1. Accepted simplifications.
+2. Test only edits, including regression tests added during validation.
+3. Comment, naming, formatting, and type only changes.
+
+Patches you applied during the audit are not new review surface. Section 2 scopes findings to the user's target, not to your own fix hunks. Verify a fix with the narrow checks and the originating reviewer, and do not let it expand the audit.
+
+After each qualifying patch group:
 
 1. List the files and behavior changed by the fixes.
 2. Recompute which reviewer domains are materially affected.
@@ -101,9 +111,18 @@ After each accepted patch group:
 7. A fix that does not change persisted or derived state, error handling, partial failure, ownership, lifecycle, access policy outcomes, or legitimate resource access does not rerun `reviewer-data-integrity`.
 8. Rerun `reviewer-rules` only when the fix changes files or integration obligations governed by rules not already exhaustively checked for the new state.
 9. Rerun `test-reviewer` only when existing tests were changed, deleted, consolidated, or their production composition changed.
-10. Rerun `code-simplifier` only when the fix adds or materially changes abstractions, helpers, dependencies, composition, ownership, or duplication.
+10. `code-simplifier` runs once for the audit. A simplification it proposes never opens another batch.
 
-Repeat until the latest affected domain batch yields no confirmed fixes or accepted simplifications. Record each batch, selected domains, omissions, findings, fixes, and verification results.
+Stop at the first of these:
+
+1. The latest batch confirmed no new defect caused by your fixes.
+2. Three batches have run.
+3. A reviewer has run twice.
+4. The only remaining candidates are preferences, style, or unreproduced suspicions.
+
+Stopping is not failure. Report anything left over as an open candidate with the evidence you have and what would settle it. An unresolved candidate in the report is worth more than another hour of batches, and the human reviewing the change decides what to do with it.
+
+Record each batch, selected domains, omissions, findings, fixes, and verification results.
 
 ## 7. Report
 
@@ -114,7 +133,8 @@ Present:
 3. Existing test quality findings separately.
 4. Verified simplifications separately.
 5. Discarded candidates with a short reason.
-6. Review batches and why each reviewer was selected or skipped.
+6. Open candidates the budget ended before settling, each with the evidence so far and what would settle it.
+7. Review batches and why each reviewer was selected or skipped.
 7. Commands run and any verification that could not be completed.
 
 If no issues are confirmed, say so clearly. Do not pad the report with generic advice.
