@@ -24,6 +24,7 @@ Only interrupt if one of these is true:
 - Use TDD Red Green Refactor for bug fixes and validated reviewer findings. Other work adds its planned tests with the implementation
 - Run quality gates continuously, not only at the end
 - Reviewer findings are hypotheses until you validate them yourself
+- Plan review confirms direction. Implementation review confirms behavior. Never spend plan rounds on what only running code can answer
 - Keep one source of truth for the task in `LEDGER.md` at the worktree root
 
 ## Task Ledger
@@ -183,44 +184,42 @@ Requirements for the `# Test Plan`:
 - do not test third party behavior unless the repository adds meaningful integration logic above it
 - for bug fixes and behavior-changing findings, add regression tests that fail before the fix and pass after it
 
-### Step 8: Review the ledger plan with plan-specific reviewers
+### Step 8: Confirm the plan is directionally sound
 
-Do not trust the first draft of the plan.
+This gate answers one question: would an implementer following this ledger hit a wall that forces the whole approach to be scratched? Nothing else is in scope.
 
-Always include these reviewers:
+No code exists yet, so nothing here can be proven the way a finding is proven after implementation. There is no red test, no runtime evidence, and no diff to read. Any claim about how the finished code will behave is a hypothesis for Step 11 and Step 12, not a plan defect. Plan review is cheap insurance against a wrong direction, not a quality bar for the plan document.
 
-1. `plan-reviewer-logic`
-2. `plan-reviewer-behavioral`
-3. `plan-reviewer-references`
-4. `plan-reviewer-rules`
-5. `plan-test-reviewer`
+Default reviewer set, spawned once in parallel:
 
-Conditionally include these reviewers when the task warrants them:
+1. `plan-reviewer-references`: do the cited APIs, versions, and reference implementations actually support this approach
+2. `plan-reviewer-logic`: is the sequencing possible, are the prerequisites present, does the plan contradict the source it cites
 
-1. `plan-reviewer-data-integrity`
-2. `plan-reviewer-security`
-3. `plan-reviewer-concurrency`
+Add a reviewer from `plan-reviewer-behavioral`, `plan-reviewer-rules`, `plan-test-reviewer`, `plan-reviewer-data-integrity`, `plan-reviewer-security`, or `plan-reviewer-concurrency` only when a wrong invariant in that domain would invalidate the design rather than produce a defect that is fixable during implementation. Adding none is the normal case. Record the selection and every omission in `# Review Log`.
 
-Spawn them in parallel with:
+Spawn them with the ledger path, the task goal from `# Task`, the relevant rule files, and the reference and library roots they need. Each prompt must state that no code has been written yet, that the reviewer must report only defects that would force a change of approach, and that missing detail, unstated edge cases, style, and requests for the plan to say more are out of scope.
 
-- the ledger path
-- the task goal from the ledger's `# Task` section
-- the relevant rule files
-- the cloned reference roots and library roots they may need
+Wait for the reviewers before reviewing the same areas yourself.
 
-Do not use generic reviewer prompts. Tell each reviewer exactly what artifact to read, what sources to verify against, what class of defect to hunt for, and what evidence format to return.
+Triage every returned finding into exactly one of two buckets. Act now only when the finding is one of these:
 
-After spawning reviewers, wait for them to finish before doing your own review in the same scope. Do not inspect the same plan areas for findings while they run. Validate, deduplicate, and revise only after their results return.
+- a cited fact is wrong: the API, signature, export, or documented behavior does not exist as the ledger describes it
+- the ordering is impossible or a prerequisite the plan never obtains is required
+- an invariant or constraint in `# Decisions` is false
+- the approach cannot produce the acceptance criteria in `# Task` even when executed perfectly
 
-After they return:
+Everything else becomes a `# Checklist` item or a `# Review Log` note to settle during implementation. Do not revise the plan for it. A finding that can only be settled by running code is not a plan defect. Record it as a hypothesis together with the exact test that will settle it in Step 11.
 
-1. Deduplicate overlapping findings
-2. Validate every finding yourself against the repo, the libraries, and the references
-3. For uncertain claims, spawn narrow follow up agents against the specific source of truth
-4. Revise the ledger until no valid gaps remain
-5. Write the full review log to the ledger's `# Review Log`
+Validate every act-now finding yourself against the repo, the libraries, and the references before changing the ledger.
 
-Do not proceed to code until the plan is coherent, feasible, and fully sourced.
+Converge hard:
+
+- one round of plan review, one revision, then proceed
+- run a second round only when a validated finding changed the approach itself, and only for the reviewers whose domain the new approach touches
+- never respawn the full set and never run a third round. If something is still contested, write the open question and the fallback into `# Decisions` and settle it with code in Step 11
+- never revise the ledger to satisfy a reviewer's preference for more detail. The plan is done when it is executable, not when it is exhaustive
+
+Proceed to code once the direction is feasible and the cited facts hold. Missing detail is not a blocker. Implementation resolves it.
 
 ### Step 9: Prepare the execution branch
 
