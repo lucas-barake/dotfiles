@@ -17,7 +17,19 @@ Collect the PR title and body, linked issues, and commit messages. Treat them as
 
 ## 2. Investigate Thoroughly
 
-Read the full changed files, then everything the product behavior depends on. Do not explain from the diff alone. The product meaning of a change usually lives in what it connects to.
+The reader cannot check anything you say. That makes the standard absolute: every sentence in the report is either a fact you traced to source or is listed as unverified. There is no third state. A wrong report is worse than none, because it becomes the basis for a product decision.
+
+Read the full changed files, then everything the product behavior depends on. Do not explain from the diff alone. The product meaning of a change lives in what it connects to, and the connections are where diff level reading gets it wrong.
+
+Investigation is the whole job. The writing is minutes; the reading is the work. Some rules for how far to go:
+
+1. Follow every flow end to end, from the surface the user touches through every layer to storage and back. A rule enforced in the interface but not at the API is a different product fact than a rule enforced at both, and only reading both layers reveals which one ships.
+2. Resolve what actually runs. Feature flags, environment config, injection, and registration decide behavior per deployment. The code path you read is a candidate until the wiring says it is the one users get.
+3. Walk error paths to where they land. What the user is finally shown, what is logged, what is retried, and what work survives are all decided frames away from where the failure starts.
+4. Read the data layer. Schemas, migrations, and what happens to records that predate the change. A new rule over old data is a product event on its own.
+5. When behavior flows through a third party library or service, verify it per the base library rules against the installed version's source, not from memory. Defaults, limits, and failure behavior are claims about that version.
+6. Read the tests. They state the intended rule more plainly than the code, and they reveal when the intended rule and the shipped rule differ.
+7. Check the boundaries of the change. What the diff touches is not the whole behavior. Search for the other places the same rule, limit, or permission is enforced, duplicated, or missed.
 
 Chase each of these until you can state it as fact:
 
