@@ -7,7 +7,7 @@ description: Explains a pull request, commit, branch, or feature area for produc
 
 Translate a change into what it means for the product. The reader manages the product and knows the domain, but will not read code. They need to know what users can now do or no longer do, what rules the system enforces, which of those rules are choices someone made, and what those choices cost.
 
-This skill explains. It does not review. No verdicts, praise, or recommendations. Use `change-audit` for review and `code-explainer` for an engineer's walkthrough.
+This skill explains. It does not review. No verdicts, praise, or recommendations.
 
 ## 1. Establish The Target
 
