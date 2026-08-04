@@ -49,29 +49,23 @@ No analogies, metaphors, or comparisons to anything outside the code. No filler 
 
 ## 5. Output Format
 
-Order files so understanding builds forward. Entry points and shape defining files first, then what they call. Never alphabetical.
+Three invariants, whatever the structure:
+
+1. Every claim about specific code carries a clickable `[Lstart-Lend](path:start)` reference.
+2. Open with a short statement of what the change does at the level of the system, then the decisions a reader is most likely to challenge, each with its consequence as fact.
+3. Order for understanding. Entry points and shape defining files before what they call, entries in execution order or reading order. Never alphabetical.
+
+Beyond that, choose the structure the target deserves. A section per file suits a change small enough to walk. A large change reads better grouped by subsystem or by flow, with files as subsections, mechanical files compressed to a line each, and depth spent only where the decisions are. A single file or symbol may need no file headers at all. Do not stretch a small target to fill a template or force a 20,000 line change through a flat per file walk.
+
+The register of an entry, at any scale:
 
 ````
-## What This Changes
-
-Two or three sentences at the level of the system.
-
-## Decisions Worth Your Attention
-
-The choices a reader is most likely to challenge, each with a line reference and its consequence as fact.
-
-## `src/relay.ts`
-
-One line on what this file is responsible for now.
-
-[L20-28](src/relay.ts:20) Constructor takes a peer address and a retry schedule. Schedule is injected so tests can set backoff to zero.
-
 [L34-41](src/relay.ts:34) Opens one socket per peer, keyed by peer id. Peer count sets the open socket count for the relay's lifetime.
 
 [L52-60](src/relay.ts:52) Sends use that peer's socket. On failure the peer is marked dead and the message is dropped. No retry.
 ````
 
-Every entry carries a clickable `[Lstart-Lend](path:start)` reference. Walk entries in execution order, or reading order when there is no single flow. A file holding one decision gets one entry.
+A file holding one decision gets one entry.
 
 ## 6. Stay Descriptive
 
