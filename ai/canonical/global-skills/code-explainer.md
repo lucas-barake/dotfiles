@@ -17,9 +17,24 @@ If the target is empty, say so and stop. If it is ambiguous, take the most defen
 
 ## 2. Read For Behavior
 
-Read the full subject files, not the hunks. Then read what the behavior depends on: constructors and module wiring, so you can say what each argument controls. Call sites, for who drives this and how often. Types and schemas, for the real shape of the data. Teardown paths, for what is released and when. Config and defaults, for what happens unconfigured. Tests, when a contract is written down nowhere else.
+The reader will not check your claims. That is the premise of the skill, and it makes the standard absolute: every entry states what you read, never what a name, a comment, or a diff hunk led you to expect. A wrong explanation is worse than none, because it gets acted on.
 
-Derive everything from source. Comments are claims. When a comment and the code disagree, explain the code and note the drift.
+Read the full subject files, not the hunks. A hunk shows an edit. Behavior lives in what the edit lands in.
+
+Then chase each claim until it is fact:
+
+1. Constructors and module wiring, until you can say what each argument controls and what actually gets instantiated at runtime. When wiring is indirect, through injection, registration, or configuration, resolve it. The interface is not the behavior. The bound implementation is.
+2. Call sites, transitively, until you can say who drives this, how often, with what arguments, and on which paths. A function that looks per-request may be called once at startup. The call graph decides, not the shape.
+3. Types and schemas, for the real shape of the data, including what is optional, what is nullable, and what is validated where.
+4. Lifecycle, both directions. What creates and what tears down, in what order, and what happens when teardown never runs.
+5. Config, environment, defaults, and feature flags, until you can say what runs with nothing overridden and which deployments diverge.
+6. Error paths as far as they propagate. A swallowed error three frames up changes what a failure here means.
+7. Tests, when a contract is written down nowhere else, and to check that what you believe is what the suite enforces.
+8. Concurrent access. Who else touches this state, from what thread, task, or process, and what interleaving is possible.
+
+When behavior flows through a third party library, verify it per the base library rules against the installed version's source, not from memory. What a call does, what it throws, and what it defaults to are claims about that version.
+
+Stop only when one of two things is true for every entry you will write: you read the lines that make it fact, or you mark it unverified. There is no third state. Comments, docstrings, PR bodies, and commit messages are claims about the code. When they disagree with the source, explain the source and note the drift.
 
 ## 3. Choose The Altitude
 
