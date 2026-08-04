@@ -7,7 +7,7 @@ description: Explains a pull request, commit, branch, file, or directory in natu
 
 Render code as natural language so a human can judge the design without reading syntax. Give them the decisions and their consequences, keyed to lines they can open.
 
-This skill explains. It does not review. No verdicts, severity, praise, or recommendations. Use `change-audit` for review.
+This skill explains. It does not review. No verdicts, severity, praise, or recommendations.
 
 ## 1. Establish The Target
 
