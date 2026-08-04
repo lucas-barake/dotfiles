@@ -51,44 +51,15 @@ No analogies or metaphors. No filler. Never show code, function names, or file p
 
 Deliver the whole report inside one fenced markdown code block so it can be pasted elsewhere intact.
 
-Structure by product behavior, never by file:
+Four invariants, whatever the structure:
 
-````
-# <Change name, in product terms>
+1. Structure by product behavior, never by file or subsystem.
+2. Open with what a user or the business gets, in the words of a release note, then the decisions most likely to matter to a product owner: limits and their values, defaults, who is excluded, what is irreversible, what is silently dropped or retried. One line each, consequence included.
+3. When stated intent and observed behavior differ, say so explicitly. When something could not be confirmed from source, list it plainly.
+4. No code, function names, or file paths in the body. Keep an appendix after the code block mapping each behavior to its files and lines, so an engineer can be pointed at the evidence.
 
-## What This Is
-
-Two or three sentences. What a user or the business gets, in the words you would use in a release note.
-
-## Behavior
-
-### <One behavior, named in product terms>
-
-What happens now, step by step from the user's side. Then the rules underneath it, each with its exact value and its consequence stated as fact.
-
-## Decisions Worth Your Attention
-
-The choices most likely to matter to a product owner: limits and their values, defaults, who is excluded, what is irreversible, what is silently dropped or retried. One line each, consequence included.
-
-## Edge Cases And Failure
-
-What users experience when things go wrong, and what happens to data that already exists.
-
-## Rollout
-
-Live on merge or gated, and what has to happen before real users see it.
-
-## Stated Intent Versus Observed Behavior
-
-Only when they differ. What the PR or issue claims, what the code does.
-
-## Not Verified
-
-What the explanation could not confirm from source, listed plainly.
-````
-
-Omit any section with nothing real in it. Keep an appendix after the code block mapping each behavior to its files and lines, so an engineer can be pointed at the evidence, but keep every reference out of the report body itself.
+Beyond that, shape the report to the target. A focused change reads as a handful of behavior sections, each walking what happens from the user's side and then the rules underneath with their exact values. A large release reads better grouped by product area, with behaviors nested inside, rollout and failure handling per area when they differ, or gathered once when they do not. A single policy change may need no sections at all. Do not stretch a small change to fill a template or flatten a 20,000 line release into one undifferentiated list.
 
 ## 6. Scale To Large Targets
 
-Hold a small target yourself. For a large one, spawn one reader per subsystem in parallel, each returning behaviors, rules, and evidence in the shape above. Merge them by product behavior, not by subsystem, write the lead sections yourself, and verify any claim you did not read yourself.
+Hold a small target yourself. For a large one, spawn one reader per subsystem in parallel, each returning behaviors, rules, and evidence. Merge them by product behavior, not by subsystem, write the lead sections yourself, and verify any claim you did not read yourself.
