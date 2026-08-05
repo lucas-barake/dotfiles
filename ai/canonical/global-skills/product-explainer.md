@@ -49,15 +49,23 @@ For each, read the implementation, the schemas, the configuration, and the tests
 
 Every behavior in the report answers three questions: what the system does, why it plausibly does it that way, and what that means for someone using or selling the product.
 
-The why must be grounded. When the code, tests, PR body, or linked issue state the reason, report it as the reason. When they do not, you may state what the choice trades off, as fact, without inventing a motive. "Uploads over 50 MB are rejected. The limit is a constant with no override, so raising it for one customer means a release" is grounded. "They chose 50 MB to keep costs down" is a guess unless something says so.
+The why must be grounded. When the code, tests, PR body, or linked issue state the reason, report it as the reason. When they do not, you may state what the choice trades off, as fact, without inventing a motive. "Uploads over 50 MB are rejected. The limit is fixed in the software with no per customer setting, so raising it for one customer requires shipping an update for everyone" is grounded. "They chose 50 MB to keep costs down" is a guess unless something says so.
 
 Say what is a decision versus what is incidental. A hardcoded three retry limit is a decision someone can revisit. The reader's job is to spot the decisions they disagree with. Surface every threshold, default, and rule as a visible, changeable choice with its current value.
 
 ## 4. Voice
 
-Plain words, short sentences. Technical terms the reader knows are fine. Terms that only mean something inside the codebase are not. Name features, roles, and flows the way the product does, not the way the code does.
+Write for someone who runs the product, not someone who builds it. They know what an API, a login, and a database are. They do not know what a cache, a queue, a webhook, a token, a schema, or a race condition is, and the report never asks them to.
 
-No analogies or metaphors. No filler. Never show code, function names, or file paths in the body. State numbers exactly: "locked out for 15 minutes after 5 failed attempts", never "temporarily locked out after too many attempts".
+The rule that governs every sentence: describe the consequence, not the mechanism. Machinery may only appear translated into what it does to the user or the business.
+
+- Not "the session token is cached for 15 minutes". Instead "after someone's permissions change, the system can keep honoring the old permissions for up to 15 minutes".
+- Not "deletes are processed through a queue". Instead "deleting does not happen instantly. The item disappears from view right away, but is actually removed a short time later, and a failure in between can leave it existing but invisible".
+- Not "the endpoint is idempotent". Instead "submitting the same order twice, for example after a page refresh, creates one order, not two".
+
+The test for every sentence: could it go in a release note, or be said to a customer, unchanged. If it needs a developer to interpret it, translate it or cut it.
+
+Name features, roles, and flows the way the product does, not the way the code does. No analogies or metaphors. No filler. Never show code, function names, or file paths in the body. State numbers exactly: "locked out for 15 minutes after 5 failed attempts", never "temporarily locked out after too many attempts". Exactness is plain language. Vagueness is not simplicity.
 
 ## 5. Output Format
 
