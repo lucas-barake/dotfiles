@@ -8,6 +8,9 @@ if not contains -- /Users/lucas/dotfiles/fish/.config/fish/functions $fish_funct
 end
 
 if status is-interactive
+    # fish_greeting prints its default only when the variable is unset, so an
+    # empty value is what silences it. See share/fish/functions/fish_greeting.fish.
+    set -g fish_greeting ''
     set -g fish_prompt_pwd_dir_length 3
     set -gx EDITOR nvim
     set -gx VISUAL nvim

@@ -20,7 +20,7 @@ This installs system packages (via brew/apt/pacman/dnf) and the cmux terminal, s
 | `cmux/` | cmux terminal. See below. |
 | `nvim/` | Neovim |
 | `zed/` | Zed editor |
-| `fish/` | Fish shell config and functions |
+| `fish/` | Fish shell config and functions, plus `~/.hushlogin` to drop the `Last login:` banner |
 | `lsd/` | `lsd` file listing |
 | `git/` | Global gitconfig and gitignore |
 
