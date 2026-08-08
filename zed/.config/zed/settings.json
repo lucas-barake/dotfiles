@@ -88,7 +88,8 @@
   },
   "preview_tabs": { "enabled": false },
   "max_tabs": 7,
-  "title_bar": { "show_branch_name": true, "show_branch_icon": true },
+  "title_bar": { "show_branch_status_icon": true,
+                 "show_branch_name": true },
   "toolbar": {
     "breadcrumbs": false,
     "quick_actions": false,
@@ -151,7 +152,7 @@
       "provider": "anthropic",
       "model": "claude-sonnet-4-5-thinking-latest",
     },
-    "play_sound_when_agent_done": true,
+    "play_sound_when_agent_done": "always",
     "single_file_review": true,
   },
 
@@ -293,17 +294,18 @@
   // ─────────────────────────────────────────────────────────────
   "profiles": {
     "rec": {
-      "ui_font_size": 24,
-      "buffer_font_size": 24,
-      "diagnostics_max_severity": null,
-      "diagnostics": {
-        "inline": {
-          "enabled": true,
-          "max_severity": "warning",
-          "padding": 1,
-          "min_column": 0,
-        },
-      },
+      "settings": {
+        "ui_font_size": 24,
+        "buffer_font_size": 24,
+        "diagnostics": {
+          "inline": {
+            "enabled": true,
+            "max_severity": "warning",
+            "padding": 1,
+            "min_column": 0
+          }
+        }
+      }
     },
   },
 }
