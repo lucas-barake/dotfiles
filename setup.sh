@@ -2,7 +2,28 @@
 set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-PACKAGES=(nvim zed scripts launchd git fish lsd)
+PACKAGES=(nvim zed scripts launchd git fish lsd ghostty helix kitty yazi)
+
+# Directories that mirror $HOME but are deliberately not stowed. Everything
+# else that mirrors $HOME must be in PACKAGES, or it gets built, committed, and
+# documented while never actually being linked to anything.
+NOT_PACKAGES=(ai bin opencode-profile state)
+
+check_package_drift() {
+  local dir name unlisted=()
+  for dir in "$DOTFILES"/*/; do
+    name="$(basename "$dir")"
+    printf '%s\n' "${PACKAGES[@]}" "${NOT_PACKAGES[@]}" | grep -qx "$name" && continue
+    unlisted+=("$name")
+  done
+  if [ ${#unlisted[@]} -gt 0 ]; then
+    echo "Unlisted directories: ${unlisted[*]}" >&2
+    echo "Add each to PACKAGES to stow it, or to NOT_PACKAGES to skip it." >&2
+    exit 1
+  fi
+}
+
+check_package_drift
 
 if [[ "$(uname)" == "Darwin" ]]; then
   if ! command -v brew &>/dev/null; then
@@ -23,7 +44,7 @@ echo "Stowing packages..."
 cd "$DOTFILES"
 for pkg in "${PACKAGES[@]}"; do
   echo "  $pkg"
-  stow -v "$pkg"
+  stow -v --restow "$pkg"
 done
 
 

@@ -22,10 +22,15 @@ This installs system packages (via brew/apt/pacman/dnf), stows all config packag
 | `zed/` | Zed editor |
 | `kitty/` | Kitty terminal |
 | `yazi/` | Yazi file manager |
+| `fish/` | Fish shell config and functions |
+| `lsd/` | `lsd` file listing |
 | `scripts/` | `~/.local/bin/` utilities (`oss-link`, `oss-update`) |
 | `launchd/` | macOS LaunchAgents (daily `oss-update`) |
-| `git/` | Global gitignore |
-| `ai/` | AI tooling config and sync CLI (not a stow package) |
+| `git/` | Global gitconfig and gitignore |
+
+Not stow packages: `ai/` (AI tooling config and sync CLI), `bin/` (PATH shims), `opencode-profile/`, `state/`.
+
+`setup.sh` refuses to run if a top-level directory is in neither `PACKAGES` nor `NOT_PACKAGES`, so a new package cannot be added to the repo and then silently never linked.
 
 ## AI tooling (`ai/`)
 
