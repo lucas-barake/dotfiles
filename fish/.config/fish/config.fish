@@ -21,7 +21,6 @@ source ~/.orbstack/shell/init2.fish 2>/dev/null || :
 
 # opencode
 fish_add_path /Users/lucas/.opencode/bin
-fish_add_path /Users/lucas/dotfiles/opencode-profile/bin
 
 # pnpm
 set -gx PNPM_HOME "/Users/lucas/Library/pnpm"

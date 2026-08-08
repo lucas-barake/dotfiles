@@ -4,8 +4,6 @@ ai/node_modules/
 ai/bun.lock
 ai/.*.bun-build
 .claude/
-launchd/Library/LaunchAgents/org.git-scm.git.*.plist
-launchd/Library/LaunchAgents/com.google.*.plist
 zed/.config/zed/prompts/prompts-library-db.0.mdb/lock.mdb
 zed/.config/zed/settings_backup.json
 state/

@@ -10,7 +10,7 @@ cd ~/dotfiles
 ./setup.sh
 ```
 
-This installs system packages (via brew/apt/pacman/dnf) and the cmux terminal, stows all config packages, sets up the global gitignore, loads the launchd agent, and builds the `dotai` CLI.
+This installs system packages (via brew/apt/pacman/dnf) and the cmux terminal, stows all config packages, sets up the global gitignore, and builds the `dotai` CLI.
 
 ## Packages
 
@@ -22,11 +22,9 @@ This installs system packages (via brew/apt/pacman/dnf) and the cmux terminal, s
 | `zed/` | Zed editor |
 | `fish/` | Fish shell config and functions |
 | `lsd/` | `lsd` file listing |
-| `scripts/` | `~/.local/bin/` utilities (`oss-link`, `oss-update`) |
-| `launchd/` | macOS LaunchAgents (daily `oss-update`) |
 | `git/` | Global gitconfig and gitignore |
 
-Not stow packages: `ai/` (AI tooling config and sync CLI), `bin/` (PATH shims), `opencode-profile/`, `state/`.
+Not stow packages: `ai/` (AI tooling config and sync CLI), `bin/` (PATH shims), `state/`.
 
 `setup.sh` refuses to run if a top-level directory is in neither `PACKAGES` nor `NOT_PACKAGES`, so a new package cannot be added to the repo and then silently never linked.
 
@@ -49,18 +47,3 @@ dotai sync
 ```
 
 The `dotai` binary is built from `ai/` and symlinked to `~/.local/bin/dotai` during setup. See `ai/README.md` for details.
-
-## OSS library sources
-
-`oss-link` creates a `.context/oss` symlink in the current project pointing to `~/src/oss/`. This makes library source code available to AI coding tools that scan the project directory.
-
-```bash
-cd ~/my-project
-oss-link
-```
-
-`oss-update` pulls all repos in `~/src/oss/` (ff-only). Runs daily at noon via launchd, or manually:
-
-```bash
-oss-update
-```

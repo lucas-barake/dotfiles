@@ -2,12 +2,12 @@
 set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-PACKAGES=(nvim zed scripts launchd git fish lsd ghostty cmux)
+PACKAGES=(nvim zed git fish lsd ghostty cmux)
 
 # Directories that mirror $HOME but are deliberately not stowed. Everything
 # else that mirrors $HOME must be in PACKAGES, or it gets built, committed, and
 # documented while never actually being linked to anything.
-NOT_PACKAGES=(ai bin opencode-profile state)
+NOT_PACKAGES=(ai bin state)
 
 check_package_drift() {
   local dir name unlisted=()
@@ -54,13 +54,6 @@ done
 
 
 if [[ "$(uname)" == "Darwin" ]]; then
-  PLIST="$HOME/Library/LaunchAgents/com.lucas.oss-update.plist"
-  if [ -f "$PLIST" ]; then
-    launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null || true
-    launchctl bootstrap "gui/$(id -u)" "$PLIST"
-    echo "Loaded oss-update launchd agent"
-  fi
-
   # cmux settings that cmux.json cannot express. Quit cmux before running this
   # or it writes its in-memory preferences back over both keys on exit.
   defaults write com.cmuxterm.app browserDisabledOverride -bool true
