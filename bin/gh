@@ -1,0 +1,63 @@
+#!/bin/sh
+# Picks the GitHub account from the working directory, mirroring the gitdir
+# rules in ~/.gitconfig.
+#
+# gh has no per-directory account setting. Its active account is global state
+# in ~/.config/gh/hosts.yml, so a `gh auth switch` in any shell silently
+# repoints every other shell, and commands like `gh repo fork` land on the
+# wrong account with no warning. GH_TOKEN outranks the active account, so
+# setting it per invocation makes the choice explicit instead of ambient.
+
+DEFAULT_ACCOUNT=lucas-barake
+SCOPED_ACCOUNT=lucas-shs
+SCOPED_PREFIX="$HOME/src/lucas-shs"
+
+self_dir=$(cd "$(dirname "$0")" 2>/dev/null && pwd -P)
+real_gh=""
+saved_ifs=$IFS
+IFS=:
+for dir in $PATH; do
+	[ -n "$dir" ] || dir=.
+	resolved=$(cd "$dir" 2>/dev/null && pwd -P) || continue
+	[ "$resolved" = "$self_dir" ] && continue
+	if [ -x "$dir/gh" ]; then
+		real_gh="$dir/gh"
+		break
+	fi
+done
+IFS=$saved_ifs
+
+if [ -z "$real_gh" ]; then
+	echo "gh shim: could not find the real gh on PATH" >&2
+	exit 127
+fi
+
+# Leave auth management alone. With GH_TOKEN set, `gh auth login` refuses to
+# run and `gh auth status` reports the env token instead of the stored ones.
+for arg in "$@"; do
+	case $arg in
+	-*) continue ;;
+	auth) exec "$real_gh" "$@" ;;
+	*) break ;;
+	esac
+done
+
+# An explicitly exported token wins, so CI and one-off overrides still work.
+if [ -n "$GH_TOKEN" ] || [ -n "$GITHUB_TOKEN" ]; then
+	exec "$real_gh" "$@"
+fi
+
+cwd=$(pwd -P 2>/dev/null) || cwd=$PWD
+case "$cwd/" in
+"$SCOPED_PREFIX"/*) account=$SCOPED_ACCOUNT ;;
+*) account=$DEFAULT_ACCOUNT ;;
+esac
+
+# A missing or logged-out account falls through to gh's own behavior rather
+# than breaking every command.
+if token=$("$real_gh" auth token --user "$account" 2>/dev/null) && [ -n "$token" ]; then
+	GH_TOKEN=$token
+	export GH_TOKEN
+fi
+
+exec "$real_gh" "$@"

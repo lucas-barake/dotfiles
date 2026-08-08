@@ -1,6 +1,9 @@
 [include]
 	path = ~/.gitconfig.local
 
+[includeIf "gitdir:/Users/lucas/src/lucas-shs/"]
+	path = ~/.gitconfig-lucas-shs
+
 [core]
 	excludesfile = ~/.gitignore_global
 [pager]
