@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-PACKAGES=(nvim zed scripts launchd git fish lsd ghostty helix kitty yazi)
+PACKAGES=(nvim zed scripts launchd git fish lsd ghostty cmux)
 
 # Directories that mirror $HOME but are deliberately not stowed. Everything
 # else that mirrors $HOME must be in PACKAGES, or it gets built, committed, and
@@ -32,6 +32,11 @@ if [[ "$(uname)" == "Darwin" ]]; then
   fi
   echo "Installing packages..."
   brew install stow neovim fzf ripgrep fd node fish dlvhdr/formulae/diffnav lazygit lsd
+  # --force takes over a copy of cmux.app that was installed by hand. The cask
+  # sets auto_updates, so brew never touches it again after this.
+  if ! brew list --cask cmux &>/dev/null; then
+    brew install --cask --force cmux
+  fi
 elif command -v apt-get &>/dev/null; then
   sudo apt-get update && sudo apt-get install -y stow
 elif command -v pacman &>/dev/null; then
@@ -55,6 +60,12 @@ if [[ "$(uname)" == "Darwin" ]]; then
     launchctl bootstrap "gui/$(id -u)" "$PLIST"
     echo "Loaded oss-update launchd agent"
   fi
+
+  # cmux settings that cmux.json cannot express. Quit cmux before running this
+  # or it writes its in-memory preferences back over both keys on exit.
+  defaults write com.cmuxterm.app browserDisabledOverride -bool true
+  defaults write com.cmuxterm.app customSidebars.beta.enabled -bool false
+  echo "Applied cmux defaults"
 fi
 
 if [ -f "$DOTFILES/ai/package.json" ]; then

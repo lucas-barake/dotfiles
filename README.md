@@ -10,18 +10,16 @@ cd ~/dotfiles
 ./setup.sh
 ```
 
-This installs system packages (via brew/apt/pacman/dnf), stows all config packages, sets up the global gitignore, loads the launchd agent, and builds the `dotai` CLI.
+This installs system packages (via brew/apt/pacman/dnf) and the cmux terminal, stows all config packages, sets up the global gitignore, loads the launchd agent, and builds the `dotai` CLI.
 
 ## Packages
 
 | Directory | What it configures |
 |---|---|
-| `helix/` | Helix editor |
-| `ghostty/` | Ghostty terminal |
+| `ghostty/` | Terminal font, palette and keybinds. cmux renders with libghostty and reads this file, so it applies even though Ghostty.app is not the terminal in use. |
+| `cmux/` | cmux terminal. See below. |
 | `nvim/` | Neovim |
 | `zed/` | Zed editor |
-| `kitty/` | Kitty terminal |
-| `yazi/` | Yazi file manager |
 | `fish/` | Fish shell config and functions |
 | `lsd/` | `lsd` file listing |
 | `scripts/` | `~/.local/bin/` utilities (`oss-link`, `oss-update`) |
@@ -31,6 +29,16 @@ This installs system packages (via brew/apt/pacman/dnf), stows all config packag
 Not stow packages: `ai/` (AI tooling config and sync CLI), `bin/` (PATH shims), `opencode-profile/`, `state/`.
 
 `setup.sh` refuses to run if a top-level directory is in neither `PACKAGES` nor `NOT_PACKAGES`, so a new package cannot be added to the repo and then silently never linked.
+
+## cmux (`cmux/`)
+
+`cmux/.config/cmux/cmux.json` is cmux's own settings file. cmux watches it and reloads on save, and the Settings UI writes back into it, so changing a setting in the app updates the tracked file and shows up as a normal diff.
+
+Two settings have no `cmux.json` equivalent and are only reachable through `NSUserDefaults`, so `setup.sh` writes them directly: the browser feature is disabled (`browserDisabledOverride`) and the custom sidebars beta is turned off (`customSidebars.beta.enabled`). cmux overwrites its preferences on exit, so quit cmux before running `setup.sh` or those two will not stick.
+
+Terminal appearance is not configured here. cmux renders with libghostty and reads `ghostty/.config/ghostty/config`.
+
+Avoid setting a socket control password while this file is tracked. `automation.socketPassword` is a valid `cmux.json` key, so the app would write the password into the repo.
 
 ## AI tooling (`ai/`)
 

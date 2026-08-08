@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+  "schemaVersion": 1,
+
+  "app": {
+    "minimalMode": true,
+    "sendAnonymousTelemetry": false,
+    "reorderOnNotification": false,
+    "openSupportedFilesInCmux": false,
+    "openMarkdownInCmuxViewer": false,
+    "preferredEditor": "open -a Zed"
+  },
+
+  "browser": {
+    "openTerminalLinksInCmuxBrowser": false,
+    "interceptTerminalOpenCommandInCmuxBrowser": false
+  },
+
+  "sidebar": {
+    "openPullRequestLinksInCmuxBrowser": false,
+    "openPortLinksInCmuxBrowser": false
+  }
+}
