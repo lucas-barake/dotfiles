@@ -34,7 +34,13 @@ Not stow packages: `ai/` (AI tooling config and sync CLI), `bin/` (PATH shims), 
 
 Two settings have no `cmux.json` equivalent and are only reachable through `NSUserDefaults`, so `setup.sh` writes them directly: the browser feature is disabled (`browserDisabledOverride`) and the custom sidebars beta is turned off (`customSidebars.beta.enabled`). cmux overwrites its preferences on exit, so quit cmux before running `setup.sh` or those two will not stick.
 
+`⌘1`–`⌘9` are remapped from `selectWorkspaceByNumber` to `selectSurfaceByNumber`. Workspaces are the sidebar rows and surfaces are the tabs across the top of a window, so with the sidebar hidden the stock binding drives a list nobody can see. Workspace-by-number moves to `⇧⌘1`–`⇧⌘9`. Only the `1` is written: cmux normalizes a numbered binding to cover all nine digits.
+
+`cmux reload-config` applies changes to this file and to the Ghostty config without restarting the app. `cmux config validate` checks the JSONC before you reload.
+
 Terminal appearance is not configured here. cmux renders with libghostty and reads `ghostty/.config/ghostty/config`.
+
+That file no longer binds `new_tab` or `goto_tab`. Tabs and windows belong to cmux, not to the terminal surface it embeds, so those Ghostty actions had nothing to act on.
 
 Avoid setting a socket control password while this file is tracked. `automation.socketPassword` is a valid `cmux.json` key, so the app would write the password into the repo.
 

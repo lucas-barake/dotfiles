@@ -32,15 +32,8 @@ palette = 13=#C792EA
 palette = 14=#89DDFF
 palette = 15=#ffffff
 
-keybind = cmd+t=new_tab
+# Tabs and windows belong to cmux, not to the terminal surface it embeds, so
+# new_tab and goto_tab have nothing to act on here. cmux owns those keys in
+# cmux/.config/cmux/cmux.json.
 keybind = cmd+k=clear_screen
-keybind = cmd+one=goto_tab:1
-keybind = cmd+two=goto_tab:2
-keybind = cmd+three=goto_tab:3
-keybind = cmd+four=goto_tab:4
-keybind = cmd+five=goto_tab:5
-keybind = cmd+six=goto_tab:6
-keybind = cmd+seven=goto_tab:7
-keybind = cmd+eight=goto_tab:8
-keybind = cmd+nine=goto_tab:9
 keybind = ctrl+enter=text:\x1b[13;5u

@@ -19,5 +19,15 @@
   "sidebar": {
     "openPullRequestLinksInCmuxBrowser": false,
     "openPortLinksInCmuxBrowser": false
+  },
+
+  // The tab strip at the top of a window lists surfaces (panes), not
+  // workspaces. Workspaces only ever appear in the sidebar, which is hidden
+  // here, so cmux's stock ⌘1-9 "select workspace" has nothing to switch
+  // between. Swap the two so ⌘1-9 drives the tabs that are actually visible.
+  // Only the "1" is read: cmux normalizes these to cover digits 1 through 9.
+  "shortcuts": {
+    "selectSurfaceByNumber": "cmd+1",
+    "selectWorkspaceByNumber": "cmd+shift+1"
   }
 }
