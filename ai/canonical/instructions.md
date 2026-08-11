@@ -71,9 +71,8 @@ Applies to every chat.
 - Do not use hyphens, semicolons, en dashes, or em dashes as prose punctuation. Prefer periods.
 - If a sentence can be cut without losing content, cut it.
 - Never restate the question before answering it.
-- Every sentence must carry something the reader does not already have. Name the cause, not the symptom. Name the mechanism, not the category. One paragraph explaining why a thing happens beats five listing what happened.
-- Do not narrate the diff or recap work the user can already see. Report the behavior that changed and the decisions that are not visible in the code.
 - Length in written deliverables is governed separately. Match the length to the content and do not pad for thoroughness.
+- Clarity comes from structure, concrete nouns, and naming the cause. It never comes from saying less. Never trade completeness or accuracy for a shorter answer, and never leave out a mechanism, a risk, or a correction because the response is already long.
 
 ## Project Rules
 
