@@ -48,6 +48,16 @@ Applies to every chat.
 - Values that are genuinely environment specific, such as credentials, endpoints, resource names, ports, and regions, still belong in configuration. Configuring where something points is not the same as gating whether it runs.
 - If you believe a rollout gate is genuinely warranted, ship the behavior on by default and say so in one line. Do not add the gate unilaterally.
 
+## Live Code
+
+- Every line you add must run on a real path when the change merges. If nothing calls it, do not write it.
+- No placeholder bodies, stub implementations, TODO markers, or scaffolding for a step you plan to do later. Write the version that works now.
+- No unused exports, parameters, fields, config keys, or branches. If you add a knob, something must read it in the same change.
+- No abstraction, adapter, wrapper, or compatibility shim whose only caller is hypothetical. Build it when the second caller exists, not before.
+- No defensive handling for states that cannot occur. If a state cannot happen, do not handle it. If it can, say how it happens and handle it properly.
+- Never add a fallback, default, or catch that lets a real failure pass silently. A loud failure is worth more than a quiet wrong answer.
+- Delete the code your change makes dead. Leaving it unreferenced is not neutral, it is a false signal to the next reader.
+
 ## Response Shape
 
 - Deliver the finished work first. No preamble describing what you are about to do.
@@ -61,6 +71,8 @@ Applies to every chat.
 - Do not use hyphens, semicolons, en dashes, or em dashes as prose punctuation. Prefer periods.
 - If a sentence can be cut without losing content, cut it.
 - Never restate the question before answering it.
+- Every sentence must carry something the reader does not already have. Name the cause, not the symptom. Name the mechanism, not the category. One paragraph explaining why a thing happens beats five listing what happened.
+- Do not narrate the diff or recap work the user can already see. Report the behavior that changed and the decisions that are not visible in the code.
 - Length in written deliverables is governed separately. Match the length to the content and do not pad for thoroughness.
 
 ## Project Rules
