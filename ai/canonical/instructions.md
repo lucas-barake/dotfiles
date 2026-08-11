@@ -38,6 +38,16 @@ Applies to every chat.
 - When the best solution is genuinely large, state the full correct design and then sequence the work. Do not silently downgrade the design to fit a smaller effort.
 - Do not present a compromised design as the recommendation and bury the correct one as an alternative. Lead with the best solution.
 
+## Shipping Defaults
+
+- Build every change to run in production, on the default path, for everyone, from the moment it merges. That is the deliverable.
+- Do not introduce an environment variable, config key, kill switch, opt in toggle, or `NODE_ENV` branch that keeps new behavior off or degraded. A change that only runs when someone sets something has not shipped.
+- Do not disable, weaken, loosen, or make optional an existing check, validation, test, type rule, or lint rule to make a change land. Fix the change instead.
+- Assume production data volumes, production concurrency, production failure rates, and real users. Never assume a local or test environment.
+- The exceptions are narrow: the user asked for the gate, the requirements or ticket call for it, or the surface already has a flag or rollout system that this change plainly belongs in. Follow the existing mechanism when one exists rather than inventing a parallel one.
+- Values that are genuinely environment specific, such as credentials, endpoints, resource names, ports, and regions, still belong in configuration. Configuring where something points is not the same as gating whether it runs.
+- If you believe a rollout gate is genuinely warranted, ship the behavior on by default and say so in one line. Do not add the gate unilaterally.
+
 ## Response Shape
 
 - Deliver the finished work first. No preamble describing what you are about to do.
