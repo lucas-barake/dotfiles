@@ -7,7 +7,7 @@ description: Explains a pull request, commit, branch, file, or directory in natu
 
 Render code as natural language so a human can judge the design without reading syntax. Give them the decisions and their consequences, keyed to lines they can open.
 
-This skill explains. It does not review. No verdicts, severity, praise, or recommendations. Use `change-audit` for review.
+This skill explains. It does not review. No verdicts, severity, praise, or recommendations.
 
 ## 1. Establish The Target
 
@@ -17,9 +17,24 @@ If the target is empty, say so and stop. If it is ambiguous, take the most defen
 
 ## 2. Read For Behavior
 
-Read the full subject files, not the hunks. Then read what the behavior depends on: constructors and module wiring, so you can say what each argument controls. Call sites, for who drives this and how often. Types and schemas, for the real shape of the data. Teardown paths, for what is released and when. Config and defaults, for what happens unconfigured. Tests, when a contract is written down nowhere else.
+The reader will not check your claims. That is the premise of the skill, and it makes the standard absolute: every entry states what you read, never what a name, a comment, or a diff hunk led you to expect. A wrong explanation is worse than none, because it gets acted on.
 
-Derive everything from source. Comments are claims. When a comment and the code disagree, explain the code and note the drift.
+Read the full subject files, not the hunks. A hunk shows an edit. Behavior lives in what the edit lands in.
+
+Then chase each claim until it is fact:
+
+1. Constructors and module wiring, until you can say what each argument controls and what actually gets instantiated at runtime. When wiring is indirect, through injection, registration, or configuration, resolve it. The interface is not the behavior. The bound implementation is.
+2. Call sites, transitively, until you can say who drives this, how often, with what arguments, and on which paths. A function that looks per-request may be called once at startup. The call graph decides, not the shape.
+3. Types and schemas, for the real shape of the data, including what is optional, what is nullable, and what is validated where.
+4. Lifecycle, both directions. What creates and what tears down, in what order, and what happens when teardown never runs.
+5. Config, environment, defaults, and feature flags, until you can say what runs with nothing overridden and which deployments diverge.
+6. Error paths as far as they propagate. A swallowed error three frames up changes what a failure here means.
+7. Tests, when a contract is written down nowhere else, and to check that what you believe is what the suite enforces.
+8. Concurrent access. Who else touches this state, from what thread, task, or process, and what interleaving is possible.
+
+When behavior flows through a third party library, verify it per the base library rules against the installed version's source, not from memory. What a call does, what it throws, and what it defaults to are claims about that version.
+
+Stop only when one of two things is true for every entry you will write: you read the lines that make it fact, or you mark it unverified. There is no third state. Comments, docstrings, PR bodies, and commit messages are claims about the code. When they disagree with the source, explain the source and note the drift.
 
 ## 3. Choose The Altitude
 
@@ -49,29 +64,23 @@ No analogies, metaphors, or comparisons to anything outside the code. No filler 
 
 ## 5. Output Format
 
-Order files so understanding builds forward. Entry points and shape defining files first, then what they call. Never alphabetical.
+Three invariants, whatever the structure:
+
+1. Every claim about specific code carries a clickable `[Lstart-Lend](path:start)` reference.
+2. Open with a short statement of what the change does at the level of the system, then the decisions a reader is most likely to challenge, each with its consequence as fact.
+3. Order for understanding. Entry points and shape defining files before what they call, entries in execution order or reading order. Never alphabetical.
+
+Beyond that, choose the structure the target deserves. A section per file suits a change small enough to walk. A large change reads better grouped by subsystem or by flow, with files as subsections, mechanical files compressed to a line each, and depth spent only where the decisions are. A single file or symbol may need no file headers at all. Do not stretch a small target to fill a template or force a 20,000 line change through a flat per file walk.
+
+The register of an entry, at any scale:
 
 ````
-## What This Changes
-
-Two or three sentences at the level of the system.
-
-## Decisions Worth Your Attention
-
-The choices a reader is most likely to challenge, each with a line reference and its consequence as fact.
-
-## `src/relay.ts`
-
-One line on what this file is responsible for now.
-
-[L20-28](src/relay.ts:20) Constructor takes a peer address and a retry schedule. Schedule is injected so tests can set backoff to zero.
-
 [L34-41](src/relay.ts:34) Opens one socket per peer, keyed by peer id. Peer count sets the open socket count for the relay's lifetime.
 
 [L52-60](src/relay.ts:52) Sends use that peer's socket. On failure the peer is marked dead and the message is dropped. No retry.
 ````
 
-Every entry carries a clickable `[Lstart-Lend](path:start)` reference. Walk entries in execution order, or reading order when there is no single flow. A file holding one decision gets one entry.
+A file holding one decision gets one entry.
 
 ## 6. Stay Descriptive
 
