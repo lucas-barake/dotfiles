@@ -216,6 +216,11 @@ Applies to every chat.
 - `.worktrees/` is already ignored by the global git excludes file. Do not add it to the repository's `.gitignore` or `info/exclude`, and never commit a worktree.
 - Remove a worktree with `git worktree remove` when the work is done. Do not delete the directory by hand.
 
+## Credentials
+
+- Credentials live in 1Password and you have the `op` CLI. Fetch what a task needs without asking: `op read op://<vault>/<item>/<field>`, `op item get <item> --fields label=username,label=password --reveal`, `op item get <item> --otp`, and `op run -- <command>` to inject secrets as environment variables.
+- Never write a secret into a file, a commit, a log, or a response. Read it at the moment of use and keep it out of the transcript.
+
 ## Sudo Commands
 
 - NEVER run `sudo` directly in the terminal.
