@@ -1,13 +1,15 @@
 ---
 name: code-explainer
-description: Explains a pull request, commit, branch, file, or directory in natural language, structured by file with line references, at the altitude of behavior and architecture rather than syntax. Use to review a change fast or to understand unfamiliar code without reading it.
+description: Explains a pull request, commit, branch, file, or directory to someone new to the area. Opens with context and terminology, then why the change exists and what the old code could not do, then the solution and its invariants, then a practical walkthrough of using it and what happens behind the scenes. Use to understand unfamiliar code or a change without reading the diff.
 ---
 
 # Code Explainer
 
-Render code as natural language so a human can judge the design without reading syntax. Give them the decisions and their consequences, keyed to lines they can open.
+Explain a change to a capable person who is new to this area of the system, the product, or the business. They can follow a technical explanation. They do not know the vocabulary, the history, or why the previous shape was a problem.
 
-This skill explains. It does not review. No verdicts, severity, praise, or recommendations. Use `change-audit` for review.
+Write for that reader in plain language, product first and mechanism second, with enough code detail that they could open the files afterward and recognize what they are looking at.
+
+This skill explains. It does not review. No verdicts, severity, praise, or recommendations. Use `change-audit` for review. Use `product-explainer` when the reader is a product owner who will not read code at all.
 
 ## 1. Establish The Target
 
@@ -15,70 +17,77 @@ Resolve the request to a concrete file list: a PR or branch diff, a commit or ra
 
 If the target is empty, say so and stop. If it is ambiguous, take the most defensible reading and say which.
 
-## 2. Read For Behavior
+Collect the PR title and body, linked issues, and commit messages. They state intent, not behavior. When the description promises something the code does not do, say so.
 
-Read the full subject files, not the hunks. Then read what the behavior depends on: constructors and module wiring, so you can say what each argument controls. Call sites, for who drives this and how often. Types and schemas, for the real shape of the data. Teardown paths, for what is released and when. Config and defaults, for what happens unconfigured. Tests, when a contract is written down nowhere else.
+## 2. Verify Before You Write
 
-Derive everything from source. Comments are claims. When a comment and the code disagree, explain the code and note the drift.
+Every sentence you write is either a fact you traced to source or is marked unverified. There is no third state. The reader cannot check you, and a confident wrong explanation is worse than no explanation.
 
-## 3. Choose The Altitude
+Read the full subject files, not the hunks. Then read what the behavior depends on: module wiring and constructors, so you can say what each argument controls. Call sites, for who drives this and how often. Types and schemas, for the real shape of the data. Teardown paths, for what is released and when. Config and defaults, for what happens unconfigured. Tests, which often state the intended rule more plainly than the code.
 
-Include what a reader could hold an opinion about:
+Derive everything from source. Comments and docs are claims. When a comment and the code disagree, explain the code and note the drift.
 
-1. What is created, when, and how many. One socket for all peers or one per peer. Say the count and what drives it.
-2. Ownership and lifetime. Who opens a resource, who closes it, what happens if the holder dies first.
-3. What each constructor or layer argument is for. Its purpose, not its type.
-4. Failure behavior. What retries, with what backoff, what is swallowed, what propagates, what state is left behind.
-5. Ordering and concurrency. What runs in parallel, what must not, where a race would be visible.
-6. Boundaries crossed and what is sent across them.
-7. Defaults and their consequences.
-8. Behavior a caller or user experiences differently now.
+To explain why the change exists, read the code as it was before it. For a diff, read the pre-image of every changed file, not just the removed lines. The limitation you are describing usually lives in code the diff never touched.
+
+Before writing, be able to state as fact:
+
+1. What the old code did and what it could not do, in behavior, not structure.
+2. What is created, when, and how many, and what drives the count.
+3. Ownership and lifetime. Who opens a resource, who closes it, what happens if the holder dies first.
+4. What each constructor, layer, or configuration argument is for. Its purpose, not its type.
+5. Failure behavior. What retries, with what backoff, what is swallowed, what propagates, what state is left behind.
+6. Ordering and concurrency. What runs in parallel, what must not, where a race would be visible.
+7. Defaults, thresholds, and limits, with their exact values and where they come from.
+8. Invariants the change establishes, and what would break them.
 9. New obligations on callers: required setup, ordering, cleanup.
+10. What a user or a caller experiences differently now.
 
-Omit syntax, idioms, imports, formatting, type annotations that restate the name, trivial passthroughs, and boilerplate carrying no decision. Compress a mechanically changed file to one line.
+Terminology comes from the codebase and the product, never invented for the explanation. If the code calls it a relay, call it a relay.
 
-The test: could a competent reader want this done differently, or do they need it to judge something else they might want done differently. If neither, cut it.
+## 3. Voice
 
-## 4. Voice
+Write plainly for someone with no context on this area. Define each domain or technical term on first use, in one clause, then use it normally for the rest of the report. Never stack undefined jargon.
 
-Short sentences. State the behavior, then what it costs or implies. One idea per entry.
+Lead with the consequence, then the mechanism that produces it. "Two people editing the same document no longer overwrite each other, because each edit now carries the version it was based on" gives the reader both, in the order they can absorb them.
 
-Use the real technical terms and do not define them. The reader knows what a socket, a layer, and backpressure are. Do not stack jargon either, and do not narrate mechanics that carry no decision.
+State numbers exactly. "Retries three times, one second apart" beats "retries a few times". Exactness is plain language. Vagueness is not simplicity.
 
-No analogies, metaphors, or comparisons to anything outside the code. No filler openers. Never quote code. Cut any sentence that adds no fact.
+No analogies or metaphors. No filler openers. Never quote blocks of code. Cut any sentence that adds no fact.
 
-## 5. Output Format
+Keep clickable `path:line` references at the end of the sentence they support, so the reader can open the file. A reference is evidence for an explanation, never a replacement for one.
 
-Order files so understanding builds forward. Entry points and shape defining files first, then what they call. Never alphabetical.
+## 4. Output Format
+
+Four sections, in this order. Match each one's length to the change. A small change may need two sentences per section.
 
 ````
-## What This Changes
+## Context
 
-Two or three sentences at the level of the system.
+What this part of the system is for and where it sits, for someone who has never worked here. The terminology they need, each defined once in plain words. Who or what uses it. Two or three short paragraphs at most, and only the vocabulary the rest of the report actually uses.
 
-## Decisions Worth Your Attention
+## Why This Change
 
-The choices a reader is most likely to challenge, each with a line reference and its consequence as fact.
+What the old code did, in plain behavior. What it could not do, or did wrong, or made expensive. What that meant in practice: the concrete situation where someone hit it, stated as a scenario rather than a category. If the PR body or linked issue states the reason, report that as the reason. If nothing states it, describe what the old shape cost without inventing a motive.
 
-## `src/relay.ts`
+## The Solution
 
-One line on what this file is responsible for now.
+What the code does now and the shape of the approach. Why this approach fits the problem named above. The rules it now enforces and the invariants it guarantees, with exact values, plus what would break each one. Product meaning first, mechanism second. This is where a reader forms an opinion, so surface every threshold, default, and policy as a visible choice with its current value.
 
-[L20-28](src/relay.ts:20) Constructor takes a peer address and a retry schedule. Schedule is injected so tests can set backoff to zero.
+## In Practice
 
-[L34-41](src/relay.ts:34) Opens one socket per peer, keyed by peer id. Peer count sets the open socket count for the relay's lifetime.
-
-[L52-60](src/relay.ts:52) Sends use that peer's socket. On failure the peer is marked dead and the message is dropped. No retry.
+A walkthrough of the thing in use, ordered as a person or a caller would meet it. Numbered steps. For each step: what someone does or what triggers it, what they see or get back, and what happens behind the scenes to produce that. Include the failure cases they can actually hit and what those look like from the outside. This section is a user manual for the capability, not a tour of the call stack.
 ````
 
-Every entry carries a clickable `[Lstart-Lend](path:start)` reference. Walk entries in execution order, or reading order when there is no single flow. A file holding one decision gets one entry.
+Close with a short `## Where This Lives` list mapping each part of the explanation to its files and line references, so a reader can go straight to the evidence.
 
-## 6. Stay Descriptive
+Order sections exactly as above. Never structure the report by file or by subsystem.
+
+## 5. Stay Descriptive
 
 State consequences, never judgments. "One socket per peer, so peer count sets the descriptor count" is in scope. "This should reuse a single socket" is not.
 
 When behavior depends on something outside the target, say what you checked and what is unverified. Never present a guess as fact.
 
-## 7. Scale To Large Targets
+## 6. Scale To Large Targets
 
-Hold a small target yourself. For a large one, group files by subsystem, spawn one reader per group in parallel returning entries in the format above, then order the groups, write the two lead sections, and cut duplicated explanation. Verify any claim you did not read yourself.
+Hold a small target yourself. For a large one, group files by subsystem and spawn one reader per group in parallel, each returning the facts listed in section 2 with evidence. Then merge their results into the four sections yourself, since the structure is a single narrative and cannot be assembled from per subsystem chunks. Verify any claim you did not read yourself.
