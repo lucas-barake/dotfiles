@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Autonomous end-to-end implementation mode. Investigates the system, maintains a comprehensive task ledger, implements the work, reviews it, commits it, and opens a draft PR. Triggers on "ship", "implement end to end", "take it from task to PR", "do it all".
+description: Autonomous end-to-end implementation mode. Investigates the system, maintains a comprehensive task ledger, opens a draft PR up front, implements the work commit by commit, reviews it, and finalizes the PR. Triggers on "ship", "implement end to end", "take it from task to PR", "do it all".
 ---
 
 # Ship Mode
@@ -26,6 +26,7 @@ Only interrupt if one of these is true:
 - Reviewer findings are hypotheses until you validate them yourself
 - Plan review confirms direction. Implementation review confirms behavior. Never spend plan rounds on what only running code can answer
 - Keep one source of truth for the task in `LEDGER.md` at the worktree root
+- Open the draft PR before the first line of code and commit each checklist item as you finish it. The history is a review artifact, not a delivery formality
 
 ## Task Ledger
 
@@ -221,13 +222,16 @@ Converge hard:
 
 Proceed to code once the direction is feasible and the cited facts hold. Missing detail is not a blocker. Implementation resolves it.
 
-### Step 9: Prepare the execution branch
+### Step 9: Prepare the branch and open the draft PR
 
-Before editing code, ensure you are not working on a protected or shared branch.
+Before editing code, get the branch and the pull request in place. Opening the PR here is mandatory. It gives the user a live view of the work from the first commit instead of one large diff at the end.
 
 1. If the current branch is protected or shared, create a feature branch from the current HEAD using `ship/<task-slug>`
 2. If the current branch is already dedicated to the task, keep it
-3. Record the chosen branch in the ledger's `# Current State`
+3. If the branch has no commits of its own yet, create the starting commit with `git commit --allow-empty -m "<task title>"`. GitHub refuses a pull request with no commits between base and head, so this empty commit is what lets the draft PR exist before any code does
+4. Push with `git push -u origin <branch>`
+5. Open the draft PR with `gh pr create --draft`. Title it from the task, prefixed with the related issue id when one clearly applies. The body states the goal and the planned approach from the ledger's `# Task` and `# Decisions`, and says the work is in progress
+6. Record the branch, the PR number, and the PR URL in the ledger's `# Current State`
 
 ### Step 10: Load execution context
 
@@ -260,6 +264,16 @@ For all items:
 - check each checklist item off in the ledger as soon as it is done and add new items as new work appears
 - keep the ledger's `# Current State` and other sections updated if reality changes
 
+Commit as you go. Do not accumulate the task into one commit at the end.
+
+- commit each checklist item once its narrow gates pass, then push. One logical change per commit
+- write the message for a reviewer reading the branch commit by commit. Say why the change exists, not which files moved
+- for Red Green items, commit the regression test together with the fix. Never push a commit that is knowingly broken
+- never push a commit whose narrow lint, typecheck, or test gates are failing. Fix it first or leave it uncommitted
+- do not amend, squash, or rebase commits you already pushed. Correct them with a follow up commit
+- never stage `LEDGER.md` or anything else the global git excludes ignore
+- when the implementation moves materially away from what the draft PR body describes, update the body
+
 ### Step 12: Audit the implementation
 
 After implementation and planned tests are complete, review the full change as one connected unit.
@@ -273,13 +287,14 @@ After implementation and planned tests are complete, review the full change as o
 7. Apply only reproduced fixes and executable simplifications. Remove invalid probe edits and rerun the narrow quality gates.
 8. After accepted fixes, recompute affected domains. Rerun the originating reviewer and only reviewers whose domain the fixes materially changed. Skip performance when the fixes do not change workload, algorithms, I/O, allocation, caching, queues, or backpressure. Skip security when they do not change trust boundaries, permissions, inputs, secrets, sensitive data, file or network capabilities, or dependency risk. Skip data integrity when they do not change stored or derived state, error handling, ownership, lifecycle, access policy outcomes, or legitimate resource access.
 9. Only a fix that changes production behavior, a contract, state, or integration wiring opens another batch. Accepted simplifications, test only edits, and comment, naming, formatting, or type only changes do not. `code-simplifier` runs once for the task.
-10. Budget three batches at most, and no reviewer runs more than twice. Stop at the first of these: the latest batch confirmed no new defect caused by your fixes, the budget is spent, or the only remaining candidates are preferences, style, or unreproduced suspicions. Follow up batches exist to catch defects your own fixes introduced, not to re-audit the change until it is perfect.
-11. Record anything left unsettled in `# Review Log` and in the PR body as an open candidate with the evidence so far and what would settle it. Shipping with a documented open candidate beats another review cycle.
-12. Write every batch, reviewer selection, omission, finding, fix, and verification result to the ledger's `# Review Log`.
+10. Commit each accepted fix on its own once its gates pass, with a message naming the defect it resolves, and push after the batch settles
+11. Budget three batches at most, and no reviewer runs more than twice. Stop at the first of these: the latest batch confirmed no new defect caused by your fixes, the budget is spent, or the only remaining candidates are preferences, style, or unreproduced suspicions. Follow up batches exist to catch defects your own fixes introduced, not to re-audit the change until it is perfect.
+12. Record anything left unsettled in `# Review Log` and in the PR body as an open candidate with the evidence so far and what would settle it. Shipping with a documented open candidate beats another review cycle.
+13. Write every batch, reviewer selection, omission, finding, fix, and verification result to the ledger's `# Review Log`.
 
 ### Step 13: Final verification
 
-Before committing:
+Before finalizing the pull request:
 
 1. Run the full relevant test suite
 2. Run lint, typecheck, and build commands where they exist
@@ -288,22 +303,22 @@ Before committing:
 
 If anything fails, fix it before moving on.
 
-### Step 14: Commit and open a draft PR
+### Step 14: Finalize the pull request
 
-When the task is complete:
+The work is already committed and pushed. This step closes it out.
 
-1. Review `git status` and the final diff
-2. Stage only the relevant files
-3. Create a single logical commit with a message that explains why the change exists
-4. Push the branch with upstream tracking if needed
-5. Open a draft PR with:
+1. Review `git status` and the full branch diff against the base branch
+2. Commit and push anything still uncommitted, as its own logical commit. Never sweep leftovers into a catch all commit
+3. Confirm the branch contains no commit that fails its own gates, and that no ignored artifact was committed
+4. Rewrite the PR title and body to describe the finished change, not the plan it started as:
    - a short, direct title
    - the related issue id as the title prefix when one clearly applies
    - a body that explains the PR goal, important behavior changes, and non obvious design decisions for engineers without prior context in this part of the codebase
    - a small code snippet or concrete usage example when the PR adds a new abstraction, important pattern, or non obvious integration
    - important risks, follow ups, links, or references that materially shaped the implementation
+   - open candidates the review budget did not settle
    - no boilerplate body headers like `Summary` or `Test Plan`
    - no routine test, lint, build, or CI result restatement unless verification was manual, unusual, or important for understanding risk
-6. Do not merge. Human review remains the final gate
+5. Leave the PR in draft and do not merge. Human review remains the final gate
 
-Your final user response should include the branch name, commit hash, PR URL, verification results, and any important residual risks or follow ups.
+Your final user response should include the branch name, the commit range, the PR URL, verification results, and any important residual risks or follow ups.
