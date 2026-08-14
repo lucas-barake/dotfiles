@@ -264,9 +264,10 @@ For all items:
 - check each checklist item off in the ledger as soon as it is done and add new items as new work appears
 - keep the ledger's `# Current State` and other sections updated if reality changes
 
-Commit as you go. Do not accumulate the task into one commit at the end.
+Commit and push item by item, as you go. The commit and the push are part of finishing a checklist item, not a phase that happens afterward. Batching the commits at the end is the same failure as one commit at the end: the user sees nothing until the work is over, and a broken step is no longer isolated to the commit that introduced it.
 
-- commit each checklist item once its narrow gates pass, then push. One logical change per commit
+- the moment a checklist item's narrow gates pass, commit it and push it, before starting the next item. One logical change per commit
+- an item is not done until its commit is on the remote. Do not carry finished work in the working tree while you start the next item
 - write the message for a reviewer reading the branch commit by commit. Say why the change exists, not which files moved
 - for Red Green items, commit the regression test together with the fix. Never push a commit that is knowingly broken
 - never push a commit whose narrow lint, typecheck, or test gates are failing. Fix it first or leave it uncommitted
