@@ -46,12 +46,15 @@ Choose only reviewers whose domain is materially implicated by the current targe
 5. `reviewer-performance` only for hot paths, large data, rendering, I/O, database or network work, queues, workers, caching, retries, batching, backpressure, allocation heavy code, or changed time or space complexity.
 6. `code-simplifier` when the change adds or modifies helpers, wrappers, schemas, validators, adapters, abstractions, dependencies, composition, state ownership, or duplicated behavior.
 7. `test-reviewer` only when existing tests are part of the target or their quality is directly affected by the change. It evaluates existing test value only. It does not seek missing tests.
+8. `ux-reviewer` when the target changes anything a user sees, reads, or operates: interface, copy, labels, presented figures, states, flows, notifications, generated documents, or an API response a person reads. It runs the surface rather than reading it, so select it only when the surface can actually be reached, and say so when it cannot.
 
 `reviewer-security` and `reviewer-data-integrity` split one boundary by direction. Security owns over permission, meaning what an attacker or unauthorized principal can reach. Integrity owns over denial and state corruption, meaning what a valid principal wrongly loses. Select both only when the target can fail in both directions, and never route the same suspicion to both.
 
 Do not select a reviewer merely because it exists. Record why each selected reviewer is relevant and why each omitted reviewer is not.
 
-For documentation only or configuration only targets, it is valid to select only `reviewer-rules`. For a narrow pure logic change, it is valid to select only `reviewer-concurrency`. Security and performance are never automatic, but they must be selected whenever the target materially enters their domains.
+`ux-reviewer` owns what the user concludes and can do. `reviewer-performance` owns rendering cost and responsiveness. A slow interaction belongs to performance; an interaction that is fast but misleading, unreachable, or unexplained belongs to UX. Route a suspicion to one of them, not both.
+
+For documentation only or configuration only targets, it is valid to select only `reviewer-rules`. For a narrow pure logic change, it is valid to select only `reviewer-concurrency`. Security and performance are never automatic, but they must be selected whenever the target materially enters their domains. `ux-reviewer` is never automatic either, but a change that alters a user-visible surface without it has not been reviewed for the only thing the user will notice.
 
 ## 4. Launch One Focused Batch
 
@@ -111,6 +114,7 @@ After each qualifying patch group:
 7. A fix that does not change persisted or derived state, error handling, partial failure, ownership, lifecycle, access policy outcomes, or legitimate resource access does not rerun `reviewer-data-integrity`.
 8. Rerun `reviewer-rules` only when the fix changes files or integration obligations governed by rules not already exhaustively checked for the new state.
 9. Rerun `test-reviewer` only when existing tests were changed, deleted, consolidated, or their production composition changed.
+10. Rerun `ux-reviewer` only when the fix changes what a user sees, reads, or operates, and rerun it against the running surface rather than the diff. A fix that only moves code, renames a symbol, or adjusts a test does not.
 10. `code-simplifier` runs once for the audit. A simplification it proposes never opens another batch.
 
 Stop at the first of these:
