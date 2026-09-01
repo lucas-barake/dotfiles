@@ -1,5 +1,5 @@
 import { realpathSync } from "node:fs"
-import { dirname } from "node:path"
+import { basename, dirname } from "node:path"
 import { Schema } from "effect"
 import * as Console from "effect/Console"
 import * as Effect from "effect/Effect"
@@ -22,6 +22,11 @@ const configFiles: Partial<Record<Target, { source: string; target: string; merg
   claude: { source: "claude.json", target: "settings.json", merge: true },
   opencode: { source: "opencode.json", target: "opencode.json", merge: false }
 }
+
+// Under `bun run src/bin.ts`, execPath is the bun runtime, not the compiled
+// dotai binary, so the repo root has to come from this module's location.
+export const defaultHome = (execPath: string, moduleDir: string): string =>
+  basename(execPath) === "bun" ? dirname(moduleDir) : dirname(dirname(execPath))
 
 const ProjectSettings = Schema.Struct({
   skills: Schema.Array(Schema.String)
@@ -618,8 +623,8 @@ const project = Command.make(
   "project",
   {
     home: Flag.directory("home").pipe(
-      Flag.withDefault(dirname(dirname(realpathSync(process.execPath)))),
-      Flag.withDescription("Path to the dotai repo (resolved from binary location)")
+      Flag.withDefault(defaultHome(realpathSync(process.execPath), import.meta.dir)),
+      Flag.withDescription("Path to the dotai repo (resolved from the binary or script location)")
     )
   },
   ({ home }) =>
@@ -644,8 +649,8 @@ const global = Command.make(
       Flag.withDescription("Target to sync: claude, opencode, codex, kimi, kimi-desktop, or all")
     ),
     home: Flag.directory("home").pipe(
-      Flag.withDefault(dirname(dirname(realpathSync(process.execPath)))),
-      Flag.withDescription("Path to the dotai repo (resolved from binary location)")
+      Flag.withDefault(defaultHome(realpathSync(process.execPath), import.meta.dir)),
+      Flag.withDescription("Path to the dotai repo (resolved from the binary or script location)")
     )
   },
   ({ target, home }) =>
@@ -677,7 +682,7 @@ const models = Command.make(
   "models",
   {
     home: Flag.directory("home").pipe(
-      Flag.withDefault(dirname(dirname(realpathSync(process.execPath)))),
+      Flag.withDefault(defaultHome(realpathSync(process.execPath), import.meta.dir)),
       Flag.withDescription("Path to the dotai repo")
     )
   },
