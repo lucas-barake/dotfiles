@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest"
 import { Effect, FileSystem, Layer, Path } from "effect"
 import { stripFrontmatter, transformAgent } from "../src/transform.ts"
-import { deepMerge, loadProjectSettings, run, scanModels, syncConfig, syncProject, syncTarget } from "../src/main.ts"
+import { deepMerge, defaultHome, loadProjectSettings, run, scanModels, syncConfig, syncProject, syncTarget } from "../src/main.ts"
 
 const sampleAgent = `---
 name: test-agent
@@ -732,5 +732,15 @@ describe("syncConfig", () => {
 describe("CLI", () => {
   it("exports a runnable CLI", () => {
     expect(run).toBeDefined()
+  })
+})
+
+describe("defaultHome", () => {
+  it("resolves from the script directory when run through the bun runtime", () => {
+    expect(defaultHome("/opt/homebrew/Cellar/bun/1.3.9/bin/bun", "/repo/ai/src")).toBe("/repo/ai")
+  })
+
+  it("resolves from the compiled binary location", () => {
+    expect(defaultHome("/Users/x/dotfiles/ai/bin/dotai", "/$bunfs/root/src")).toBe("/Users/x/dotfiles/ai")
   })
 })
