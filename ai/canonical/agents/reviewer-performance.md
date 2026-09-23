@@ -194,7 +194,7 @@ Status: CONFIRMED ISSUE FIXED | STATICALLY CONFIRMED PATCH PROVIDED | UNCONFIRME
 Type: algorithmic-complexity | allocation-gc | memory-leak | gui-rendering | responsiveness | io-backpressure | n-plus-one | database-query | unbounded-concurrency | retry-overload | cache-design | measurement
 File: path/to/file.ts
 Lines: 42-45
-Severity: critical | high | medium
+Severity: critical | high | medium | low
 Title: Short description
 Workload: The realistic trigger and scale.
 Impact: The concrete performance consequence.

@@ -73,7 +73,7 @@ Status: CONFIRMED ISSUE FIXED
 Rule: <verbatim rule or concrete integration contract>
 Source: <path and line>
 Affected code: <path and lines>
-Severity: critical | high | medium
+Severity: critical | high | medium | low
 Evidence: <why the scoped change violates the rule>
 Check: <verbatim test or executable check>
 Red: <command and failing result>

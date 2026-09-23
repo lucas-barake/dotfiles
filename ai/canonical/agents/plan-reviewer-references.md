@@ -59,7 +59,7 @@ The plan is your starting point, not your boundary. You have full repo access. U
 
 ## Evidence Requirements
 
-Every finding MUST include:
+Every finding must include:
 
 - the exact plan path and section or research file entry
 - the exact plan or research text that is unsupported, weak, or wrong
@@ -73,7 +73,8 @@ Every finding MUST include:
 PLAN ISSUE
 Plan: /absolute/path/to/plan.md
 Section: References item 4
-Severity: critical | high | medium
+Severity: critical | high | medium | low
+Confidence: high | medium | low
 Title: Short description
 What the plan says: <verbatim quote>
 Evidence: <source evidence with paths, lines, and URLs when relevant>

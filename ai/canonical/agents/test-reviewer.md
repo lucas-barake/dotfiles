@@ -49,7 +49,7 @@ ISSUE
 Type: redundant | superfluous | brittle | invalid | implementation-mirroring | implementation-coupled | divergent-composition | library-naive | non-deterministic | weak-assertion | unverified-fake | proxy-invariant
 Test file: <existing test path>
 Lines: <existing test lines>
-Severity: critical | high | medium
+Severity: critical | high | medium | low
 Observable contract claimed: <behavior the test claims to protect>
 Why confidence is low: <concrete evidence>
 Evidence: <production and test paths, commands, and observed results>
