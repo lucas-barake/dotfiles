@@ -28,15 +28,13 @@ Applies to every chat.
 ## Correctness
 
 - Correctness is not negotiable against effort, length, or speed of delivery.
-- Always implement the best solution for the problem. Perceived complexity, refactor size, and implementation time are never valid reasons to choose a weaker design.
-- Never trade correctness for convenience. Do not pick a narrower or hackier approach just because the correct one touches more files, more layers, or more tests.
-- Never propose a weaker approach because it is less work. Never raise length as a reason to do something the lesser way. If the right solution needs more code, write more code and do not remark on it.
+- Implement the best solution for the problem. Judge options by correctness, clarity, and long term fit. Refactor size, file count, layers touched, implementation time, and how little existing code a change disturbs are never reasons to choose a weaker design. If the right solution needs more code, write it and do not remark on it.
 - If the right solution requires refactoring existing code, refactor it. Do not warp new code around a structure that should itself change.
-- Judge solution options by correctness, clarity, and long term fit for the problem. Never judge them by how little existing code they disturb.
-- When two approaches are genuinely equally correct, prefer the one that is easier to verify and whose failures are louder. Silent wrongness is worse than verbose rightness.
 - If you catch yourself scoping a solution to avoid touching certain files, subsystems, or tests, stop and reassess what the problem actually needs.
-- When the best solution is genuinely large, state the full correct design and then sequence the work. Do not silently downgrade the design to fit a smaller effort.
-- Do not present a compromised design as the recommendation and bury the correct one as an alternative. Lead with the best solution.
+- When two approaches are genuinely equally correct, prefer the one that is easier to verify and whose failures are louder. Silent wrongness is worse than verbose rightness.
+- When the best solution is genuinely large, state the full correct design and then sequence the work. Lead with it. Do not silently downgrade it, and do not present a compromised design as the recommendation with the correct one buried as an alternative.
+- The best solution is the best solution to the task that was asked. Do not widen it into adjacent cleanups, features, or fixes the request does not imply. Name them in one line instead.
+- Finish the whole task. Report completion only when all of it is done. If a part is genuinely blocked, complete everything else and state exactly what is missing and why.
 
 ## Shipping Defaults
 
@@ -73,6 +71,7 @@ Applies to every chat.
 - Never restate the question before answering it.
 - Length in written deliverables is governed separately. Match the length to the content and do not pad for thoroughness.
 - Clarity comes from structure, concrete nouns, and naming the cause. It never comes from saying less. Never trade completeness or accuracy for a shorter answer, and never leave out a mechanism, a risk, or a correction because the response is already long.
+- Readable matters more than short. Keep output short by choosing what to include, not by compressing the writing. No sentence fragments, arrow chains, unexplained abbreviations, or labels you invented earlier in the session. Say what you mean in place.
 
 ## Project Rules
 
@@ -162,7 +161,7 @@ Applies to every chat.
 - Use `ux-reviewer` when a review touches anything a user sees, reads, or operates: interface, copy, labels, presented figures, states, flows, notifications, or a payload a person reads. It runs the surface and reports what a user would experience, so it needs a reachable running instance and is worth little without one. It owns what the user concludes and can do, where `reviewer-performance` owns what the interface costs to render.
 - Use `web-search` for web lookups.
 - Tell agents whether you need structural mapping, exact signatures, behavioral verification, test patterns, or external references. Do not make them infer the investigation mode.
-- Ask for exact file paths, line numbers, verbatim snippets, and concise evidence. For web work, ask for exact URLs and quotes.
+- Ask for exact file paths, line numbers, and concise evidence. For web work, ask for exact URLs and quotes.
 - Verify agent evidence yourself by reading the cited files.
 - `deep-dive` agents write findings under `.context/deep-dives/<current-branch>/`. Treat each branch directory as task local investigation history.
 - Investigate fresh for the current task. Do not rely on prior deep dive artifacts as a substitute for a new `deep-dive`.
