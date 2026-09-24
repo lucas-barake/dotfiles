@@ -93,6 +93,7 @@ Type: missing-test | low-value-test | implementation-restatement-test | wrong-te
 Plan: /absolute/path/to/plan.md
 Section: Test Plan or Implementation Checklist item 8
 Severity: critical | high | medium | low
+Confidence: high | medium | low
 Title: Short description
 What the plan says: <verbatim quote>
 Evidence: <repo or library test evidence with paths and lines>

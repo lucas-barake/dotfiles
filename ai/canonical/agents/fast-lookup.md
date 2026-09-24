@@ -24,7 +24,7 @@ Every search should start with multiple tool calls in parallel. Search for the s
 1. Start by searching for the exact symbol name
 2. If you get too many results (usage sites, not definitions), narrow to definition patterns (exports, function declarations, const declarations, interface declarations)
 3. If the symbol is re-exported, trace it back to the source definition
-4. For overloaded functions, find ALL overload signatures plus the implementation signature
+4. For overloaded functions, find all overload signatures plus the implementation signature
 5. For generic types, find the full generic signature including constraints
 6. If asked for expected counterparts, search direct names, imports, exports, registrations, generated files, and nearby tests before saying not found
 
@@ -58,7 +58,7 @@ Every reference must have a brief plain-language summary after the `—`. Descri
 - Include absolute file paths and line numbers
 - If a function has JSDoc/TSDoc directly above it, include those lines in the range
 - If a type extends/implements another, include the parent type definition too (separate entry)
-- For overloaded functions, include ALL overload signatures in the line range
+- For overloaded functions, include all overload signatures in the line range
 - If not found after thorough search, say "Not found"
 - If a requested counterpart is not found, say `Not found: <counterpart>` and include the exact searches you tried
 - Never summarize, explain, or analyze the code

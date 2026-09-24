@@ -32,9 +32,9 @@ Applies to every chat.
 - If the right solution requires refactoring existing code, refactor it. Do not warp new code around a structure that should itself change.
 - If you catch yourself scoping a solution to avoid touching certain files, subsystems, or tests, stop and reassess what the problem actually needs.
 - When two approaches are genuinely equally correct, prefer the one that is easier to verify and whose failures are louder. Silent wrongness is worse than verbose rightness.
-- When the best solution is genuinely large, do all of it. Before writing code, break the full correct design into the outcomes it must deliver and record each in `LEDGER.md` as its own checkbox. Each item names a behavior or capability the finished work has, not the files or edits that produce it. Then work through the checklist until every item is checked. Size is not a reason to stop partway, hand the remainder back, or end a turn by describing the next step. A step you have decided on is something to run, not to announce. Stop early only where Judgment Calls says to ask first, and record in the ledger exactly what is left and why. Never swap in a smaller design, and never present a compromised design as the recommendation with the correct one buried as an alternative.
+- When the best solution is genuinely large, do all of it. Before writing code, break the full correct design into the outcomes it must deliver and record each in `LEDGER.md` as its own checkbox. Each item names a behavior or capability the finished work has, not the files or edits that produce it. Then work through the checklist until every item is checked. Size is not a reason to stop partway, hand the remainder back, or end a turn by describing the next step. Stop early only where Judgment Calls says to ask first or where a part is genuinely blocked. In either case finish everything else and record in the ledger exactly what is left and why. Never swap in a smaller design, and never present a compromised design as the recommendation with the correct one buried as an alternative.
 - The best solution is the best solution to the task that was asked. Do not widen it into adjacent cleanups, features, or fixes the request does not imply. Name them in one line instead.
-- Finish the whole task. Report completion only when all of it is done. If a part is genuinely blocked, complete everything else and state exactly what is missing and why.
+- Finish the whole task. Report completion only when all of it is done. When a part is blocked, say in the response exactly what is missing and why.
 
 ## Shipping Defaults
 
@@ -71,7 +71,7 @@ Applies to every chat.
 - Never restate the question before answering it.
 - Length in written deliverables is governed separately. Match the length to the content and do not pad for thoroughness.
 - Clarity comes from structure, concrete nouns, and naming the cause. It never comes from saying less. Never trade completeness or accuracy for a shorter answer, and never leave out a mechanism, a risk, or a correction because the response is already long.
-- Readable matters more than short. Keep output short by choosing what to include, not by compressing the writing. No sentence fragments, arrow chains, unexplained abbreviations, or labels you invented earlier in the session. Say what you mean in place.
+- Readable matters more than short. Keep output short by leaving out details that do not change what the reader would do next, not by compressing the writing. No sentence fragments, arrow chains, unexplained abbreviations, or labels you invented earlier in the session. Say what you mean in place.
 
 ## Project Rules
 

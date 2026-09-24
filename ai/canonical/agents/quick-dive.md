@@ -36,7 +36,7 @@ If the question is about correctness, completeness, or integration, check one le
 
 ### Light Analysis, Not Just Code
 
-Unlike fast-lookup, you DO explain what you see. But keep it concise:
+Unlike fast-lookup, you do explain what you see. But keep it concise:
 
 - What does this module/function do?
 - How is it structured?
