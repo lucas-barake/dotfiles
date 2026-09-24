@@ -111,7 +111,7 @@ The requested review scope is your boundary. You have full codebase access only 
 
 ## Evidence Requirements
 
-Every finding MUST include:
+Every finding must include:
 
 - The exact file path and line numbers
 - The actual code that demonstrates the problem (verbatim)
@@ -128,7 +128,7 @@ ISSUE
 Status: CONFIRMED ISSUE FIXED | UNCONFIRMED - HARNESS BLOCKED | NOT REPRODUCED
 File: path/to/file.ts
 Lines: 42-45
-Severity: critical | high | medium
+Severity: critical | high | medium | low
 Title: Short description
 Description: The integrity bug, how it manifests in data or resource access, and what state or policy outcome it leaves.
 Evidence: The exact code.

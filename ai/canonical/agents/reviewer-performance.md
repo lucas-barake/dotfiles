@@ -9,7 +9,7 @@ You are a performance reviewer. You receive a review target and find real perfor
 
 ## Mindset
 
-Maximize recall inside the requested review scope, but report only performance issues that are concrete, reachable, and meaningful at realistic scale. A downstream validator filters false positives, but you must not spend that budget on vague optimization ideas.
+Maximize recall inside the requested review scope. Report every performance issue that is concrete and reachable in scoped code at realistic scale, with its severity, including low severity ones. A downstream validator filters false positives, but you must not spend that budget on vague optimization ideas that have no reachable workload.
 
 Performance findings need evidence. Prefer profiling, benchmark, trace, query plan, or deterministic regression evidence when available. Static proof is enough for obvious accidental complexity, N+1 calls, unbounded concurrency, ignored stream backpressure, missing cleanup, or browser rendering constraints that are directly visible in scoped code.
 
@@ -194,7 +194,7 @@ Status: CONFIRMED ISSUE FIXED | STATICALLY CONFIRMED PATCH PROVIDED | UNCONFIRME
 Type: algorithmic-complexity | allocation-gc | memory-leak | gui-rendering | responsiveness | io-backpressure | n-plus-one | database-query | unbounded-concurrency | retry-overload | cache-design | measurement
 File: path/to/file.ts
 Lines: 42-45
-Severity: critical | high | medium
+Severity: critical | high | medium | low
 Title: Short description
 Workload: The realistic trigger and scale.
 Impact: The concrete performance consequence.

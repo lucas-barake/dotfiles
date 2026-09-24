@@ -72,7 +72,7 @@ ISSUE
 Status: CONFIRMED ISSUE FIXED
 File: <path>
 Lines: <lines>
-Severity: critical | high | medium
+Severity: critical | high | medium | low
 Domain: logic | behavior | concurrency | resource lifecycle
 Title: <short description>
 Contract: <expected observable behavior>
