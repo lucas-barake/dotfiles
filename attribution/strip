@@ -1,0 +1,252 @@
+#!/usr/bin/env perl
+# Removes AI tool attribution from commit messages and GitHub text.
+#
+#   strip FILE                     rewrite FILE in place (git hooks)
+#   strip --exec-gh GH ARGS...     strip text arguments, then exec GH ARGS
+#
+# Only attribution is removed. A Co-authored-by trailer goes only when it names
+# an AI tool, so human co-authors survive.
+
+use strict;
+use warnings;
+
+my $tool = qr{
+	claude(?:[ -]code)? | anthropic | cursor(?:[ -]?agent)? | codex | openai | chatgpt | gpt
+	| (?:github[ -])?copilot | aider | opencode | amp | sourcegraph | gemini(?:[ -]cli)?
+	| jules | devin(?:[ -]ai)? | qwen(?:[ -]coder?)? | cline | roo(?:[ -]?code)? | roomote
+	| windsurf | cascade | codeium | kimi | moonshot | factory(?:[ -]droid)? | droid
+}xi;
+
+my $tool_domain = qr{
+	anthropic\.com | claude\.(?:ai|com) | cursor\.(?:com|sh) | openai\.com | github\.com
+	| aider\.(?:dev|chat) | opencode\.ai | ampcode\.com | sourcegraph\.com | google\.com
+	| devin\.ai | cognition\.ai | alibabacloud\.com | qwen\.ai | cline\.bot | roocode\.com
+	| windsurf\.com | codeium\.com | moonshot\.(?:ai|cn) | kimi\.com | factory\.ai
+}xi;
+
+my $attribution_key = qr{
+	co-?authored-by | co-?developed-by | ai-assisted-by
+	| (?:generated|assisted|made|created|written)-(?:by|with)
+}xi;
+
+my $scissors = qr{^\S+ -{24} >8 -{24}$};
+
+sub is_tool_identity {
+	my ($value) = @_;
+	my ($name, $email) = $value =~ /^(.*?)\s*<\s*([^<>\s]+)\s*>$/
+		or return $value =~ /^$tool\b/;
+	return 1 if $email =~ /\[bot\]\@users\.noreply\.github\.com$/i;
+	return 1 if $email =~ /^\d+\+copilot\@users\.noreply\.github\.com$/i;
+	my ($local, $domain) = $email =~ /^(.*)\@(.*)$/ or return 0;
+	return 0 unless $domain =~ /^(?:.*\.)?(?:$tool_domain)$/;
+	return $local =~ /^(?:no-?reply|cursoragent|codex|copilot|amp|gemini|qwen-coder|roomote)$/i
+		|| $name =~ /^(?:$tool)(?:\s*\([^)]*\))?$/;
+}
+
+sub is_attribution_line {
+	my ($line) = @_;
+
+	if (my ($value) = $line =~ /^\s*$attribution_key\s*:\s*(.*?)\s*$/) {
+		return is_tool_identity($value);
+	}
+
+	# Footers such as "🤖 Generated with [Claude Code](https://claude.com/claude-code)".
+	# The tool name must end the line, so prose that only starts the same way stays.
+	my $footer = $line =~ s/^[\s\p{So}\p{Sk}\x{FE0F}>*_]+//r;
+	return 1 if $footer =~ m{
+		^(?:generated|made|created|built|written|authored|co-authored|produced|crafted|drafted|assisted|powered)
+		\s+(?:with|by|using|via|in)\s+
+		(?:\[\s*(?:$tool)\s*\]\([^)]*\)|(?:$tool))
+		(?:\s*\([^)]*\))?
+		[\s.!*_\p{So}\x{FE0F}]*$
+	}xi;
+	return $footer =~ /^link\s+to\s+devin\s+run\s*:/i;
+}
+
+# Text that is not valid UTF-8 is handled as Latin-1, which maps every byte to
+# one character and back, so bytes the patterns do not touch come out unchanged.
+sub strip_text {
+	my ($bytes) = @_;
+	# Every attribution line names a tool or a bot address. Skipping the rest
+	# here keeps Encode off the path of almost every commit.
+	return $bytes unless $bytes =~ /$tool|\[bot\]\@/;
+
+	require Encode;
+	my $encoding = 'UTF-8';
+	my $text = eval { Encode::decode('UTF-8', $bytes, Encode::FB_CROAK() | Encode::LEAVE_SRC()) };
+	if (!defined $text) {
+		$encoding = 'ISO-8859-1';
+		$text = Encode::decode($encoding, $bytes);
+	}
+
+	my @lines = split /(?<=\n)/, $text;
+	my (@message, @verbose, $fence, $removed, $removed_since_kept);
+	while (@lines) {
+		my $line = shift @lines;
+
+		# Below git's scissors line is the verbose diff, which git discards.
+		if ($line =~ $scissors) {
+			@verbose = ($line, @lines);
+			last;
+		}
+
+		if ($line =~ /^\s*(`{3,}|~{3,})/) {
+			my $marker = $1;
+			if (!defined $fence) {
+				$fence = $marker;
+			}
+			elsif (substr($marker, 0, 1) eq substr($fence, 0, 1) && length $marker >= length $fence) {
+				undef $fence;
+			}
+		}
+		elsif (!defined $fence && is_attribution_line($line =~ s/\r?\n\z//r)) {
+			$removed = $removed_since_kept = 1;
+			next;
+		}
+
+		# Removing a line between two blank lines would leave a double gap.
+		my $blank = qr/^\s*$/;
+		next if $removed_since_kept && $line =~ $blank && @message && $message[-1] =~ $blank;
+		$removed_since_kept = 0;
+		push @message, $line;
+	}
+	return $bytes unless $removed;
+
+	# A removed footer leaves behind the blank lines and the rule above it.
+	my $message = join '', @message;
+	my $ends_with_newline = @verbose || $text =~ /\n\z/;
+	1 while $message =~ s/(?:\A|\n)[ \t]*(?:-{3,}|\*{3,}|_{3,})?\s*\z//;
+	$message .= "\n" if $ends_with_newline && length $message;
+
+	return Encode::encode($encoding, $message . join('', @verbose));
+}
+
+sub read_input {
+	my ($path) = @_;
+	local $/;
+	if ($path eq '-') {
+		binmode STDIN;
+		return scalar <STDIN>;
+	}
+	open my $fh, '<:raw', $path or die "strip: cannot read $path: $!\n";
+	return scalar <$fh>;
+}
+
+sub strip_file {
+	my ($path) = @_;
+	my $original = read_input($path);
+	my $stripped = strip_text($original);
+	return if $stripped eq $original;
+	open my $fh, '>:raw', $path or die "strip: cannot write $path: $!\n";
+	print {$fh} $stripped or die "strip: cannot write $path: $!\n";
+	close $fh or die "strip: cannot write $path: $!\n";
+}
+
+# A file argument becomes an inline value holding the stripped contents, so gh
+# never reads the unstripped file.
+sub rewrite_text_flags {
+	my ($text_long, $text_short, $file_long, $file_short, @args) = @_;
+	my @out;
+	while (@args) {
+		my $arg = shift @args;
+		if ($arg eq '--') {
+			push @out, $arg, @args;
+			last;
+		}
+		my ($kind, $value);
+		if (($arg eq $text_long || $arg eq $text_short) && @args) {
+			($kind, $value) = ('text', shift @args);
+		}
+		elsif (($arg eq $file_long || $arg eq $file_short) && @args) {
+			($kind, $value) = ('file', shift @args);
+		}
+		elsif ($arg =~ /^\Q$text_long\E=(.*)\z/s || $arg =~ /^\Q$text_short\E=?(.+)\z/s) {
+			($kind, $value) = ('text', $1);
+		}
+		elsif ($arg =~ /^\Q$file_long\E=(.*)\z/s || $arg =~ /^\Q$file_short\E=?(.+)\z/s) {
+			($kind, $value) = ('file', $1);
+		}
+		else {
+			push @out, $arg;
+			next;
+		}
+		push @out, "$text_long=" . strip_text($kind eq 'file' ? read_input($value) : $value);
+	}
+	return @out;
+}
+
+sub rewrite_api_fields {
+	my @args = @_;
+	my @out;
+	while (@args) {
+		my $arg = shift @args;
+		if ($arg eq '--') {
+			push @out, $arg, @args;
+			last;
+		}
+		my ($flag, $field);
+		if ($arg =~ /^(?:-f|--raw-field|-F|--field)\z/ && @args) {
+			($flag, $field) = ($arg, shift @args);
+		}
+		elsif ($arg =~ /^(--raw-field|--field)=(.*)\z/s || $arg =~ /^(-[fF])=?(.+)\z/s) {
+			($flag, $field) = ($1, $2);
+		}
+		else {
+			push @out, $arg;
+			next;
+		}
+		my ($key, $value) = split /=/, $field, 2;
+		if (!defined $value || $key !~ /^(?:body|message)\z/) {
+			push @out, $flag, $field;
+		}
+		elsif ($flag =~ /^(?:-F|--field)\z/ && $value =~ /^@(.*)\z/s) {
+			# gh reads a typed @file field as a plain string, which is what a raw field holds.
+			push @out, '-f', "$key=" . strip_text(read_input($1));
+		}
+		else {
+			push @out, $flag, "$key=" . strip_text($value);
+		}
+	}
+	return @out;
+}
+
+sub exec_gh {
+	my ($gh, @args) = @_;
+	my ($group, @rest) = @args;
+
+	if ($group eq 'api') {
+		@args = ($group, rewrite_api_fields(@rest));
+	}
+	else {
+		# -R is a persistent flag on these groups, so it may come before the subcommand.
+		my @before;
+		while (@rest && $rest[0] =~ /^-/) {
+			my $flag = shift @rest;
+			push @before, $flag;
+			push @before, shift @rest if ($flag eq '-R' || $flag eq '--repo') && @rest;
+		}
+		my $command = join ' ', $group, $rest[0] // '';
+		my @flags = $command =~ /^(?:pr (?:create|edit|comment|review|merge)|issue (?:create|edit|comment))$/
+			? ('--body', '-b', '--body-file', '-F')
+			: $command =~ /^release (?:create|edit)$/
+			? ('--notes', '-n', '--notes-file', '-F')
+			: ();
+		if (@flags) {
+			my $subcommand = shift @rest;
+			@args = ($group, @before, $subcommand, rewrite_text_flags(@flags, @rest));
+		}
+	}
+
+	exec { $gh } $gh, @args or die "strip: cannot run $gh: $!\n";
+}
+
+if (@ARGV >= 3 && $ARGV[0] eq '--exec-gh') {
+	shift @ARGV;
+	exec_gh(@ARGV);
+}
+elsif (@ARGV == 1) {
+	strip_file($ARGV[0]);
+}
+else {
+	die "usage: strip FILE | strip --exec-gh GH GROUP [ARGS...]\n";
+}

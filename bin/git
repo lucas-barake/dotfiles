@@ -1,0 +1,90 @@
+#!/bin/sh
+# Routes every git command that writes commit messages through
+# ~/dotfiles/attribution/hooks, which strips AI tool attribution from the
+# message and then runs the repository's own hook of the same name.
+#
+# A global core.hooksPath cannot do this. Husky and most other hook managers
+# set core.hooksPath in the repository config, which outranks the global one,
+# so a global hook would never run in the repositories that matter. Config
+# passed through the environment outranks every config file.
+#
+# GIT_CONFIG_COUNT is used instead of -c because git copies -c into
+# GIT_CONFIG_PARAMETERS for every process it starts. The dispatcher removes the
+# GIT_CONFIG_COUNT entry before running the repository hook, so git commands
+# inside that hook see the repository's real configuration. An explicit -c
+# core.hooksPath still wins, because git reads GIT_CONFIG_PARAMETERS last.
+
+self_dir=$(cd "${0%/*}" && pwd -P)
+real_git=""
+saved_ifs=$IFS
+IFS=:
+for dir in $PATH; do
+	[ -n "$dir" ] || dir=.
+	# Resolving a directory costs a subshell, and git runs this on every call.
+	[ -f "$dir/git" ] && [ -x "$dir/git" ] || continue
+	[ "$(cd "$dir" && pwd -P)" = "$self_dir" ] && continue
+	real_git="$dir/git"
+	break
+done
+IFS=$saved_ifs
+
+if [ -z "$real_git" ]; then
+	echo "git shim: could not find the real git on PATH" >&2
+	exit 127
+fi
+
+# Global options come before the subcommand. These take their value as the
+# next argument (git.c handle_options).
+global_count=0
+subcommand=""
+takes_value=0
+for arg; do
+	if [ $takes_value = 1 ]; then
+		takes_value=0
+	else
+		case $arg in
+		-C | -c | --git-dir | --work-tree | --namespace | --super-prefix | --config-env | --shallow-file | --attr-source)
+			takes_value=1
+			;;
+		-*) ;;
+		*)
+			subcommand=$arg
+			break
+			;;
+		esac
+	fi
+	global_count=$((global_count + 1))
+done
+
+case $subcommand in
+commit | merge | pull | cherry-pick | revert | rebase | am) ;;
+*) exec "$real_git" "$@" ;;
+esac
+
+hooks_dir="${self_dir%/*}/attribution/hooks"
+
+global_args=""
+i=0
+while [ $i -lt $global_count ]; do
+	i=$((i + 1))
+	global_args="$global_args \"\${$i}\""
+done
+
+# Outside a repository there are no hooks to route. Git reports that error
+# itself when the real command runs.
+repo_hooks=$(eval "\"\$real_git\"$global_args rev-parse --path-format=absolute --git-path hooks" 2>/dev/null) ||
+	exec "$real_git" "$@"
+
+# Already routed: this is a git command started by an outer one, such as a
+# rebase exec line or a hook that commits.
+[ "$repo_hooks" = "$hooks_dir" ] && exec "$real_git" "$@"
+
+config_count=${GIT_CONFIG_COUNT:-0}
+STRIP_ATTRIBUTION_CONFIG_COUNT=${GIT_CONFIG_COUNT-}
+STRIP_ATTRIBUTION_REPO_HOOKS=$repo_hooks
+export STRIP_ATTRIBUTION_CONFIG_COUNT STRIP_ATTRIBUTION_REPO_HOOKS
+export "GIT_CONFIG_KEY_$config_count=core.hooksPath"
+export "GIT_CONFIG_VALUE_$config_count=$hooks_dir"
+export GIT_CONFIG_COUNT=$((config_count + 1))
+
+exec "$real_git" "$@"

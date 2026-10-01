@@ -1,0 +1,27 @@
+#!/bin/sh
+# Every file in hooks/ links here. bin/git points core.hooksPath at hooks/,
+# so this runs in place of the repository's hook, strips attribution from
+# commit messages, and then hands off to the repository's own hook.
+
+hook=${0##*/}
+attribution_dir=${0%/hooks/*}
+
+case $hook in
+applypatch-msg | prepare-commit-msg | commit-msg)
+	"$attribution_dir/strip" "$1" || exit
+	;;
+esac
+
+if [ -n "$STRIP_ATTRIBUTION_CONFIG_COUNT" ]; then
+	export GIT_CONFIG_COUNT=$STRIP_ATTRIBUTION_CONFIG_COUNT
+	unset "GIT_CONFIG_KEY_$GIT_CONFIG_COUNT" "GIT_CONFIG_VALUE_$GIT_CONFIG_COUNT"
+else
+	unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
+fi
+
+repo_hook="${STRIP_ATTRIBUTION_REPO_HOOKS:?set by bin/git}/$hook"
+unset STRIP_ATTRIBUTION_CONFIG_COUNT STRIP_ATTRIBUTION_REPO_HOOKS
+
+# Git skips a hook that is missing or not executable (hook.c find_hook).
+[ -x "$repo_hook" ] || exit 0
+exec "$repo_hook" "$@"

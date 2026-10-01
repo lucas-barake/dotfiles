@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+# End to end checks for attribution stripping. Runs the real bin/git and
+# bin/gh shims against real git repositories. Only gh's network calls are
+# replaced, by a fake gh that prints the arguments it received.
+
+set -uo pipefail
+
+dotfiles=$(cd "$(dirname "$0")/.." && pwd -P)
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+
+real_git=$(PATH=$(printf %s "$PATH" | tr : '\n' | grep -vx "$dotfiles/bin" | paste -sd : -) command -v git)
+mkdir "$work/fake"
+cat >"$work/fake/gh" <<'EOF'
+#!/bin/sh
+for arg; do printf '%s\0' "$arg"; done
+EOF
+chmod +x "$work/fake/gh"
+export PATH="$dotfiles/bin:$work/fake:$PATH"
+export GH_TOKEN=test
+export GIT_CONFIG_GLOBAL=$work/gitconfig GIT_CONFIG_NOSYSTEM=1
+"$real_git" config --global user.name Tester
+"$real_git" config --global user.email tester@example.com
+"$real_git" config --global init.defaultBranch main
+
+failures=0
+check() {
+	local name=$1 expected=$2 actual=$3
+	if [ "$expected" == "$actual" ]; then
+		echo "ok   $name"
+	else
+		echo "FAIL $name"
+		diff <(printf '%s\n' "$expected") <(printf '%s\n' "$actual") | sed 's/^/     /'
+		failures=$((failures + 1))
+	fi
+}
+message() { "$real_git" -C "$1" log -1 --format=%B "${2:-HEAD}" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'; }
+new_repo() {
+	"$real_git" init -q "$work/$1"
+	"$real_git" -C "$work/$1" commit -q --allow-empty -m init
+}
+
+claude_message='Fix the parser
+
+Handles empty input.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
+Co-authored-by: Jane Doe <jane@example.com>'
+clean_message='Fix the parser
+
+Handles empty input.
+
+Co-authored-by: Jane Doe <jane@example.com>'
+
+new_repo plain
+git -C "$work/plain" commit -q --allow-empty -m "$claude_message"
+check "commit -m strips Claude footer and trailer, keeps human co-author" "$clean_message" "$(message "$work/plain")"
+
+git -C "$work/plain" commit -q --allow-empty --no-verify -m "$claude_message"
+check "commit --no-verify still strips" "$clean_message" "$(message "$work/plain")"
+
+git -C "$work/plain" commit -q --allow-empty -m "Add cache" \
+	--trailer "Co-authored-by: Cursor <cursoragent@cursor.com>" \
+	--trailer "Co-authored-by: Codex <noreply@openai.com>" \
+	--trailer "Co-authored-by: aider (gpt-5) <noreply@aider.dev>" \
+	--trailer "Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>" \
+	--trailer "Co-authored-by: Devin AI <158243242+devin-ai-integration[bot]@users.noreply.github.com>" \
+	--trailer "Co-authored-by: Devin Smith <devin@example.com>" \
+	--trailer "Co-authored-by: Jules Dupont <jules@google.com>" \
+	--trailer "Assisted-by: Claude:claude-opus-5-5"
+check "commit --trailer strips every tool, keeps humans named like tools" "Add cache
+
+Co-authored-by: Devin Smith <devin@example.com>
+Co-authored-by: Jules Dupont <jules@google.com>" "$(message "$work/plain")"
+
+printf '#!/bin/sh\nprintf "Edit in editor\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>\\n" >"$1"\n' >"$work/editor"
+chmod +x "$work/editor"
+GIT_EDITOR=$work/editor git -C "$work/plain" commit -q --allow-empty
+check "message written in the editor strips" "Edit in editor" "$(message "$work/plain")"
+
+fenced='Document the hook
+
+```
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+```'
+git -C "$work/plain" commit -q --allow-empty -m "$fenced"
+check "fenced code blocks are left alone" "$fenced" "$(message "$work/plain")"
+
+prose='Generated with Claude Code the tests failed, so this pins the version.'
+git -C "$work/plain" commit -q --allow-empty -m "$prose"
+check "prose that starts like a footer is left alone" "$prose" "$(message "$work/plain")"
+
+printf 'Caf\351 menu\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n' >"$work/latin1"
+git -C "$work/plain" -c i18n.commitEncoding=ISO-8859-1 commit -q --allow-empty -F "$work/latin1"
+check "non UTF-8 message bytes survive" "$(printf 'Caf\351 menu')" "$("$real_git" -C "$work/plain" cat-file commit HEAD | sed '1,/^$/d')"
+
+new_repo husky
+mkdir -p "$work/husky/.husky/_" "$work/husky/sub"
+cat >"$work/husky/.husky/_/commit-msg" <<'EOF'
+#!/bin/sh
+cp "$1" "$PWD/.seen-message"
+git config core.hooksPath >"$PWD/.seen-hooks-path"
+grep -q REJECT "$1" && exit 1
+exit 0
+EOF
+chmod +x "$work/husky/.husky/_/commit-msg"
+"$real_git" -C "$work/husky" config core.hooksPath .husky/_
+(cd "$work/husky/sub" && git commit -q --allow-empty -m "$claude_message")
+check "repository core.hooksPath (husky) still gets stripped, from a subdirectory" "$clean_message" "$(message "$work/husky")"
+check "repository hook receives the stripped message" "$clean_message" "$(sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$work/husky/.seen-message")"
+check "git inside the repository hook sees the repository config" ".husky/_" "$(cat "$work/husky/.seen-hooks-path")"
+before=$("$real_git" -C "$work/husky" rev-parse HEAD)
+git -C "$work/husky" commit -q --allow-empty -m "REJECT me" 2>/dev/null
+check "a failing repository hook still blocks the commit" "$before" "$("$real_git" -C "$work/husky" rev-parse HEAD)"
+
+new_repo default
+cat >"$work/default/.git/hooks/pre-commit" <<'EOF'
+#!/bin/sh
+echo ran >"$PWD/.pre-commit-ran"
+EOF
+chmod +x "$work/default/.git/hooks/pre-commit"
+git -C "$work/default" commit -q --allow-empty -m "$claude_message"
+check "hooks in .git/hooks still run" "ran" "$(cat "$work/default/.pre-commit-ran" 2>/dev/null)"
+"$real_git" -C "$work/default" worktree add -q "$work/default-wt"
+rm "$work/default/.pre-commit-ran"
+git -C "$work/default-wt" commit -q --allow-empty -m "$claude_message"
+check "linked worktree strips" "$clean_message" "$(message "$work/default-wt")"
+check "linked worktree runs the shared hooks" "ran" "$(cat "$work/default-wt/.pre-commit-ran" 2>/dev/null)"
+
+new_repo history
+"$real_git" -C "$work/history" switch -q -c feature
+"$real_git" -C "$work/history" commit -q --allow-empty -m "$claude_message"
+"$real_git" -C "$work/history" switch -q main
+git -C "$work/history" cherry-pick --allow-empty feature >/dev/null
+check "cherry-pick strips a commit made without the shim" "$clean_message" "$(message "$work/history")"
+"$real_git" -C "$work/history" switch -q -c side
+"$real_git" -C "$work/history" commit -q --allow-empty -m side
+"$real_git" -C "$work/history" switch -q main
+git -C "$work/history" merge -q --no-ff side -m "$claude_message"
+check "merge commit strips" "$clean_message" "$(message "$work/history")"
+"$real_git" -C "$work/history" switch -q feature
+git -C "$work/history" rebase -q main 2>/dev/null
+check "rebase strips the commits it replays" "$clean_message" "$(message "$work/history")"
+
+gh_args() { gh "$@" | tr '\0' '\n'; }
+pr_body='Adds caching.
+
+---
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)'
+check "gh pr create --body" "pr
+create
+--title
+t
+--body=Adds caching." "$(gh_args pr create --title t --body "$pr_body")"
+printf '%s\n' "$pr_body" >"$work/body.md"
+check "gh pr create --body-file" "pr
+create
+--body=Adds caching." "$(gh_args pr create --body-file "$work/body.md")"
+check "gh pr comment -F - reads stdin" "pr
+comment
+1
+--body=Adds caching." "$(printf '%s\n' "$pr_body" | gh_args pr comment 1 -F -)"
+check "gh pr -R before the subcommand" "pr
+-R
+o/r
+edit
+1
+--body=Adds caching." "$(gh_args pr -R o/r edit 1 -b "$pr_body")"
+check "gh release create --notes" "release
+create
+v1
+--notes=Adds caching." "$(gh_args release create v1 -n "$pr_body")"
+check "gh api body fields" "api
+repos/o/r/pulls
+-f
+title=t
+-f
+body=Adds caching.
+-f
+body=Adds caching." "$(gh_args api repos/o/r/pulls -f title=t -f "body=$pr_body" -F "body=@$work/body.md")"
+check "gh commands without text pass through" "pr
+list
+--state
+open" "$(gh_args pr list --state open)"
+
+echo
+if [ $failures -gt 0 ]; then
+	echo "$failures failed"
+	exit 1
+fi
+echo "all passed"
