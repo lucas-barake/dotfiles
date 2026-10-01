@@ -7,6 +7,9 @@
 # repoints every other shell, and commands like `gh repo fork` land on the
 # wrong account with no warning. GH_TOKEN outranks the active account, so
 # setting it per invocation makes the choice explicit instead of ambient.
+#
+# Text that gh publishes also passes through ~/dotfiles/attribution/strip,
+# which removes AI tool attribution from PR, issue, and release bodies.
 
 DEFAULT_ACCOUNT=lucas-barake
 SCOPED_ACCOUNT=lucas-shs
@@ -32,6 +35,13 @@ if [ -z "$real_gh" ]; then
 	exit 127
 fi
 
+run_gh() {
+	case $1 in
+	pr | issue | release | api) exec "$(dirname "$self_dir")/attribution/strip" --exec-gh "$real_gh" "$@" ;;
+	esac
+	exec "$real_gh" "$@"
+}
+
 # Leave auth management alone. With GH_TOKEN set, `gh auth login` refuses to
 # run and `gh auth status` reports the env token instead of the stored ones.
 for arg in "$@"; do
@@ -44,7 +54,7 @@ done
 
 # An explicitly exported token wins, so CI and one-off overrides still work.
 if [ -n "$GH_TOKEN" ] || [ -n "$GITHUB_TOKEN" ]; then
-	exec "$real_gh" "$@"
+	run_gh "$@"
 fi
 
 cwd=$(pwd -P 2>/dev/null) || cwd=$PWD
@@ -60,4 +70,4 @@ if token=$("$real_gh" auth token --user "$account" 2>/dev/null) && [ -n "$token"
 	export GH_TOKEN
 fi
 
-exec "$real_gh" "$@"
+run_gh "$@"
