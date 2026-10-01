@@ -24,7 +24,7 @@ This installs system packages (via brew/apt/pacman/dnf) and the cmux terminal, s
 | `lsd/` | `lsd` file listing |
 | `git/` | Global gitconfig and gitignore |
 
-Not stow packages: `ai/` (AI tooling config and sync CLI), `bin/` (PATH shims), `state/`.
+Not stow packages: `ai/` (AI tooling config and sync CLI), `attribution/` (AI attribution stripping), `bin/` (PATH shims), `state/`.
 
 `setup.sh` refuses to run if a top-level directory is in neither `PACKAGES` nor `NOT_PACKAGES`, so a new package cannot be added to the repo and then silently never linked.
 
@@ -43,6 +43,18 @@ Terminal appearance is not configured here. cmux renders with libghostty and rea
 That file no longer binds `new_tab` or `goto_tab`. Tabs and windows belong to cmux, not to the terminal surface it embeds, so those Ghostty actions had nothing to act on.
 
 Avoid setting a socket control password while this file is tracked. `automation.socketPassword` is a valid `cmux.json` key, so the app would write the password into the repo.
+
+## AI attribution (`attribution/`)
+
+Claude Code, Cursor, Codex, Copilot, aider, opencode, Devin and others add their own attribution to commits and PRs: `Co-authored-by: Claude <noreply@anthropic.com>` trailers, `🤖 Generated with [Claude Code](https://claude.com/claude-code)` footers. The `bin/git` and `bin/gh` shims remove it on the way out, so agents keep running plain `git` and `gh`.
+
+- `git commit`, `merge`, `pull`, `cherry-pick`, `revert`, `rebase` and `am` run with `core.hooksPath` pointed at `attribution/hooks/`. Every hook there is `attribution/dispatch`, which strips the message in `prepare-commit-msg` (runs even with `--no-verify`), `commit-msg` (after the editor) and `applypatch-msg`, then runs the repository's own hook of the same name. Husky, `.githooks` and `.git/hooks` keep working.
+- `gh pr`, `gh issue` and `gh release` text flags (`--body`, `--body-file`, `--notes`, `--notes-file`) and `gh api` `body`/`message` fields are stripped before the real `gh` runs.
+- `Co-authored-by` trailers are removed only when the name or address belongs to an AI tool. Human co-authors stay. Fenced code blocks are left alone.
+
+The routing is passed through `GIT_CONFIG_COUNT` rather than a global `core.hooksPath`, because a repository's own `core.hooksPath` outranks the global one. Anything that runs git by absolute path (`/usr/bin/git`) instead of through `PATH` skips the shims.
+
+`attribution/test` runs every case end to end against real repositories.
 
 ## AI tooling (`ai/`)
 

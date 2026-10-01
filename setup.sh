@@ -7,7 +7,7 @@ PACKAGES=(nvim zed git fish lsd ghostty cmux)
 # Directories that mirror $HOME but are deliberately not stowed. Everything
 # else that mirrors $HOME must be in PACKAGES, or it gets built, committed, and
 # documented while never actually being linked to anything.
-NOT_PACKAGES=(ai bin state)
+NOT_PACKAGES=(ai attribution bin state)
 
 check_package_drift() {
   local dir name unlisted=()
@@ -52,6 +52,22 @@ for pkg in "${PACKAGES[@]}"; do
   stow -v --restow "$pkg"
 done
 
+# Login shells rebuild PATH after the parent shell set it (path_helper in
+# /etc/zprofile and /etc/profile on macOS), which puts the real git and gh back
+# in front of the shims in bin/. ~/.zprofile and the bash login profile run
+# after that rebuild, so the shims go back in front there.
+put_shims_first() {
+  local profile=$1 line="export PATH=\"$DOTFILES/bin:\$PATH\""
+  grep -qxF "$line" "$profile" 2>/dev/null && return
+  printf '\n# Keeps the %s shims ahead of the real git and gh.\n%s\n' "$DOTFILES/bin" "$line" >>"$profile"
+  echo "Put $DOTFILES/bin first in $profile"
+}
+put_shims_first "$HOME/.zprofile"
+# bash reads only the first of these that exists.
+for bash_profile in "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile"; do
+  [ -f "$bash_profile" ] && break
+done
+put_shims_first "$bash_profile"
 
 if [[ "$(uname)" == "Darwin" ]]; then
   # cmux settings that cmux.json cannot express. Quit cmux before running this
