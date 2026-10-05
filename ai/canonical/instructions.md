@@ -230,3 +230,10 @@ Applies to every chat.
   ```bash
   osascript -e 'Tell application "System Events" to display dialog "sudo password required" default answer "" with hidden answer' -e 'text returned of result' | sudo -S <command>
   ```
+
+## Desktop App Automation
+
+- The user keeps working while you drive macOS apps. Never take focus, raise a window, or move the pointer unless the step cannot happen any other way.
+- Prefer, in order: the app's own CLI or API, its AppleScript dictionary (`tell application "Mail" to …` works without activating it), Accessibility actions on a specific element (`perform action "AXPress"`, `set value`), and keystrokes last. `activate`, `set frontmost`, `AXRaise`, `keystroke`, and `key code` all steal focus, and keystrokes land in whatever app is frontmost.
+- Capture a window by its ID, never the whole screen: `winid <App> [title substring]` (in `~/dotfiles/bin`) prints `<windowID> <pid> <onscreen|offscreen> <title>`, then `screencapture -x -o -l <windowID> out.png`. This captures a window behind other apps without raising it. It cannot capture a minimized window.
+- When a step truly needs focus, such as pasting into a compose body, first record the frontmost app (`tell application "System Events" to name of first process whose frontmost is true`), check the target window is the one you mean, do only the focused step, and reactivate the recorded app right after. Tell the user you took focus and for how long.
