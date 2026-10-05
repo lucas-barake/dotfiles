@@ -2,6 +2,7 @@
   // ─────────────────────────────────────────────────────────────
   // File Scanning & Search
   // ─────────────────────────────────────────────────────────────
+  "cli_default_open_behavior": "existing_window",
   "telemetry": {
     "diagnostics": false,
     "metrics": false,
@@ -171,9 +172,9 @@
   "languages": {
     "TypeScript": {
       "language_servers": [
-        "tsgo",
+        "typescript-ls",
+        "oxlint",
         "!vtsls",
-        "oxc",
         "!typescript-language-server",
       ],
       "show_edit_predictions": true,
@@ -182,9 +183,9 @@
     },
     "TSX": {
       "language_servers": [
-        "tsgo",
+        "typescript-ls",
+        "oxlint",
         "!vtsls",
-        "oxc",
         "!typescript-language-server",
       ],
       "code_actions_on_format": { "source.fixAll.eslint": true },
@@ -192,9 +193,9 @@
     },
     "JavaScript": {
       "language_servers": [
-        "tsgo",
+        "typescript-ls",
+        "oxlint",
         "!vtsls",
-        "oxc",
         "!typescript-language-server",
       ],
       "code_actions_on_format": { "source.fixAll.eslint": true },
@@ -213,7 +214,7 @@
         "require_config_file": true,
       },
     },
-    "oxc": {
+    "oxlint": {
       "initialization_options": {
         "options": {
           "run": "onType",
