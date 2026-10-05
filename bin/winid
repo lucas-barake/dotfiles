@@ -1,0 +1,25 @@
+#!/usr/bin/env swift
+// Lists an app's windows as "<windowID> <pid> <onscreen> <title>" without touching focus.
+// Feed the window ID to `screencapture -x -o -l <windowID> out.png`.
+import CoreGraphics
+import Foundation
+
+let args = CommandLine.arguments
+guard args.count >= 2 else {
+  FileHandle.standardError.write("usage: winid <app name> [title substring]\n".data(using: .utf8)!)
+  exit(2)
+}
+let app = args[1]
+let needle = args.count > 2 ? args[2].lowercased() : nil
+let windows = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+var found = false
+for w in windows {
+  guard (w[kCGWindowOwnerName as String] as? String) == app,
+        (w[kCGWindowLayer as String] as? Int) == 0 else { continue }
+  let title = w[kCGWindowName as String] as? String ?? ""
+  if let needle = needle, !title.lowercased().contains(needle) { continue }
+  let onscreen = (w[kCGWindowIsOnscreen as String] as? Bool) ?? false
+  print("\(w[kCGWindowNumber as String]!) \(w[kCGWindowOwnerPID as String]!) \(onscreen ? "onscreen" : "offscreen") \(title)")
+  found = true
+}
+exit(found ? 0 : 1)
