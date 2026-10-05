@@ -38,7 +38,9 @@ Two settings have no `cmux.json` equivalent and are only reachable through `NSUs
 
 `cmux reload-config` applies changes to this file and to the Ghostty config without restarting the app. `cmux config validate` checks the JSONC before you reload.
 
-Terminal appearance is not configured here. cmux renders with libghostty and reads `ghostty/.config/ghostty/config`.
+Terminal appearance is not configured here, with one exception. cmux renders with libghostty and reads `ghostty/.config/ghostty/config`.
+
+The exception is `app.globalFontMagnification`, set to `110`. It scales cmux chrome (tab titles, sidebars, settings, overlays) and is also multiplied into the Ghostty `font-size` before libghostty sees it, so the terminal renders at ~19pt inside cmux while Ghostty.app stays at the configured 17. Only multiples of 10 from 50 to 200 are accepted.
 
 That file no longer binds `new_tab` or `goto_tab`. Tabs and windows belong to cmux, not to the terminal surface it embeds, so those Ghostty actions had nothing to act on.
 
