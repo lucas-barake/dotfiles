@@ -3,6 +3,11 @@
   "schemaVersion": 1,
 
   "app": {
+    // Scales app chrome and, on top of the Ghostty config, the terminal font:
+    // cmux multiplies the loaded `font-size` by this percent before handing it
+    // to libghostty. 17pt there renders at ~19pt here, while Ghostty.app keeps
+    // 17. Steps of 10 between 50 and 200 are the only accepted values.
+    "globalFontMagnification": 110,
     "minimalMode": true,
     "sendAnonymousTelemetry": false,
     "reorderOnNotification": false,
