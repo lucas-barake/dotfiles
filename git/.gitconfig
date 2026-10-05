@@ -25,3 +25,9 @@
 	changes = "!f() { git diff ${1:-origin/main}; }; f"
 [maintenance]
 	repo = /Users/lucas/dotfiles
+[credential "https://github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
