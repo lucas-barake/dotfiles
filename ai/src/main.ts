@@ -15,8 +15,11 @@ const targetPaths: Record<Target, string> = {
   opencode: `${process.env.HOME}/.config/opencode`,
   codex: `${process.env.HOME}/.codex`,
   kimi: process.env.KIMI_CODE_HOME ?? `${process.env.HOME}/.kimi-code`,
-  "kimi-desktop": `${process.env.HOME}/Library/Application Support/kimi-desktop/daimon-share/daimon`
+  "kimi-desktop": `${process.env.HOME}/Library/Application Support/kimi-desktop/daimon-share/daimon`,
+  cursor: `${process.env.HOME}/.cursor`
 }
+
+const allTargets: ReadonlyArray<Target> = ["claude", "opencode", "codex", "kimi", "kimi-desktop", "cursor"]
 
 const configFiles: Partial<Record<Target, { source: string; target: string; merge: boolean }>> = {
   claude: { source: "claude.json", target: "settings.json", merge: true },
@@ -50,7 +53,12 @@ const RETIRED_GLOBAL_SKILL_NAMES = ["deep-review"] as const
 const DESKTOP_CONFIG_START = "# --- dotai desktop start ---"
 const DESKTOP_CONFIG_END = "# --- dotai desktop end ---"
 
-const removeRetiredProviderAssets = (targetDir: string, target: Target, agentsDirName = "agents") =>
+const removeRetiredProviderAssets = (
+  targetDir: string,
+  target: Target,
+  agentsDirName = "agents",
+  options: { skills: boolean } = { skills: true }
+) =>
   Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
     const p = yield* Path.Path
@@ -61,6 +69,7 @@ const removeRetiredProviderAssets = (targetDir: string, target: Target, agentsDi
       (name) => fs.remove(p.join(targetDir, agentsDirName, `${name}${targetAgentExtension}`), { force: true }),
       { concurrency: "unbounded" }
     )
+    if (!options.skills) return
     yield* Effect.forEach(
       RETIRED_GLOBAL_SKILL_NAMES,
       (skillName) =>
@@ -576,6 +585,14 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
         }),
       { concurrency: "unbounded" }
     )
+
+    // Cursor already loads global skills from ~/.claude/skills, so writing
+    // them under ~/.cursor too would list every skill twice.
+    if (target === "cursor") {
+      yield* removeRetiredProviderAssets(targetDir, target, "agents", { skills: false })
+      return false
+    }
+
     yield* syncProviderSkills(sourceDir, targetDir, target, modelMap)
     if (target === "claude") {
       yield* syncInstructions(sourceDir, targetDir, "CLAUDE.md", "instructions.claude.md")
@@ -644,9 +661,9 @@ const project = Command.make(
 const global = Command.make(
   "global",
   {
-    target: Flag.choice("target", ["claude", "opencode", "codex", "kimi", "kimi-desktop", "all"]).pipe(
+    target: Flag.choice("target", ["claude", "opencode", "codex", "kimi", "kimi-desktop", "cursor", "all"]).pipe(
       Flag.withDefault("all" as const),
-      Flag.withDescription("Target to sync: claude, opencode, codex, kimi, kimi-desktop, or all")
+      Flag.withDescription("Target to sync: claude, opencode, codex, kimi, kimi-desktop, cursor, or all")
     ),
     home: Flag.directory("home").pipe(
       Flag.withDefault(defaultHome(realpathSync(process.execPath), import.meta.dir)),
@@ -658,7 +675,7 @@ const global = Command.make(
       const fs = yield* FileSystem.FileSystem
       const p = yield* Path.Path
       const modelMap = yield* readModelMap(home)
-      const targets: ReadonlyArray<Target> = target === "all" ? ["claude", "opencode", "codex", "kimi", "kimi-desktop"] : [target]
+      const targets: ReadonlyArray<Target> = target === "all" ? allTargets : [target]
 
       for (const currentTarget of targets) {
         const skipped = yield* syncTarget(`${home}/canonical`, targetPaths[currentTarget], currentTarget, modelMap)

@@ -131,6 +131,23 @@ Body.
     expect(result).toContain("You are a test agent.")
   })
 
+  it("converts to cursor subagent frontmatter", () => {
+    const result = transformAgent(sampleAgent, "cursor", { haiku: "bedrock-haiku" })
+    expect(result).toContain("name: test-agent")
+    expect(result).toContain('description: "A test agent for verification."')
+    expect(result).toContain("model: inherit")
+    expect(result).toContain("readonly: true")
+    expect(result).not.toMatch(/^tools:/m)
+    expect(result).toContain("You are a test agent.")
+  })
+
+  it("keeps cursor agents writable when any write-capable tool is allowed", () => {
+    const bashOnly = sampleAgent.replace("tools: Read, Glob, Grep", "tools: Bash")
+    const noTools = sampleAgent.replace("tools: Read, Glob, Grep\n", "")
+    expect(transformAgent(bashOnly, "cursor")).not.toContain("readonly")
+    expect(transformAgent(noTools, "cursor")).not.toContain("readonly")
+  })
+
   it("remaps model when modelMap is provided", () => {
     const result = transformAgent(sampleAgent, "claude", { haiku: "us.anthropic.claude-haiku-4-5-20251001" })
     expect(result).toContain("model: us.anthropic.claude-haiku-4-5-20251001")
@@ -418,6 +435,25 @@ Use the canonical instructions.
       yield* syncTarget("/src", "/out", "opencode").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(removed.has("/out/agents/reviewer-behavioral.md")).toBe(true)
+    }))
+
+  it.effect("syncs cursor agents and removes retired ones without touching skills or instructions", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, written, removed } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/global-skills/ship.md": sampleSkill,
+        "/src/instructions.md": "# Base Rules\n",
+        "/out/agents/reviewer-logic.md": "stale",
+        "/out/skills/deep-review/SKILL.md": "custom"
+      }, ["/out"])
+
+      const skipped = yield* syncTarget("/src", "/out", "cursor").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(skipped).toBe(false)
+      expect(written.get("/out/agents/deep-dive.md")).toContain("model: inherit")
+      expect(removed.has("/out/agents/reviewer-logic.md")).toBe(true)
+      expect(removed.has("/out/skills/deep-review")).toBe(false)
+      expect([...written.keys()]).toEqual(["/out/agents/deep-dive.md"])
     }))
 
   it.effect("syncs codex agent files and config entries", () =>

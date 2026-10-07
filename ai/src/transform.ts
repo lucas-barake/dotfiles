@@ -1,4 +1,4 @@
-export type Target = "claude" | "opencode" | "codex" | "kimi" | "kimi-desktop"
+export type Target = "claude" | "opencode" | "codex" | "kimi" | "kimi-desktop" | "cursor"
 
 export const parseFrontmatter = (content: string) => {
   const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
@@ -60,6 +60,25 @@ export const transformAgent = (content: string, target: Target, modelMap?: Recor
     // Drop `model`/`context` since they have no Kimi equivalent.
     const keptFields = fields.filter(([key]) => key !== "model" && key !== "context")
     return `${serializeFrontmatter(keptFields)}\n${body}`
+  }
+
+  if (target === "cursor") {
+    // Cursor subagents accept name, description, model (`inherit` or a Cursor
+    // model id), readonly, and is_background. Claude aliases like `opus` are
+    // not Cursor ids, so every agent inherits the parent model. Cursor has no
+    // per-tool allowlist; an agent denied every write-capable tool maps to
+    // readonly.
+    const name = getField(fields, "name")
+    const toolsStr = getField(fields, "tools")
+    const entries: Array<readonly [string, string]> = [
+      ...(name ? [["name", name] as const] : []),
+      ["description", JSON.stringify(getField(fields, "description") ?? "")],
+      ["model", "inherit"]
+    ]
+    if (toolsStr && Object.keys(toolsToDenyObject(toolsStr)).length === deniableTools.length) {
+      entries.push(["readonly", "true"])
+    }
+    return `${serializeFrontmatter(entries)}\n${body}`
   }
 
   const description = getField(fields, "description") ?? ""
