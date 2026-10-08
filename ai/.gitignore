@@ -3,3 +3,4 @@ bun.lock
 .DS_Store
 bin/
 model-mapper.json
+cursor-workspaces.json

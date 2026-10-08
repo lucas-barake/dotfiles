@@ -1,7 +1,17 @@
 import { describe, expect, it } from "@effect/vitest"
 import { Effect, FileSystem, Layer, Path } from "effect"
 import { stripFrontmatter, transformAgent } from "../src/transform.ts"
-import { deepMerge, defaultHome, loadProjectSettings, run, scanModels, syncConfig, syncProject, syncTarget } from "../src/main.ts"
+import {
+  deepMerge,
+  defaultHome,
+  loadProjectSettings,
+  run,
+  scanModels,
+  syncConfig,
+  syncCursorWorkspace,
+  syncProject,
+  syncTarget
+} from "../src/main.ts"
 
 const sampleAgent = `---
 name: test-agent
@@ -454,6 +464,37 @@ Use the canonical instructions.
       expect(removed.has("/out/agents/reviewer-logic.md")).toBe(true)
       expect(removed.has("/out/skills/deep-review")).toBe(false)
       expect([...written.keys()]).toEqual(["/out/agents/deep-dive.md"])
+    }))
+
+  it.effect("mirrors cursor agents into a workspace with a managed gitignore", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, written, removed } = makeMemoryFs({
+        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/fast-lookup.md": sampleAgent,
+        "/ws/.cursor/agents/reviewer-logic.md": "stale",
+        "/ws/.cursor/agents/own-agent.md": "custom",
+        "/ws/.cursor/agents/.gitignore": "notes.txt\n\n# --- dotai agents start ---\nold.md\n# --- dotai agents end ---\n"
+      }, ["/ws"])
+
+      const skipped = yield* syncCursorWorkspace("/src", "/ws").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(skipped).toBe(false)
+      expect(written.get("/ws/.cursor/agents/deep-dive.md")).toBe(transformAgent(sampleAgent, "cursor"))
+      expect(removed.has("/ws/.cursor/agents/reviewer-logic.md")).toBe(true)
+      expect(removed.has("/ws/.cursor/agents/own-agent.md")).toBe(false)
+      expect(written.get("/ws/.cursor/agents/.gitignore")).toBe(
+        "notes.txt\n\n# --- dotai agents start ---\n.gitignore\ndeep-dive.md\nfast-lookup.md\n# --- dotai agents end ---\n"
+      )
+    }))
+
+  it.effect("skips a cursor workspace that does not exist", () =>
+    Effect.gen(function*() {
+      const { layer: fsLayer, written } = makeMemoryFs({ "/src/agents/deep-dive.md": sampleAgent })
+
+      const skipped = yield* syncCursorWorkspace("/src", "/missing").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
+
+      expect(skipped).toBe(true)
+      expect(written.size).toBe(0)
     }))
 
   it.effect("syncs codex agent files and config entries", () =>

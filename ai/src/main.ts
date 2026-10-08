@@ -52,6 +52,8 @@ const RETIRED_GLOBAL_SKILL_NAMES = ["deep-review"] as const
 
 const DESKTOP_CONFIG_START = "# --- dotai desktop start ---"
 const DESKTOP_CONFIG_END = "# --- dotai desktop end ---"
+const CURSOR_IGNORE_START = "# --- dotai agents start ---"
+const CURSOR_IGNORE_END = "# --- dotai agents end ---"
 
 const removeRetiredProviderAssets = (
   targetDir: string,
@@ -88,6 +90,33 @@ const readModelMap = (home: string) =>
     const mapperPath = p.join(home, "model-mapper.json")
     if (!(yield* fs.exists(mapperPath))) return undefined
     return JSON.parse(yield* fs.readFileString(mapperPath)) as Record<string, string>
+  })
+
+const readCursorWorkspaces = (home: string) =>
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const p = yield* Path.Path
+    const listPath = p.join(home, "cursor-workspaces.json")
+    if (!(yield* fs.exists(listPath))) return [] as ReadonlyArray<string>
+    return JSON.parse(yield* fs.readFileString(listPath)) as ReadonlyArray<string>
+  })
+
+const writeAgents = (sourceDir: string, agentsDir: string, target: Target, modelMap?: Record<string, string>) =>
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const p = yield* Path.Path
+    const agentFiles = (yield* fs.readDirectory(p.join(sourceDir, "agents"))).filter((file) => file.endsWith(".md"))
+    yield* fs.makeDirectory(agentsDir, { recursive: true })
+    yield* Effect.forEach(
+      agentFiles,
+      (file) =>
+        Effect.gen(function*() {
+          const content = yield* fs.readFileString(p.join(sourceDir, "agents", file))
+          yield* fs.writeFileString(p.join(agentsDir, file), transformAgent(content, target, modelMap) as string)
+        }),
+      { concurrency: "unbounded" }
+    )
+    return agentFiles.sort()
   })
 
 const readCanonicalSkills = (sourceDir: string, kind: "global-skills" | "project-skills") =>
@@ -575,16 +604,7 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
       return false
     }
 
-    yield* fs.makeDirectory(p.join(targetDir, "agents"), { recursive: true })
-    yield* Effect.forEach(
-      agentFiles.filter((file) => file.endsWith(".md")),
-      (file) =>
-        Effect.gen(function*() {
-          const content = yield* fs.readFileString(p.join(sourceDir, "agents", file))
-          yield* fs.writeFileString(p.join(targetDir, "agents", file), transformAgent(content, target, modelMap) as string)
-        }),
-      { concurrency: "unbounded" }
-    )
+    yield* writeAgents(sourceDir, p.join(targetDir, "agents"), target, modelMap)
 
     // Cursor already loads global skills from ~/.claude/skills, so writing
     // them under ~/.cursor too would list every skill twice.
@@ -603,6 +623,27 @@ export const syncTarget = (sourceDir: string, targetDir: string, target: Target,
     }
     yield* removeRetiredProviderAssets(targetDir, target)
 
+    return false
+  })
+
+// The Cursor SDK (which embedders like T3 Code run on) reads subagents only
+// from <workspace>/.cursor/agents and rejects files that resolve outside the
+// workspace, so ~/.cursor/agents and symlinks to it are invisible there.
+export const syncCursorWorkspace = (sourceDir: string, workspaceDir: string, modelMap?: Record<string, string>) =>
+  Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const p = yield* Path.Path
+
+    if (!(yield* fs.exists(workspaceDir))) return true
+
+    const cursorDir = p.join(workspaceDir, ".cursor")
+    const agentFiles = yield* writeAgents(sourceDir, p.join(cursorDir, "agents"), "cursor", modelMap)
+    yield* removeRetiredProviderAssets(cursorDir, "cursor", "agents", { skills: false })
+
+    const ignorePath = p.join(cursorDir, "agents", ".gitignore")
+    const existing = (yield* fs.exists(ignorePath)) ? yield* fs.readFileString(ignorePath) : ""
+    const block = [CURSOR_IGNORE_START, ".gitignore", ...agentFiles, CURSOR_IGNORE_END].join("\n")
+    yield* fs.writeFileString(ignorePath, replaceManagedBlock(existing, CURSOR_IGNORE_START, CURSOR_IGNORE_END, block))
     return false
   })
 
@@ -680,6 +721,16 @@ const global = Command.make(
       for (const currentTarget of targets) {
         const skipped = yield* syncTarget(`${home}/canonical`, targetPaths[currentTarget], currentTarget, modelMap)
         yield* Console.log(skipped ? `Skipped ${currentTarget} (directory not found)` : `Synced ${currentTarget} agents`)
+        if (currentTarget === "cursor" && !skipped) {
+          for (const workspace of yield* readCursorWorkspaces(home)) {
+            const workspaceSkipped = yield* syncCursorWorkspace(`${home}/canonical`, workspace, modelMap)
+            yield* Console.log(
+              workspaceSkipped
+                ? `Skipped cursor workspace ${workspace} (directory not found)`
+                : `Synced cursor agents into ${workspace}/.cursor/agents`
+            )
+          }
+        }
         if (
           (currentTarget === "codex" || currentTarget === "claude" || currentTarget === "kimi") &&
           !skipped &&
