@@ -25,6 +25,18 @@ Applies to every chat.
 - Never deliver a feasibility verdict, a cost estimate, or a recommendation from inference. Verify the facts it rests on first.
 - Assumptions are for choices that are cheap to correct. They are never a substitute for a fact you could have looked up.
 
+## Existing Capabilities
+
+- Assume the API, endpoint, field, parameter, event, service, or shared package you need already exists until a thorough search shows it does not. Building a new one is the last resort.
+- Search for the behavior, not a guessed name. Use synonyms, the owning team's vocabulary, every casing form, and old names.
+- One repository is never the whole search. Find the service that would own the capability, then also search its contracts (OpenAPI, proto, GraphQL schema), its consumers in other repositories, generated clients and SDKs, other API versions and surfaces, and the provider's published reference.
+- Check whether something more general already covers the need: a filter or query parameter, a batch or search endpoint, an `expand` option, a webhook or event, a GraphQL field when REST lacks it, or a short composition of existing calls.
+- An empty code search is not proof of absence. GitHub code search skips non default branches, archived repositories, most forks, files of 384 KB or more, inactive repositories, and everything past 1000 results. Clone the likely owners and search them locally before trusting an empty result.
+- Before writing code against an external API, confirm the exact contract from a spec, the implementation, a real caller, or a read only live call. Never write against an endpoint or parameter you inferred.
+- Live calls made only to confirm a capability are read only. Never create, change, or delete remote state to check whether something works.
+- When the search spans more than the repository in hand, or targets a third party API, use `capability-search`. Do not claim absence or build a replacement until it returns NOT_FOUND with a coverage report. Treat INCONCLUSIVE as unknown and say what blocked it.
+- When you report that something exists or does not, say what you searched and where.
+
 ## Correctness
 
 - Correctness is not negotiable against effort, length, or speed of delivery.
@@ -160,6 +172,7 @@ Applies to every chat.
 - Use `reviewer-performance` for hot paths, large data, UI rendering, responsiveness, I/O, database or network access, queues, workers, caching, retries, batching, backpressure, allocation heavy code, or changes that may affect time complexity, memory pressure, garbage collection, or resource consumption.
 - Use `ux-reviewer` when a review touches anything a user sees, reads, or operates: interface, copy, labels, presented figures, states, flows, notifications, or a payload a person reads. It runs the surface and reports what a user would experience, so it needs a reachable running instance and is worth little without one. It owns what the user concludes and can do, where `reviewer-performance` owns what the interface costs to render.
 - Use `web-search` for web lookups.
+- Use `capability-search` to decide whether an API, endpoint, field, event, service, or package already exists across many repositories, an organization, or a third party API. It owns the existence question before anything new is built. Use `fast-lookup` or `deep-dive` instead when the code in question is already located.
 - Use `natural-writer` for prose that a person other than the user will read as coming from the user: an email, a chat message, a reply on a ticket or review thread, an announcement. It is the exception to keeping authoring with you, because text drafted inside a working session carries the session's detail and phrasing. Do not use it for code, commit messages, or your own replies to the user.
 - `natural-writer` sees only what you send. Pass the medium, the facts to convey, and the outcome wanted, plus everything you know about the reader: who they are, their role, what they already know, whether they are technical, and how the sender relates to them. Pass samples of the user's own writing when you have them. Leave out what you do not know rather than guessing, and do not paste task history. Its reply is the final text. Use it verbatim.
 - Tell agents whether you need structural mapping, exact signatures, behavioral verification, test patterns, or external references. Do not make them infer the investigation mode.
