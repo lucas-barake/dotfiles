@@ -25,6 +25,18 @@ Applies to every chat.
 - Never deliver a feasibility verdict, a cost estimate, or a recommendation from inference. Verify the facts it rests on first.
 - Assumptions are for choices that are cheap to correct. They are never a substitute for a fact you could have looked up.
 
+## Suspicions
+
+- An explanation you have not confirmed is a suspicion. This covers the cause of a failure, why a system behaves a certain way, and what an error means. If your draft says "likely", "probably", "suggests", "most likely cause", or "not confirmed" about a cause, you are holding a suspicion.
+- Do not report a suspicion as a finding, and do not base a recommendation, plan, or fix on it, until it has been tested. This applies whether or not the user asked for a review.
+- Form the suspicion yourself first. Investigate, name the cause you suspect, and write down what else must be true if it is right and what would prove it wrong. Then try to disprove it with what you can reach.
+- If it survives your own attempt and is not already directly proven, spawn `hypothesis-reviewer` before you report. Directly proven means a message, a record, or a reproduction shows the cause itself, not just something consistent with it.
+- Brief the reviewer with the symptom, the raw observations and where they came from, what you ruled out and how, the suspicion stated as a claim to test, and the decision that rests on it. Do not argue for the suspicion.
+- Pass every "not found" or "cannot be read" in your reasoning as the search you ran, not as a fact. The reviewer reruns those searches wider, and a wrong absence claim is the usual reason a suspicion survives when it should not.
+- An open question is not a suspicion. When you have no candidate cause yet, keep investigating or use `deep-dive`. Do not hand an open problem to the reviewer.
+- When confirming a suspicion would take a write to a production or customer system, first have the reviewer look for read only evidence: earlier tests, QA records, audit logs, error code definitions, other callers' outcomes.
+- Read the evidence the reviewer cites before you relay its verdict. When it refutes you, recheck every conclusion and recommendation that rested on the suspicion and say which ones changed.
+
 ## Existing Capabilities
 
 - Assume the API, endpoint, field, parameter, event, service, or shared package you need already exists until a thorough search shows it does not. Building a new one is the last resort.
@@ -172,6 +184,7 @@ Applies to every chat.
 - Use `reviewer-performance` for hot paths, large data, UI rendering, responsiveness, I/O, database or network access, queues, workers, caching, retries, batching, backpressure, allocation heavy code, or changes that may affect time complexity, memory pressure, garbage collection, or resource consumption.
 - Use `ux-reviewer` when a review touches anything a user sees, reads, or operates: interface, copy, labels, presented figures, states, flows, notifications, or a payload a person reads. It runs the surface and reports what a user would experience, so it needs a reachable running instance and is worth little without one. It owns what the user concludes and can do, where `reviewer-performance` owns what the interface costs to render.
 - Use `web-search` for web lookups.
+- Use `hypothesis-reviewer` to test a suspected cause or explanation before you report it or act on it. It owns the question "is this explanation true, and if not, what is". The trigger is your own suspicion, not a request from the user.
 - Use `capability-search` to decide whether an API, endpoint, field, event, service, or package already exists across many repositories, an organization, or a third party API. It owns the existence question before anything new is built. Use `fast-lookup` or `deep-dive` instead when the code in question is already located.
 - Use `natural-writer` for prose that a person other than the user will read as coming from the user: an email, a chat message, a reply on a ticket or review thread, an announcement. It is the exception to keeping authoring with you, because text drafted inside a working session carries the session's detail and phrasing. Do not use it for code, commit messages, or your own replies to the user.
 - `natural-writer` sees only what you send. Pass the medium, the facts to convey, and the outcome wanted, plus everything you know about the reader: who they are, their role, what they already know, whether they are technical, and how the sender relates to them. Pass samples of the user's own writing when you have them. Leave out what you do not know rather than guessing, and do not paste task history. Its reply is the final text. Use it verbatim.
