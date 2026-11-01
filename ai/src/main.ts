@@ -44,6 +44,7 @@ const PROJECT_SKILLS_END = "<!-- dotai skills table end -->"
 const RETIRED_AGENT_NAMES = [
   "deep-dive",
   "effect-idiom-reviewer",
+  "fast-lookup",
   "effect-reviewer",
   "reuse-reviewer",
   "reviewer-behavioral",
