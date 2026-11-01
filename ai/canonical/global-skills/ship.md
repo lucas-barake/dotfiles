@@ -190,14 +190,14 @@ This gate answers one question: would an implementer following this ledger hit a
 
 No code exists yet, so nothing here can be proven the way a finding is proven after implementation. There is no red test, no runtime evidence, and no diff to read. Any claim about how the finished code will behave is a hypothesis for Step 11 and Step 12, not a plan defect. Plan review is cheap insurance against a wrong direction, not a quality bar for the plan document.
 
-Default reviewer set, spawned once in parallel:
+Default check:
 
-1. `plan-reviewer-references`: do the cited APIs, versions, and reference implementations actually support this approach
-2. `plan-reviewer-logic`: is the sequencing possible, are the prerequisites present, does the plan contradict the source it cites
+1. Spawn `capability-search` once with every API, endpoint, signature, version, library behavior, and reference implementation the ledger cites. It answers whether each exists and behaves as the ledger says, at the installed version.
+2. Check the sequencing yourself against the source the plan cites: every step is possible in that order, every prerequisite is obtained before it is used, and no step contradicts the code it relies on.
 
-Add a reviewer from `plan-reviewer-behavioral`, `plan-reviewer-rules`, `plan-test-reviewer`, `plan-reviewer-data-integrity`, `plan-reviewer-security`, or `plan-reviewer-concurrency` only when a wrong invariant in that domain would invalidate the design rather than produce a defect that is fixable during implementation. Adding none is the normal case. Record the selection and every omission in `# Review Log`.
+Domain risks are reviewed against the real diff in Step 12. Spawn a `reviewer-*` agent here only when a wrong invariant in its domain would invalidate the design rather than produce a defect that is fixable during implementation, and tell it to review only that invariant in the ledger. Adding none is the normal case. Record the selection and every omission in `# Review Log`.
 
-Spawn them with the ledger path, the task goal from `# Task`, the relevant rule files, and the reference and library roots they need. Each prompt must state that no code has been written yet, that the reviewer must report only defects that would force a change of approach, and that missing detail, unstated edge cases, style, and requests for the plan to say more are out of scope.
+Spawn reviewers with the ledger path, the task goal from `# Task`, the relevant rule files, and the reference and library roots they need. Each prompt must state that no code has been written yet, that the reviewer must report only defects that would force a change of approach, and that missing detail, unstated edge cases, style, and requests for the plan to say more are out of scope.
 
 Wait for the reviewers before reviewing the same areas yourself.
 

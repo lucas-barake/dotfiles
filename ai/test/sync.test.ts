@@ -311,6 +311,7 @@ describe("syncTarget", () => {
         "/out/agents/deep-dive.md": "stale",
         "/out/agents/fast-lookup.md": "stale",
         "/out/agents/quick-dive.md": "stale",
+        "/out/agents/plan-reviewer-logic.md": "stale",
         "/out/skills/deep-review/SKILL.md": "stale"
       }, ["/out"])
 
@@ -320,6 +321,7 @@ describe("syncTarget", () => {
       expect(removed.has("/out/agents/deep-dive.md")).toBe(true)
       expect(removed.has("/out/agents/fast-lookup.md")).toBe(true)
       expect(removed.has("/out/agents/quick-dive.md")).toBe(true)
+      expect(removed.has("/out/agents/plan-reviewer-logic.md")).toBe(true)
       expect(removed.has("/out/skills/deep-review")).toBe(true)
     }))
 
