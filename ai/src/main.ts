@@ -42,6 +42,7 @@ const CODEX_AGENTS_END = "# --- dotai agents end ---"
 const PROJECT_SKILLS_START = "<!-- dotai skills table start -->"
 const PROJECT_SKILLS_END = "<!-- dotai skills table end -->"
 const RETIRED_AGENT_NAMES = [
+  "deep-dive",
   "effect-idiom-reviewer",
   "effect-reviewer",
   "reuse-reviewer",

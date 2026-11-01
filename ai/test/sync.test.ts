@@ -291,29 +291,31 @@ describe("syncTarget", () => {
   it.effect("syncs agent files for claude", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/global-skills/ship.md": sampleSkill
       }, ["/out"])
 
       const skipped = yield* syncTarget("/src", "/out", "claude").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(skipped).toBe(false)
-      expect(written.get("/out/agents/deep-dive.md")).toContain("name: test-agent")
+      expect(written.get("/out/agents/code-tracer.md")).toContain("name: test-agent")
       expect(written.get("/out/skills/ship/SKILL.md")).toContain("model: claude-sonnet-4-20250514")
     }))
 
   it.effect("removes retired claude agents and renamed global skills", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, removed } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/global-skills/change-audit.md": sampleSkill,
         "/out/agents/reviewer-logic.md": "stale",
+        "/out/agents/deep-dive.md": "stale",
         "/out/skills/deep-review/SKILL.md": "stale"
       }, ["/out"])
 
       yield* syncTarget("/src", "/out", "claude").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(removed.has("/out/agents/reviewer-logic.md")).toBe(true)
+      expect(removed.has("/out/agents/deep-dive.md")).toBe(true)
       expect(removed.has("/out/skills/deep-review")).toBe(true)
     }))
 
@@ -366,7 +368,7 @@ describe("syncTarget", () => {
 Use the canonical instructions.
 `
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/instructions.codex.md": "# Codex Rules\n",
         "/src/instructions.md": instructions
       }, ["/out"])
@@ -387,7 +389,7 @@ Complete ambiguous work instead of asking.
 Use the canonical instructions.
 `
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/instructions.claude.md": claudeInstructions,
         "/src/instructions.codex.md": "# Codex Rules\n",
         "/src/instructions.md": instructions
@@ -405,7 +407,7 @@ Use the canonical instructions.
 Use the canonical instructions.
 `
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/instructions.claude.md": "# Working Agreement\n",
         "/src/instructions.md": instructions
       }, ["/out"])
@@ -418,7 +420,7 @@ Use the canonical instructions.
   it.effect("syncs agent files for opencode", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/global-skills/ship.md": sampleSkill,
         "/src/instructions.codex.md": "# Codex Rules\n",
         "/src/instructions.md": "# Base Rules\n"
@@ -426,7 +428,7 @@ Use the canonical instructions.
 
       yield* syncTarget("/src", "/out", "opencode").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
-      const agent = written.get("/out/agents/deep-dive.md")!
+      const agent = written.get("/out/agents/code-tracer.md")!
       expect(agent).toContain("mode: subagent")
       expect(agent).not.toMatch(/^name:/m)
       expect(agent).toContain("bash: false")
@@ -438,7 +440,7 @@ Use the canonical instructions.
   it.effect("removes retired opencode agents", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, removed } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/out/agents/reviewer-behavioral.md": "stale"
       }, ["/out"])
 
@@ -450,7 +452,7 @@ Use the canonical instructions.
   it.effect("syncs cursor agents and removes retired ones without touching skills or instructions", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written, removed } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/global-skills/ship.md": sampleSkill,
         "/src/instructions.md": "# Base Rules\n",
         "/out/agents/reviewer-logic.md": "stale",
@@ -460,16 +462,16 @@ Use the canonical instructions.
       const skipped = yield* syncTarget("/src", "/out", "cursor").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(skipped).toBe(false)
-      expect(written.get("/out/agents/deep-dive.md")).toContain("model: inherit")
+      expect(written.get("/out/agents/code-tracer.md")).toContain("model: inherit")
       expect(removed.has("/out/agents/reviewer-logic.md")).toBe(true)
       expect(removed.has("/out/skills/deep-review")).toBe(false)
-      expect([...written.keys()]).toEqual(["/out/agents/deep-dive.md"])
+      expect([...written.keys()]).toEqual(["/out/agents/code-tracer.md"])
     }))
 
   it.effect("mirrors cursor agents into a workspace with a managed gitignore", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written, removed } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/agents/fast-lookup.md": sampleAgent,
         "/ws/.cursor/agents/reviewer-logic.md": "stale",
         "/ws/.cursor/agents/own-agent.md": "custom",
@@ -479,17 +481,17 @@ Use the canonical instructions.
       const skipped = yield* syncCursorWorkspace("/src", "/ws").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(skipped).toBe(false)
-      expect(written.get("/ws/.cursor/agents/deep-dive.md")).toBe(transformAgent(sampleAgent, "cursor"))
+      expect(written.get("/ws/.cursor/agents/code-tracer.md")).toBe(transformAgent(sampleAgent, "cursor"))
       expect(removed.has("/ws/.cursor/agents/reviewer-logic.md")).toBe(true)
       expect(removed.has("/ws/.cursor/agents/own-agent.md")).toBe(false)
       expect(written.get("/ws/.cursor/agents/.gitignore")).toBe(
-        "notes.txt\n\n# --- dotai agents start ---\n.gitignore\ndeep-dive.md\nfast-lookup.md\n# --- dotai agents end ---\n"
+        "notes.txt\n\n# --- dotai agents start ---\n.gitignore\ncode-tracer.md\nfast-lookup.md\n# --- dotai agents end ---\n"
       )
     }))
 
   it.effect("skips a cursor workspace that does not exist", () =>
     Effect.gen(function*() {
-      const { layer: fsLayer, written } = makeMemoryFs({ "/src/agents/deep-dive.md": sampleAgent })
+      const { layer: fsLayer, written } = makeMemoryFs({ "/src/agents/code-tracer.md": sampleAgent })
 
       const skipped = yield* syncCursorWorkspace("/src", "/missing").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
@@ -508,7 +510,7 @@ Run independent tool calls concurrently.
 Use the canonical Codex instructions.
 `
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/global-skills/ship.md": sampleSkill,
         "/src/instructions.codex.md": codexInstructions,
         "/src/instructions.md": instructions
@@ -516,8 +518,8 @@ Use the canonical Codex instructions.
 
       yield* syncTarget("/src", "/out", "codex").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
-      expect(written.get("/out/agents/deep-dive.toml")).toContain("developer_instructions")
-      expect(written.get("/out/config.toml")).toContain("[agents.deep-dive]")
+      expect(written.get("/out/agents/code-tracer.toml")).toContain("developer_instructions")
+      expect(written.get("/out/config.toml")).toContain("[agents.code-tracer]")
       expect(written.get("/out/AGENTS.md")).toBe(`${codexInstructions.trim()}\n\n${instructions}`)
       expect(written.get("/out/skills/ship/SKILL.md")).not.toContain("model:")
     }))
@@ -525,7 +527,7 @@ Use the canonical Codex instructions.
   it.effect("removes retired codex agents and preserves unmanaged config", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written, removed } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/out/agents/effect-reviewer.toml": "stale",
         "/out/config.toml": [
           "approval_policy = \"never\"",
@@ -574,7 +576,7 @@ Use the canonical Codex instructions.
     Effect.gen(function*() {
       const instructions = "# Base Rules\n"
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/instructions.md": instructions
       }, ["/out"])
 
@@ -587,7 +589,7 @@ Use the canonical Codex instructions.
     Effect.gen(function*() {
       const instructions = "\n# Base Rules\n\n"
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/instructions.codex.md": " \n\t",
         "/src/instructions.md": instructions
       }, ["/out"])
@@ -604,7 +606,7 @@ Use the canonical Codex instructions.
 Use the canonical global instructions.
 `
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/global-skills/planning.md": sampleSkill,
         "/src/instructions.md": instructions
       }, ["/out"])
@@ -612,7 +614,7 @@ Use the canonical global instructions.
       const skipped = yield* syncTarget("/src", "/out", "kimi").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
 
       expect(skipped).toBe(false)
-      const agent = written.get("/out/agents/deep-dive.md")!
+      const agent = written.get("/out/agents/code-tracer.md")!
       expect(agent).toContain("name: test-agent")
       expect(agent).toContain("tools: Read, Glob, Grep")
       expect(agent).not.toMatch(/^model:/m)
@@ -635,7 +637,7 @@ api_key = "secret-stays"
 `
       const genericAgentsDir = `${process.env.HOME}/.agents/agents`
       const { layer: fsLayer, written, removed } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/global-skills/planning.md": sampleSkill,
         "/src/instructions.md": instructions,
         "/out/config.json": JSON.stringify({ agents: { entries: { main: { workDir: "/desktop-workspace" } } } }),
@@ -649,14 +651,14 @@ api_key = "secret-stays"
 
       expect(skipped).toBe(false)
 
-      const agent = written.get("/out/user/agents/deep-dive.md")!
+      const agent = written.get("/out/user/agents/code-tracer.md")!
       expect(agent).toContain("name: test-agent")
       expect(agent).toContain("tools: Read, Glob, Grep")
       expect(agent).not.toMatch(/^model:/m)
 
       // agents are mirrored to the generic ~/.agents/agents directory, and
       // retired agents are cleaned from it too
-      expect(written.get(`${genericAgentsDir}/deep-dive.md`)).toBe(agent)
+      expect(written.get(`${genericAgentsDir}/code-tracer.md`)).toBe(agent)
       expect(removed.has(`${genericAgentsDir}/effect-reviewer.md`)).toBe(true)
 
       expect(written.get("/out/skills/planning/SKILL.md")).toContain("name: test-skill")
@@ -678,7 +680,7 @@ api_key = "secret-stays"
   it.effect("replaces the managed kimi-desktop config block on re-sync", () =>
     Effect.gen(function*() {
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent
+        "/src/agents/code-tracer.md": sampleAgent
       }, ["/out"])
 
       yield* syncTarget("/src", "/out", "kimi-desktop").pipe(Effect.provide(Layer.mergeAll(fsLayer, Path.layer)))
@@ -694,7 +696,7 @@ api_key = "secret-stays"
       const instructions = "# Base Rules\n"
       const defaultWorkspace = `${process.env.HOME}/Documents/kimi/workspace`
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/instructions.md": instructions,
         "/out/config.json": "not json {"
       }, ["/out"])
@@ -720,7 +722,7 @@ type = "kimi"
 api_key = "secret-stays"
 `
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/kimi-desktop.toml": canonicalToml,
         "/out/runtime/kimi-code/config.toml": existingConfig
       }, ["/out"])
@@ -749,7 +751,7 @@ max_steps_per_turn = 2000
 type = "kimi"
 `
       const { layer: fsLayer, written } = makeMemoryFs({
-        "/src/agents/deep-dive.md": sampleAgent,
+        "/src/agents/code-tracer.md": sampleAgent,
         "/src/kimi-desktop.toml": canonicalToml,
         "/out/runtime/kimi-code/config.toml": existingConfig
       }, ["/out"])

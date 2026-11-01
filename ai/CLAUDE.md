@@ -13,7 +13,9 @@ canonical/
   agents/                      # Agent definitions (frontmatter + markdown body)
     fast-lookup.md
     quick-dive.md
-    deep-dive.md
+    code-tracer.md
+    capability-search.md
+    hypothesis-reviewer.md
     web-search.md
   global-skills/               # Skills synced to provider skill directories
     change-audit.md             # Relevance selected implementation review

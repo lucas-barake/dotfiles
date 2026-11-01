@@ -33,7 +33,7 @@ Applies to every chat.
 - If it survives your own attempt and is not already directly proven, spawn `hypothesis-reviewer` before you report. Directly proven means a message, a record, or a reproduction shows the cause itself, not just something consistent with it.
 - Brief the reviewer with the symptom, the raw observations and where they came from, what you ruled out and how, the suspicion stated as a claim to test, and the decision that rests on it. Do not argue for the suspicion.
 - Pass every "not found" or "cannot be read" in your reasoning as the search you ran, not as a fact. The reviewer reruns those searches wider, and a wrong absence claim is the usual reason a suspicion survives when it should not.
-- An open question is not a suspicion. When you have no candidate cause yet, keep investigating or use `deep-dive`. Do not hand an open problem to the reviewer.
+- An open question is not a suspicion. When you have no candidate cause yet, keep investigating or use `code-tracer`. Do not hand an open problem to the reviewer.
 - When confirming a suspicion would take a write to a production or customer system, first have the reviewer look for read only evidence: earlier tests, QA records, audit logs, error code definitions, other callers' outcomes.
 - Read the evidence the reviewer cites before you relay its verdict. When it refutes you, recheck every conclusion and recommendation that rested on the suspicion and say which ones changed.
 
@@ -165,7 +165,7 @@ Applies to every chat.
 - Do not spawn an agent to write, rewrite, redesign, or restructure content when you already know what the result should be. Authoring and editing you have the context to do stay with you. Delegating a decision you have already made pays for it twice.
 - Do not spawn an agent for a small, bounded, obvious edit, for a file you have already read, or for work whose only output is applying a change you already specified.
 - One agent per independent question, spawned in parallel in a single message. Do not split one question across several agents and do not spawn a follow up agent on a question an earlier agent already answered.
-- Prefer the narrowest agent that can answer the question. Reach for `fast-lookup` before `quick-dive`, and `quick-dive` before `deep-dive`, unless the wider scope is genuinely required.
+- Prefer the narrowest agent that can answer the question. Reach for `fast-lookup` before `quick-dive`, and `quick-dive` before `code-tracer`, unless the wider scope is genuinely required.
 - After spawning investigation or review agents, wait for them to finish before doing your own investigation or review in that same scope. Do not duplicate agent work in the background. Your job while they run is coordination only. Validate, deduplicate, and continue after their results return.
 - Agent prompts must be highly specific and self contained. Do not send vague prompts like "investigate this" or "look into the bug".
 - Every agent prompt should include the exact paths, directories, symbols, or URLs to inspect, the exact question to answer, why that question matters, any constraints or exclusions, and the exact shape of the response you want back.
@@ -177,7 +177,7 @@ Applies to every chat.
 - Use `fast-lookup` for unknown signatures, exports, return shapes, and exact API questions.
 - Do not use `fast-lookup` when you already know the exact file path or name and can read the file directly.
 - Use `quick-dive` for nearby structure and immediate codebase context.
-- Use `deep-dive` for subsystem traces, cross cutting patterns, and behavior that spans multiple files or repos. It answers how located code works. It does not answer whether something exists or whether existing code can already do something new, even when you think you know which repositories to point it at.
+- Use `code-tracer` for subsystem traces, cross cutting patterns, library internals, and behavior that spans multiple files or repos. It answers how located code works. It does not answer whether something exists or whether existing code can already do something new, even when you think you know which repositories to point it at.
 - Use `reviewer-security` when a review touches trust boundaries, authentication, authorization, tenant isolation, secrets, untrusted inputs, injection surfaces, file or network access, dependency supply chain changes, or sensitive data flow. It owns over permission: what an attacker or unauthorized principal can reach.
 - Use `reviewer-data-integrity` when a review touches stored or derived data, error handling, transactions, retries, partial failure, ownership, lifecycle transitions, access policy state, or whether legitimate users and systems can still reach and act on their resources. It owns over denial and state corruption: what a valid principal wrongly loses.
 - These two are one boundary split by direction, not two views of the same question. Select both only when the change can fail in both directions.
@@ -185,14 +185,14 @@ Applies to every chat.
 - Use `ux-reviewer` when a review touches anything a user sees, reads, or operates: interface, copy, labels, presented figures, states, flows, notifications, or a payload a person reads. It runs the surface and reports what a user would experience, so it needs a reachable running instance and is worth little without one. It owns what the user concludes and can do, where `reviewer-performance` owns what the interface costs to render.
 - Use `web-search` for web lookups.
 - Use `hypothesis-reviewer` to test a suspected cause or explanation before you report it or act on it. It owns the question "is this explanation true, and if not, what is". The trigger is your own suspicion, not a request from the user.
-- Use `capability-search` to decide whether an API, endpoint, field, event, service, package, or library function or option already exists across many repositories, an organization, a third party API, or a library and its ecosystem. It owns the existence question before anything new is built, including "can what already exists do this". Use `fast-lookup` or `deep-dive` instead only when existence is settled and the question is how the code works.
+- Use `capability-search` to decide whether an API, endpoint, field, event, service, package, or library function or option already exists across many repositories, an organization, a third party API, or a library and its ecosystem. It owns the existence question before anything new is built, including "can what already exists do this". Use `fast-lookup` or `code-tracer` instead only when existence is settled and the question is how the code works.
 - Use `natural-writer` for prose that a person other than the user will read as coming from the user: an email, a chat message, a reply on a ticket or review thread, an announcement. It is the exception to keeping authoring with you, because text drafted inside a working session carries the session's detail and phrasing. Do not use it for code, commit messages, or your own replies to the user.
 - `natural-writer` sees only what you send. Pass the medium, the facts to convey, and the outcome wanted, plus everything you know about the reader: who they are, their role, what they already know, whether they are technical, and how the sender relates to them. Pass samples of the user's own writing when you have them. Leave out what you do not know rather than guessing, and do not paste task history. Its reply is the final text. Use it verbatim.
 - Tell agents whether you need structural mapping, exact signatures, behavioral verification, test patterns, or external references. Do not make them infer the investigation mode.
 - Ask for exact file paths, line numbers, and concise evidence. For web work, ask for exact URLs and quotes.
 - Verify agent evidence yourself by reading the cited files.
-- `deep-dive` agents write findings under `.context/deep-dives/<current-branch>/`. Treat each branch directory as task local investigation history.
-- Investigate fresh for the current task. Do not rely on prior deep dive artifacts as a substitute for a new `deep-dive`.
+- `code-tracer` agents write findings under `.context/code-traces/<current-branch>/`, and `capability-search` agents under `.context/capability-searches/<current-branch>/`. Treat each branch directory as task local investigation history.
+- Investigate fresh for the current task. Do not rely on prior trace or search artifacts as a substitute for a new `code-tracer` or `capability-search` run.
 - Resume prior agents when useful.
 - Do not specify the model when spawning agents.
 

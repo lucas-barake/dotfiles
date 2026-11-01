@@ -91,10 +91,10 @@ Delegate exploration, not the work itself. Agents map what you do not yet know. 
 
 1. Spawn agents in parallel for each affected surface and for the important consumers and providers of that surface
 2. Use `quick-dive` to map module purpose and immediate neighbors
-3. Use `deep-dive` when you need a subsystem trace, cross file flow, or convention inventory
+3. Use `code-tracer` when you need a subsystem trace, cross file flow, or convention inventory
 4. Use `fast-lookup` for exact definitions, signatures, exports, and return shapes
 
-Investigate fresh for the current task. Do not rely on prior deep-dive artifacts or older plans as a substitute for new investigation.
+Investigate fresh for the current task. Do not rely on prior trace or search artifacts or older plans as a substitute for new investigation.
 
 Every spawned agent prompt must be highly specific and self contained. Include the exact paths, directories, symbols, or libraries to inspect, the exact question to answer, why it matters for the current task, any exclusions, and the exact response format you want back. Keep the prompt scoped to that agent's mission. Do not include unrelated task history, other agents' missions, or concerns that belong to another agent type. Prefer multiple narrow prompts over one broad prompt.
 
@@ -106,7 +106,7 @@ The goal is to understand how the system is actually built, not just where the r
 
 Only after the structural agents return:
 
-1. Spawn a targeted agent to find existing utilities, components, services, handlers, validators, pipelines, and helpers that overlap with the requested work
+1. Use `capability-search` to find existing utilities, components, services, handlers, validators, pipelines, helpers, endpoints, and library features that overlap with the requested work
 2. Separate reusable code from legacy or accidental patterns
 3. Identify what capability the current system is missing
 4. Decide whether the right move is to extend the system with that capability instead of working around the gap
@@ -122,7 +122,7 @@ If the task touches any library or framework behavior, investigate it before des
 2. Inspect installed package metadata and lockfiles for each relevant library or framework. Use `repository.url`, `repository.directory`, exports, and installed version to find the official repository and package directory, then inspect the matching upstream tag, release branch, or commit through `~/src/oss/.versions/<repo>/<version>/`
 3. Do not inspect `~/src/oss/<repo>` directly for project-specific library behavior. Treat it only as the shared repository used to create versioned checkouts. First look for an existing reusable version checkout under `~/src/oss/.versions/<repo>/<version>/`. Create one shared git worktree only if that exact version is missing. Use a separate clone only when a worktree cannot be created from the shared repository. If no matching upstream ref exists, use the installed package source as the version source of truth and record the mismatch
 4. Use `fast-lookup` for exact signatures, parameter types, return values, and exported helpers
-5. Use `deep-dive` on the version matched library source and tests to find idiomatic usage, setup patterns, and test strategies
+5. Use `capability-search` when the question is whether the library or its ecosystem already provides something, and `code-tracer` on the version matched library source and tests to learn idiomatic usage, setup patterns, and test strategies
 6. Prefer source code and test files over docs. Use docs only as a secondary source
 7. If behavior remains uncertain, write temporary verification code, run it, record the answer, and delete the temporary artifact immediately
 
