@@ -11,7 +11,6 @@ canonical/
   instructions.claude.md       # Claude Code only prefix, currently empty (empty means no prefix)
   instructions.codex.md        # Instructions prepended only for Codex
   agents/                      # Agent definitions (frontmatter + markdown body)
-    quick-dive.md
     code-tracer.md
     capability-search.md
     hypothesis-reviewer.md

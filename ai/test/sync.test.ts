@@ -310,6 +310,7 @@ describe("syncTarget", () => {
         "/out/agents/reviewer-logic.md": "stale",
         "/out/agents/deep-dive.md": "stale",
         "/out/agents/fast-lookup.md": "stale",
+        "/out/agents/quick-dive.md": "stale",
         "/out/skills/deep-review/SKILL.md": "stale"
       }, ["/out"])
 
@@ -318,6 +319,7 @@ describe("syncTarget", () => {
       expect(removed.has("/out/agents/reviewer-logic.md")).toBe(true)
       expect(removed.has("/out/agents/deep-dive.md")).toBe(true)
       expect(removed.has("/out/agents/fast-lookup.md")).toBe(true)
+      expect(removed.has("/out/agents/quick-dive.md")).toBe(true)
       expect(removed.has("/out/skills/deep-review")).toBe(true)
     }))
 
@@ -474,7 +476,7 @@ Use the canonical instructions.
     Effect.gen(function*() {
       const { layer: fsLayer, written, removed } = makeMemoryFs({
         "/src/agents/code-tracer.md": sampleAgent,
-        "/src/agents/quick-dive.md": sampleAgent,
+        "/src/agents/web-search.md": sampleAgent,
         "/ws/.cursor/agents/reviewer-logic.md": "stale",
         "/ws/.cursor/agents/own-agent.md": "custom",
         "/ws/.cursor/agents/.gitignore": "notes.txt\n\n# --- dotai agents start ---\nold.md\n# --- dotai agents end ---\n"
@@ -487,7 +489,7 @@ Use the canonical instructions.
       expect(removed.has("/ws/.cursor/agents/reviewer-logic.md")).toBe(true)
       expect(removed.has("/ws/.cursor/agents/own-agent.md")).toBe(false)
       expect(written.get("/ws/.cursor/agents/.gitignore")).toBe(
-        "notes.txt\n\n# --- dotai agents start ---\n.gitignore\ncode-tracer.md\nquick-dive.md\n# --- dotai agents end ---\n"
+        "notes.txt\n\n# --- dotai agents start ---\n.gitignore\ncode-tracer.md\nweb-search.md\n# --- dotai agents end ---\n"
       )
     }))
 

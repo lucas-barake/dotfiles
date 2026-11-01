@@ -45,6 +45,7 @@ const RETIRED_AGENT_NAMES = [
   "deep-dive",
   "effect-idiom-reviewer",
   "fast-lookup",
+  "quick-dive",
   "effect-reviewer",
   "reuse-reviewer",
   "reviewer-behavioral",

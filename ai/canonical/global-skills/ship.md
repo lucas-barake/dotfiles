@@ -90,9 +90,8 @@ Do not perform broad structural exploration in the main context. Delegate it.
 Delegate exploration, not the work itself. Agents map what you do not yet know. They do not write, redesign, or restructure content whose shape you have already decided, and they are not worth spawning for a surface you have already read or can read directly from known paths.
 
 1. Spawn agents in parallel for each affected surface and for the important consumers and providers of that surface
-2. Use `quick-dive` to map module purpose and immediate neighbors
-3. Use `code-tracer` when you need a subsystem trace, cross file flow, or convention inventory
-4. Read exact definitions, signatures, exports, and return shapes yourself once you know where they live
+2. Use `code-tracer` to map module purpose and neighbors, trace a subsystem or cross file flow, or inventory conventions
+3. Read exact definitions, signatures, exports, and return shapes yourself once you know where they live
 
 Investigate fresh for the current task. Do not rely on prior trace or search artifacts or older plans as a substitute for new investigation.
 
