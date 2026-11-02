@@ -250,6 +250,8 @@ Applies to every chat.
 - Merge only when commits are already shared and rebasing would disrupt other people.
 - Use `git switch` and `git restore` instead of `git checkout`.
 - One logical change per commit.
+- Before any remote write (push, fork, PR create or edit, comment, release), run `gh api user --jq .login` from the repository's directory and confirm it is the account that owns or works in that repository. The `~/dotfiles/bin/gh` shim picks the account from the working directory, so `gh auth status` shows only a global default the shim overrides. Never run `gh auth switch`, which changes that default for every other session.
+- Before pushing to a branch that has a pull request, check its state with `gh pr view`. Never push follow up commits to a branch whose pull request is already merged. Open a new branch from the updated base instead.
 - Prefer `git stash push -m "description"` over bare `git stash`.
 - Run git commands from the working directory. Do not use `git -C <path>` unless you genuinely need to operate on a different repo than the current working directory.
 
