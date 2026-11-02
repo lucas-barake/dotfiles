@@ -14,6 +14,7 @@ canonical/
     code-tracer.md
     capability-search.md
     hypothesis-reviewer.md
+    outcome-verifier.md
     web-search.md
   global-skills/               # Skills synced to provider skill directories
     change-audit.md             # Relevance selected implementation review

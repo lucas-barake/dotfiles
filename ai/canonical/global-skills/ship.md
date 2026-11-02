@@ -299,7 +299,8 @@ Before finalizing the pull request:
 1. Run the full relevant test suite
 2. Run lint, typecheck, and build commands where they exist
 3. Perform any manual verification steps listed in the ledger
-4. Ensure every checklist item is checked off and the ledger reflects the final truth, with `# Current State` marking the work complete
+4. Spawn `outcome-verifier` with every behavior the PR claims, the build under test, and how to reach the real target. Tests and builds do not satisfy this step. Every claim must come back VERIFIED, or the PR body must list it as not verified with the blocker
+5. Ensure every checklist item is checked off and the ledger reflects the final truth, with `# Current State` marking the work complete
 
 If anything fails, fix it before moving on.
 

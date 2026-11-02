@@ -60,6 +60,15 @@ Applies to every chat.
 - The best solution is the best solution to the task that was asked. Do not widen it into adjacent cleanups, features, or fixes the request does not imply. Name them in one line instead.
 - Finish the whole task. Report completion only when all of it is done. When a part is blocked, say in the response exactly what is missing and why.
 
+## Done Means Observed
+
+- Do not say that something is done, works, is fixed, is verified, or is ready until you have watched the outcome happen on the real target. Tests passing, a clean build, a zero exit code, and a 200 response are evidence about what they exercise and nothing more. Say what they cover.
+- Run the deliverable the way its user will. Drive the real interface with real keystrokes, pointer events, and typed input. Run the change's logic over the real data it will meet, read only, across the whole affected set rather than one example. After a write to another system, read the result back from that system and compare it with what was intended. Confirm the build you observed is the one deployed or installed.
+- A substitute verifies only the substitute. A local proxy instead of the production URL, a server only harness instead of the client, fixtures instead of real data, and stage instead of production each need to be named as such in the report.
+- When you cannot observe the outcome, say "not verified" plainly, with what blocked it and what would settle it. Never let a test count or a successful command imply it.
+- Disclose simulated, cached, stale, or degraded behavior in the deliverable, even when the claim technically holds.
+- Before reporting done on anything with a user facing surface, production data, or a write to another system, spawn `outcome-verifier` with each claim, the deliverable, and how to reach the target. Report its verdicts, not your expectation.
+
 ## Shipping Defaults
 
 - Build every change to run in production, on the default path, for everyone, from the moment it merges. That is the deliverable.
@@ -181,6 +190,7 @@ Applies to every chat.
 - Use `reviewer-performance` for hot paths, large data, UI rendering, responsiveness, I/O, database or network access, queues, workers, caching, retries, batching, backpressure, allocation heavy code, or changes that may affect time complexity, memory pressure, garbage collection, or resource consumption.
 - Use `ux-reviewer` when a review touches anything a user sees, reads, or operates: interface, copy, labels, presented figures, states, flows, notifications, or a payload a person reads. It runs the surface and reports what a user would experience, so it needs a reachable running instance and is worth little without one. It owns what the user concludes and can do, where `reviewer-performance` owns what the interface costs to render.
 - Use `web-search` for web lookups.
+- Use `outcome-verifier` to check claims that work is done, works, or is fixed before you report them. It observes the outcome on the real target and owns the question "did this actually happen". `ux-reviewer` judges what a user experiences, and `outcome-verifier` judges whether the claimed behavior occurs.
 - Use `hypothesis-reviewer` to test a suspected cause or explanation before you report it or act on it. It owns the question "is this explanation true, and if not, what is". The trigger is your own suspicion, not a request from the user.
 - Use `capability-search` to decide whether an API, endpoint, field, event, service, package, or library function or option already exists across many repositories, an organization, a third party API, or a library and its ecosystem. It owns the existence question before anything new is built, including "can what already exists do this". Use `code-tracer` instead only when existence is settled and the question is how the code works.
 - Use `natural-writer` for prose that a person other than the user will read as coming from the user: an email, a chat message, a reply on a ticket or review thread, an announcement. It is the exception to keeping authoring with you, because text drafted inside a working session carries the session's detail and phrasing. Do not use it for code, commit messages, or your own replies to the user.
