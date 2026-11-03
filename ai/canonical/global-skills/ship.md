@@ -59,6 +59,7 @@ Maintain these top level sections:
 6. `# Test Plan`
    - test files and named test cases with purpose
    - deterministic setup strategy and exact verification commands
+   - the dev or staging environment, how to reach and deploy to it, and the real path scenarios to run there
 7. `# Review Log`
    - plan and implementation review findings
    - validation results, accepted corrections, and rejected false positives
@@ -80,6 +81,7 @@ Before spawning agents:
 3. Run branch state and diff checks to understand what already exists
 4. Search for partial implementations, experiments, and existing fixes already on the branch
 5. Create `LEDGER.md` at the worktree root, ensure it is locally git ignored per the base rules, and write the `# Current State` and `# Task` sections plus a preliminary `# Checklist`. If the ledger already holds unrelated prior work, clear it first
+6. Find the dev or staging environment for every system the task touches: deploy manifests, CI workflows, Helm or ArgoCD values, per environment config and env files, and 1Password items named for dev, stage, staging, or QA. Record in `# Test Plan` how to reach and deploy to each one. If none exists after that search, record the routes you tried and what production checks would be low risk or reversible
 
 If investigation shows the task is already complete, or no code changes are necessary, stop and report that.
 
@@ -183,6 +185,7 @@ Requirements for the `# Test Plan`:
 - do not test what the language, compiler, or framework already proves unless the repository adds meaningful logic on top
 - do not test third party behavior unless the repository adds meaningful integration logic above it
 - for bug fixes and behavior-changing findings, add regression tests that fail before the fix and pass after it
+- list the real path scenarios to run in dev or staging for every behavior that crosses a service, database, queue, UI, or third party, including writes, and for each bug the reproduction to run before and after the fix
 
 ### Step 8: Confirm the plan is directionally sound
 
@@ -251,6 +254,7 @@ For bug fixes and validated reviewer findings, follow Red Green Refactor:
 3. If the test stays Red because the test or harness is wrong, revert the implementation, fix the test or harness, prove Red again, reapply the implementation, and rerun until Green
 4. If the test stays Red because the implementation is wrong, keep the test and adjust the implementation until Green
 5. Refactor: once Green, simplify only when behavior is preserved and rerun the relevant checks
+6. End to end: when the bug crosses a service, database, queue, UI, or third party, run its reproduction in dev or staging before the fix, deploy the fix there, and run it again. Record both runs in `# Review Log`. A unit test passing does not finish the item
 
 For everything else:
 
@@ -260,6 +264,7 @@ For everything else:
 For all items:
 
 - after every meaningful file change, run the smallest relevant lint, typecheck, test, or build command before moving on
+- once an item's behavior is complete, run its real path scenarios from `# Test Plan` in dev or staging, writes included, before checking it off
 - check each checklist item off in the ledger as soon as it is done and add new items as new work appears
 - keep the ledger's `# Current State` and other sections updated if reality changes
 
@@ -299,7 +304,7 @@ Before finalizing the pull request:
 1. Run the full relevant test suite
 2. Run lint, typecheck, and build commands where they exist
 3. Perform any manual verification steps listed in the ledger
-4. Spawn `outcome-verifier` with every behavior the PR claims, the build under test, and how to reach the real target. Tests and builds do not satisfy this step. Every claim must come back VERIFIED, or the PR body must list it as not verified with the blocker
+4. Deploy the branch to dev or staging and spawn `outcome-verifier` with every behavior the PR claims, the build under test, the environment from `# Test Plan`, and how to reach it. Tests and builds do not satisfy this step. Every claim must come back VERIFIED, or the PR body must list it as not verified with the blocker
 5. Ensure every checklist item is checked off and the ledger reflects the final truth, with `# Current State` marking the work complete
 
 If anything fails, fix it before moving on.

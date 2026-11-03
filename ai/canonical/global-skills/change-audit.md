@@ -81,7 +81,8 @@ A correctness or rules finding is confirmed only when:
 2. The reviewer supplied a valid test or executable check against the real production composition.
 3. Red fails for the suspected behavioral reason before the fix.
 4. Green passes with the smallest fix.
-5. Relevant third party claims were checked against installed metadata and exact version matched official source and tests under `~/src/oss/.versions/`.
+5. When the defect crosses a service, database, queue, UI, or third party, the reproduction also ran on dev or staging before and after the fix, or the reviewer listed the routes it tried and the finding is marked unit level only.
+6. Relevant third party claims were checked against installed metadata and exact version matched official source and tests under `~/src/oss/.versions/`.
 
 If a test is wrong, revert the production fix, repair the harness, prove Red again on unfixed code, then reapply the fix. Remove invalid probe edits. Do not turn an unconfirmed candidate into a final finding.
 
