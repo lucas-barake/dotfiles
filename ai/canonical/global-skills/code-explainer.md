@@ -27,6 +27,8 @@ Read the full subject files, not the hunks. Then read what the behavior depends 
 
 Derive everything from source. Comments and docs are claims. When a comment and the code disagree, explain the code and note the drift.
 
+When a statement is about runtime behavior and the code can be run, run it: the tests, a scratch script, or the feature in a dev or staging environment. Observed behavior outranks a trace, and a run that contradicts your reading of the source means the reading was wrong. Do not write to production to explain something.
+
 To explain why the change exists, read the code as it was before it. For a diff, read the pre-image of every changed file, not just the removed lines. The limitation you are describing usually lives in code the diff never touched.
 
 Before writing, be able to state as fact:
