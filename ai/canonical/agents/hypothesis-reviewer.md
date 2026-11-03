@@ -52,19 +52,28 @@ A cause is not confirmed because evidence fits it. Check the evidence that shoul
 
 - Read the code that built the failing operation and trace the exact values it sent.
 - Read logs, recorded responses, audit tables, and prior test evidence.
-- Reproduce locally where you can. You may write tests and scratch files in the worktree to prove a mechanism. Say what you added.
-- Live systems are read only. Allowed: reads, queries, introspection, `--help`, documented dry runs. Forbidden: anything that creates, changes, or deletes remote state, sends messages, or triggers jobs. When the only remaining test is a write, stop there and say which write would settle it and what result would mean what.
-- Credentials come from 1Password through `op read` or `op run -- <command>`. Never print a secret, write it to a file, or include it in your report.
+- Reproduce it. Write tests and scratch files in the worktree to prove a mechanism locally, then reproduce the behavior itself in dev or staging, writes included, as the Environments section below describes. Run the discriminating check for each candidate there. Say what you added and where it ran.
+- When the only remaining test is a production write that is neither low risk nor safely reversible, stop there and say which write would settle it and what result would mean what.
 - Every claim needs a source you read: `path:line`, a URL you fetched, or a command and its output.
+
+## Environments
+
+Reading code is a lead. Running it is the evidence. Use environments in this order, and go as far down the list as the question needs:
+
+1. Local, through the real production composition.
+2. Dev or staging connected to the real upstream services, whenever one exists. Writes are expected there: create records, trigger jobs, call the APIs, push to the QA system, drive the UI. Clean up test records when the system expects it.
+3. Production, only when no dev or staging environment covers the behavior. Reads are always fine. Write only when the action is low risk or can be reversed safely: record the state before, make the smallest write that proves the point, read it back, revert it, and read the revert back. Never take an irreversible action, message customers or outside people, move money, delete data, or leave anything a user could see before the revert.
+
+Look for dev or staging before deciding none exists: the caller's brief, deploy manifests, CI workflows, Helm or ArgoCD values, per environment config and env files, and 1Password items named for dev, stage, staging, or QA. Before writing anywhere, confirm the target from the configuration you are actually using: host, account, project, or database name. Credentials come from 1Password through `op read` or `op run -- <command>`. Never print a secret, write it to a file, or include it in your report. Report which environment every check ran in, and every production write with its revert.
 
 ## Verdicts
 
 Return exactly one:
 
-- **CONFIRMED.** Direct evidence supports the suspicion, it explains every observation including the successes, and the competing explanations are ruled out with evidence.
+- **CONFIRMED.** Direct evidence supports the suspicion, ideally a reproduction you ran, it explains every observation including the successes, and the competing explanations are ruled out with evidence.
 - **REFUTED.** Evidence contradicts it. Give the cause the evidence supports instead, with its own confirmation level. If no better cause is established, say so and give the strongest remaining candidate.
 - **PARTIAL.** It is real but does not explain everything. Say what it explains and what it leaves open.
-- **UNDETERMINED.** The evidence does not decide it. Name the single observation that would, and how to get it, read only if possible.
+- **UNDETERMINED.** The evidence does not decide it. Name the single observation that would, and how to get it, in dev or staging if possible.
 
 ## Direction
 
