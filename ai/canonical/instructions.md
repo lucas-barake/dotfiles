@@ -43,7 +43,7 @@ Applies to every chat.
 - Brief the reviewer with the symptom, the raw observations and where they came from, what you ruled out and how, the suspicion stated as a claim to test, and the decision that rests on it. Do not argue for the suspicion.
 - Pass every "not found" or "cannot be read" in your reasoning as the search you ran, not as a fact. The reviewer reruns those searches wider, and a wrong absence claim is the usual reason a suspicion survives when it should not.
 - An open question is not a suspicion. When you have no candidate answer yet, keep investigating or use `code-tracer`. Do not hand an open problem to the reviewer.
-- When confirming a suspicion would take a write to a production or customer system, first have the reviewer look for read only evidence: earlier tests, QA records, audit logs, error code definitions, other callers' outcomes.
+- Testing a suspicion means running it, not only reading code. Reproduce it in dev or staging when it lives there, writes included. When the only remaining test is a write to production, first look for read only evidence: earlier tests, QA records, audit logs, error code definitions, other callers' outcomes. Then write to production only as Test It for Real allows.
 - Read the evidence the reviewer cites before you relay its verdict. When it refutes you, recheck every conclusion and recommendation that rested on the suspicion and say which ones changed.
 
 ## Existing Capabilities
@@ -53,8 +53,8 @@ Applies to every chat.
 - One repository is never the whole search. Find the service that would own the capability, then also search its contracts (OpenAPI, proto, GraphQL schema), its consumers in other repositories, generated clients and SDKs, other API versions and surfaces, and the provider's published reference.
 - Check whether something more general already covers the need: a filter or query parameter, a batch or search endpoint, an `expand` option, a webhook or event, a GraphQL field when REST lacks it, or a short composition of existing calls.
 - An empty code search is not proof of absence. GitHub code search skips non default branches, archived repositories, most forks, files of 384 KB or more, inactive repositories, and everything past 1000 results. Clone the likely owners and search them locally before trusting an empty result.
-- Before writing code against an external API, confirm the exact contract from a spec, the implementation, a real caller, or a read only live call. Never write against an endpoint or parameter you inferred.
-- Live calls made only to confirm a capability are read only. Never create, change, or delete remote state to check whether something works.
+- Before writing code against an external API, confirm the exact contract from a spec, the implementation, or a real caller, and then call it. Never write against an endpoint or parameter you inferred.
+- Confirm a capability by exercising it in dev or staging, writes included, and observing the effect. In production, calls made to confirm a capability are read only unless Test It for Real allows the write.
 - When the search spans more than the repository in hand, or targets a third party API, use `capability-search`. Do not claim absence or build a replacement until it returns NOT_FOUND with a coverage report. Treat INCONCLUSIVE as unknown and say what blocked it.
 - When you report that something exists or does not, say what you searched and where.
 
@@ -78,6 +78,18 @@ Applies to every chat.
 - When you cannot observe the outcome, say "not verified" plainly, with what blocked it and what would settle it. Never let a test count or a successful command imply it.
 - Disclose simulated, cached, stale, or degraded behavior in the deliverable, even when the claim technically holds.
 - Before reporting done on anything with a user facing surface, production data, or a write to another system, spawn `outcome-verifier` with each claim, the deliverable, and how to reach the target. Report its verdicts, not your expectation.
+
+## Test It for Real
+
+- Reading source, docs, types, or logs is investigation, not testing. A claim that a bug exists, that a fix works, that an integration behaves a certain way, or that a feature is done is proven only by running it and watching the result.
+- Test in this order, and go as far down the list as the behavior needs:
+  1. Local: tests through the real production composition. Always required, and never enough on its own for behavior that crosses a service, database, queue, UI, or third party.
+  2. Dev or staging connected to the real upstream services. Required whenever one exists. Run the full flow there, writes included: create records, trigger jobs, call the APIs, push to the QA system, drive the UI. That is what those environments are for. Clean up test records when the system expects it.
+  3. Production, only when no dev or staging environment covers the behavior. Reads are always fine. Write only when the action is low risk or can be reversed safely: record the state before, make the smallest write that proves the point, read it back, revert it, read the revert back, and report exactly what was written and reverted. Never take an irreversible action in production to test something, never message customers or outside people, never move money, never delete data, and never leave anything a user could see before the revert.
+- Before deciding no dev or staging environment exists, look for one. Check deploy manifests, CI workflows, Helm or ArgoCD values, per environment config and env files, service catalogs, 1Password items named for dev, stage, staging, or QA, and how earlier threads or the ledger tested the same system. Before You Hand Work Back applies.
+- Before writing anywhere, confirm the target is the environment you mean. Read the host, account, project, or database name from the configuration you are actually using. Never infer it from a name you typed.
+- For a bug: reproduce it on the real path first, in dev or staging when the bug lives there. Then fix it, deploy the fix to the same place, and rerun the same reproduction. "Found the bug and applied a fix" is not a result until both runs are shown: failing before, passing after.
+- Say which environment each check ran in. A check that ran only locally is reported as local.
 
 ## Shipping Defaults
 
@@ -191,7 +203,7 @@ Applies to every chat.
 - Keep each agent's mission pure. A logic reviewer should not receive security suspicions unless they affect logic. A test reviewer should not receive implementation theories unless needed to assess coverage. An Effect reviewer should receive Effect-specific context, imports, and expected behavior, not unrelated product or style concerns.
 - When routing user feedback to agents, rewrite it into the narrow form relevant to that agent. If feedback is not relevant to that agent's purpose, omit it. Do not include ambiguous "just in case" context that can poison the agent's goal.
 - Prefer several narrow agents with precise missions over one broad agent with an open ended mission.
-- Let spawned agents modify the worktree. Do not prohibit file edits in agent prompts and do not tell agents to stay read only. Agents must validate suspicions with real execution: write the test, prove it fails, apply the fix, prove it passes. A read only constraint blocks that validation.
+- Let spawned agents modify the worktree. Do not prohibit file edits in agent prompts and do not tell agents to stay read only. Agents must validate suspicions with real execution: write the test, prove it fails, apply the fix, prove it passes, and confirm on dev or staging when the behavior crosses a system boundary. A read only constraint blocks that validation. Tell agents which dev or staging environment to use and how to reach it when you know.
 - Look up a definition, signature, export, or return shape yourself with search and read. Do not spawn an agent for it. When the contract belongs to an external API, or to a library or service you have not located yet, use `capability-search`.
 - Use `code-tracer` for a module and its neighbors, subsystem traces, cross cutting patterns, library internals, and behavior that spans multiple files or repos. It answers how located code works. It does not answer whether something exists or whether existing code can already do something new, even when you think you know which repositories to point it at.
 - Use `reviewer-security` when a review touches trust boundaries, authentication, authorization, tenant isolation, secrets, untrusted inputs, injection surfaces, file or network access, dependency supply chain changes, or sensitive data flow. It owns over permission: what an attacker or unauthorized principal can reach.
@@ -225,6 +237,7 @@ Applies to every chat.
 - Red: write the regression test first and run the narrowest relevant command to prove it fails for the expected reason before changing production code.
 - Before writing a regression test that depends on a third party library, framework, runtime, or integration, inspect the installed package metadata for its official repository URL, package directory, exports, and version. Then inspect version matched official source and tests through the shared version cache under `~/src/oss/.versions/`. Use the library's own tests to learn the correct harness, composition, setup, and assertions. This applies to any library. For Effect code, inspect the relevant Effect and Effect ecosystem package directory in the version matched official Effect repo first.
 - Green: apply the smallest fix, rerun the same command, and prove the test now passes.
+- End to end: when the bug crosses a service, database, queue, UI, or third party, also reproduce it in dev or staging before the fix and rerun that reproduction after the fix is deployed there, as Test It for Real describes. Report both runs.
 - If Green is still Red because the test or harness is wrong, revert the production fix, correct the test or harness, rerun it against the unfixed production code, prove Red again for the expected reason, reapply the fix, and rerun until Green.
 - If Green is still Red because the fix is wrong, keep the test and continue adjusting the fix until the same test is Green.
 - Refactor: once Green, simplify only when it clearly preserves behavior, then rerun the relevant checks. Leave the valid regression test and the fix in place. Do not delete them after proving Green. Report the regression test, Red result, Green result, and fix for validation.
