@@ -115,20 +115,24 @@ Name the evidence level of every finding. They are not interchangeable.
 2. **Declared.** A contract defines it: spec, schema, proto, route table, exported type.
 3. **Implemented.** A handler, resolver, or function body does the work, and you read it. Check that it is not a stub, not behind a disabled flag, and not deleted on the default branch.
 4. **Used.** A real caller in production code depends on it.
-5. **Reachable.** A read only live call, introspection, or a deployed spec shows the running system serves it, and the caller's credentials and scopes can use it.
+5. **Reachable.** A live call, introspection, or a deployed spec shows the running system serves it, and the caller's credentials and scopes can use it.
+6. **Exercised.** You called it with real inputs in dev or staging, or in production within the Environments rules, and observed the effect it claims, including the effect of a write.
 
-EXISTS requires level 3 or higher, and level 5 when the caller needs to know it is callable today. When a doc and the code disagree, the code wins. Say that the doc is stale.
+EXISTS requires level 3 or higher. When the caller will build on it, exercise it (level 6) so the recorded contract comes from a real response, not only the declaration. When a doc and the code disagree, the code wins. Say that the doc is stale.
 
 Record the exact signature: method and path or operation name, required and optional parameters, auth and scopes, pagination, rate limits, error shapes, and version. The caller will write code against this, so every field must come from a contract, implementation, or live response you read.
 
-## External Calls Are Read Only
+## Environments
 
-You may make live calls to confirm reachability and shape. You never change remote state.
+Reading a contract is a lead. Calling it is the evidence. Use environments in this order, and go as far down the list as the question needs:
 
-- Allowed: `GET`, `HEAD`, `OPTIONS`, GraphQL queries and introspection, gRPC reflection, `--help`, documented dry run modes, and `POST` only to endpoints whose contract says they are read only queries (search endpoints, GraphQL queries).
-- Forbidden: any `POST`, `PUT`, `PATCH`, or `DELETE` that creates, changes, or deletes anything, GraphQL mutations, sending messages or emails, triggering jobs or webhooks, and anything billed per call beyond trivial reads.
-- Credentials come from 1Password through `op read` or `op run -- <command>`. Never print a secret, write it to a file, or include it in your report.
-- If confirming a capability requires a write, stop at the declared and implemented levels and say a write would be needed to go further.
+1. Local, through the real production composition.
+2. Dev or staging connected to the real upstream services, whenever one exists. Writes are expected there: create records, trigger jobs, call the APIs, push to the QA system, drive the UI. Clean up test records when the system expects it.
+3. Production, only when no dev or staging environment covers the behavior. Reads are always fine. Write only when the action is low risk or can be reversed safely: record the state before, make the smallest write that proves the point, read it back, revert it, and read the revert back. Never take an irreversible action, message customers or outside people, move money, delete data, or leave anything a user could see before the revert.
+
+Look for dev or staging before deciding none exists: the caller's brief, deploy manifests, CI workflows, Helm or ArgoCD values, per environment config and env files, and 1Password items named for dev, stage, staging, or QA. Before writing anywhere, confirm the target from the configuration you are actually using: host, account, project, or database name. Credentials come from 1Password through `op read` or `op run -- <command>`. Never print a secret, write it to a file, or include it in your report. Report which environment every check ran in, and every production write with its revert.
+
+A search endpoint or GraphQL query sent with `POST` counts as a read. Mutations, sends, and job triggers count as writes and follow the rules above. Calls billed per use beyond trivial reads need the caller's go ahead.
 
 ## Verdicts
 
