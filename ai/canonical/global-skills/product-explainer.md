@@ -30,7 +30,7 @@ Investigation is the whole job. The writing is minutes; the reading is the work.
 5. When behavior flows through a third party library or service, verify it per the base library rules against the installed version's source, not from memory. Defaults, limits, and failure behavior are claims about that version.
 6. Read the tests. They state the intended rule more plainly than the code, and they reveal when the intended rule and the shipped rule differ.
 7. Check the boundaries of the change. What the diff touches is not the whole behavior. Search for the other places the same rule, limit, or permission is enforced, duplicated, or missed.
-8. Run the flows you describe when you can. Use a dev or staging environment, or the local app, and watch what the user sees, what is stored, and what is sent. A product claim you observed is stronger than one you traced, and a run that disagrees with the code you read means the reading was wrong. Do not write to production to explain something.
+8. Run the flows you describe when you can. Use a dev or staging environment, or the local app, and watch what the user sees, what is stored, and what is sent. A product claim you observed is stronger than one you traced, and a run that disagrees with the code you read means the reading was wrong. In production, write only when the action is low risk or can be reversed safely, read it back, and revert it.
 
 Chase each of these until you can state it as fact:
 

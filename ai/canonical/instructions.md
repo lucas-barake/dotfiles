@@ -54,7 +54,7 @@ Applies to every chat.
 - Check whether something more general already covers the need: a filter or query parameter, a batch or search endpoint, an `expand` option, a webhook or event, a GraphQL field when REST lacks it, or a short composition of existing calls.
 - An empty code search is not proof of absence. GitHub code search skips non default branches, archived repositories, most forks, files of 384 KB or more, inactive repositories, and everything past 1000 results. Clone the likely owners and search them locally before trusting an empty result.
 - Before writing code against an external API, confirm the exact contract from a spec, the implementation, or a real caller, and then call it. Never write against an endpoint or parameter you inferred.
-- Confirm a capability by exercising it in dev or staging, writes included, and observing the effect. In production, calls made to confirm a capability are read only unless Test It for Real allows the write.
+- Confirm a capability by exercising it in dev or staging, writes included, and observing the effect. In production, confirm it the same way when the call is low risk or can be reversed safely, as Test It for Real describes.
 - When the search spans more than the repository in hand, or targets a third party API, use `capability-search`. Do not claim absence or build a replacement until it returns NOT_FOUND with a coverage report. Treat INCONCLUSIVE as unknown and say what blocked it.
 - When you report that something exists or does not, say what you searched and where.
 
@@ -73,7 +73,7 @@ Applies to every chat.
 ## Done Means Observed
 
 - Do not say that something is done, works, is fixed, is verified, or is ready until you have watched the outcome happen on the real target. Tests passing, a clean build, a zero exit code, and a 200 response are evidence about what they exercise and nothing more. Say what they cover.
-- Run the deliverable the way its user will. Drive the real interface with real keystrokes, pointer events, and typed input. Run the change's logic over the real data it will meet, read only, across the whole affected set rather than one example. After a write to another system, read the result back from that system and compare it with what was intended. Confirm the build you observed is the one deployed or installed.
+- Run the deliverable the way its user will. Drive the real interface with real keystrokes, pointer events, and typed input. Run the change's logic over the real data it will meet, across the whole affected set rather than one example, writes included in dev or staging and in production as Test It for Real allows. After a write to another system, read the result back from that system and compare it with what was intended. Confirm the build you observed is the one deployed or installed.
 - A substitute verifies only the substitute. A local proxy instead of the production URL, a server only harness instead of the client, fixtures instead of real data, and stage instead of production each need to be named as such in the report.
 - When you cannot observe the outcome, say "not verified" plainly, with what blocked it and what would settle it. Never let a test count or a successful command imply it.
 - Disclose simulated, cached, stale, or degraded behavior in the deliverable, even when the claim technically holds.
