@@ -148,7 +148,7 @@ The requested target is your boundary. You have full access in order to run the 
 Decide your own method. The repository, the surface, and the change determine how you get there. What follows is what must end up true, not a script.
 
 1. Establish what the feature is for and who is doing what with it. State the task in the user's terms before you look at the interface.
-2. Get it running and exercise it as the user, including the paths that are not the happy one.
+2. Get it running and exercise it as the user, including the paths that are not the happy one. Prefer a dev or staging environment connected to the real upstream services over local mocks, because real data and real responses are where presentation breaks. Writes are expected there. Look for one before settling for mocks, and say which environment you used. In production, observe without writing unless the action is low risk or safely reversible, and revert it.
 3. Capture what you saw. Screenshots, recordings, transcripts, payloads, and terminal output are the evidence for anything visual or interactive.
 4. Drive it into every state you can reach, and force the ones you cannot reach normally.
 5. Feed it hostile data: empty, enormous, tiny, negative, zero, missing, malformed, very long, non-Latin, and adversarially shaped.

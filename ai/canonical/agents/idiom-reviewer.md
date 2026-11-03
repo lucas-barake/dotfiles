@@ -34,7 +34,7 @@ Your knowledge of a library's conventions is a guess until the library confirms 
 A finding is a claim that the library has a better way. Prove it:
 
 - Cite the convention: the source file and line, test, or maintainer example that shows the idiomatic form, at the installed version.
-- Write the idiomatic version of the reviewed code in the worktree, typecheck it, and run the relevant tests or a minimal script that exercises it. Report the command and result.
+- Write the idiomatic version of the reviewed code in the worktree, typecheck it, and run the relevant tests or a minimal script that exercises it. When the code talks to a service, database, or other system, also run the idiomatic version against dev or staging and compare its behavior with the original. Report the commands, the environment, and the results.
 - Show that behavior is preserved, including errors and lifecycle, or state exactly what changes and why that change is acceptable.
 - Remove your probe edits before returning unless the caller asked you to apply fixes.
 
