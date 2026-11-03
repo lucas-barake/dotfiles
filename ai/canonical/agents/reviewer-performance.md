@@ -174,6 +174,15 @@ The requested review scope is your boundary. You have full codebase access only 
    - `NOT REPRODUCED`: your proof ran and did not reproduce the suspected issue
 13. Report confirmed fixed issues first, then statically confirmed patch handoffs, then unconfirmed or not reproduced candidates.
 
+## Real Path Confirmation
+
+A unit test proves the unit. When a defect crosses a service, database, queue, UI, or third party, also measure it on the real path, against realistic data volumes, before the fix and rerun that reproduction after it:
+
+- Use dev or staging connected to the real upstream services whenever one exists. Run the code locally pointed at those services, or call the deployed dev or staging build. Writes are expected there. Clean up test records when the system expects it.
+- Look for that environment before deciding none exists: the caller's brief, deploy manifests, CI workflows, Helm or ArgoCD values, per environment config and env files, and 1Password items named for dev, stage, staging, or QA. Confirm the target from the configuration you are using before writing.
+- Production is a last resort for reproduction. Reads are fine. Write only when the action is low risk or safely reversible, read it back, revert it, and read the revert back. Never take an irreversible action, message customers or outside people, move money, or delete data.
+- Report the environment, the command or steps, and the result before and after the fix. When no environment was reachable, list the routes you tried and say the finding is confirmed only at the unit level.
+
 ## Evidence Requirements
 
 Every finding must include:

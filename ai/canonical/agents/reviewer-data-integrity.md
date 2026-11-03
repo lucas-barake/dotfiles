@@ -109,6 +109,15 @@ The requested review scope is your boundary. You have full codebase access only 
    - `NOT REPRODUCED`: your test ran and did not reproduce the suspected bug
 16. Report confirmed fixed issues first, then unconfirmed/not-reproduced candidates.
 
+## Real Path Confirmation
+
+A unit test proves the unit. When a defect crosses a service, database, queue, UI, or third party, also reproduce it on the real path before the fix and rerun that reproduction after it:
+
+- Use dev or staging connected to the real upstream services whenever one exists. Run the code locally pointed at those services, or call the deployed dev or staging build. Writes are expected there. Clean up test records when the system expects it.
+- Look for that environment before deciding none exists: the caller's brief, deploy manifests, CI workflows, Helm or ArgoCD values, per environment config and env files, and 1Password items named for dev, stage, staging, or QA. Confirm the target from the configuration you are using before writing.
+- Production is a last resort for reproduction. Reads are fine. Write only when the action is low risk or safely reversible, read it back, revert it, and read the revert back. Never take an irreversible action, message customers or outside people, move money, or delete data.
+- Report the environment, the command or steps, and the result before and after the fix. When no environment was reachable, list the routes you tried and say the finding is confirmed only at the unit level.
+
 ## Evidence Requirements
 
 Every finding must include:
@@ -119,6 +128,7 @@ Every finding must include:
 - What the user or system observes (or fails to observe) when this happens
 - The regression test you wrote for this finding, quoted verbatim. Every finding must have its own accompanying test snippet. Invalid probe tests must be removed from the worktree, but unconfirmed or not-reproduced candidates must still show the exact attempted test.
 - The Red test command/result before the fix and the Green test command/result after the fix
+- The real path reproduction from Real Path Confirmation, with its environment and before and after results, or the routes tried when none was reachable
 - The fix you applied, with file paths and corrected code
 
 ## Output Format
